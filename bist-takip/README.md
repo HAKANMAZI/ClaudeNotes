@@ -43,6 +43,10 @@ Takip listesi `bist_takip/watchlist.py` dosyasındadır. Şirket ekleyip çıkar
 pytest
 ```
 
+streamlit.io
+<img width="433" height="673" alt="image" src="https://github.com/user-attachments/assets/bd800938-7caf-4fd2-bf5f-e0faccd6ea14" />
+
+
 ### Notlar
 
 - Veriler [borsapy](https://github.com/saidsurucu/borsapy) kütüphanesiyle KAP ve borsa kaynaklarından çekilir ve gecikmeli olabilir.
