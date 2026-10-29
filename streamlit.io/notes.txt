@@ -1,0 +1,11 @@
+Ama henüz internette yayında değil, bu yüzden tıklayıp açabileceğiniz bir link yok. Bu ortamdan yayınlayamıyorum. Yayınlamak ücretsiz ve telefondan yaklaşık 5 dakika sürüyor:
+
+https://share.streamlit.io adresini açın.
+Continue with GitHub ile HAKANMAZI hesabınızla giriş yapın ve izin isterse onaylayın.
+Create app düğmesine basın, ardından “Deploy a public app from GitHub” seçeneğini seçin.
+Alanları şöyle doldurun:
+Repository: HAKANMAZI/ClaudeNotes
+Branch: main
+Main file path: bist-takip/app.py
+Deploy düğmesine basın. 2-3 dakika kurulum yapar.
+Sonunda https://....streamlit.app gibi bir link açılır. Bu link sizin web arayüzünüz; telefonun ana ekranına ekleyebilirsiniz.
