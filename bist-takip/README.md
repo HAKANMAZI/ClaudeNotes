@@ -50,3 +50,6 @@ pytest
 - Veriler [borsapy](https://github.com/saidsurucu/borsapy) kütüphanesiyle KAP ve borsa kaynaklarından çekilir ve gecikmeli olabilir.
 - İhaleler KAP bildirim başlıklarına göre otomatik sınıflandırılır (`bist_takip/categories.py`). Ayrıntı için KAP linkini açın.
 - Bu uygulama yatırım tavsiyesi değildir.
+
+
+https://share.streamlit.io/
