@@ -18,6 +18,17 @@ KURULUM
 GÜNCELLEME
 Bash'te: cd ClaudeNotes && git pull   ->   Web -> Reload
 
+RELOAD NEDİR, NE ZAMAN?
+Reload, siteyi yeniden başlatır ve kodu baştan okur.
+Gerekli:
+- git pull ile kod güncelledikten sonra
+- WSGI dosyasını değiştirdikten sonra
+- pip install ile kütüphane kurduktan sonra
+Gereksiz:
+- Yeni kullanıcı, gönderi, yorum, beğeni (bunlar veritabanında, anında görünür)
+Reload veri silmez. Veritabanı ve fotoğraflar yerinde kalır.
+"Run until ..." düğmesi Reload değildir, sadece sitenin süresini uzatır.
+
 BAKIM
 Ayda bir Web sekmesindeki "Run until ..." düğmesine bas, yoksa site kapanır.
 
