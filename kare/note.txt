@@ -1,0 +1,62 @@
+KARE - Instagram benzeri fotoğraf paylaşım uygulaması
+=====================================================
+
+GEREKSİNİMLER
+-------------
+- Windows bilgisayar
+- Python üç (python.org/downloads adresinden)
+  Kurulumda "Add python.exe to PATH" kutusu işaretlenmeli.
+- Flask kütüphanesi
+- İnternet tarayıcısı (Chrome, Edge vb.)
+
+KURULUM
+-------
+1. cmd'yi aç.
+2. Python kurulu mu kontrol et:
+   python --version
+3. Flask'ı kur:
+   pip install flask
+
+ÇALIŞTIRMA
+----------
+1. cmd'de uygulama klasörüne git:
+   cd C:\DBA_HAKAN\Claude\App\Instagram
+2. Uygulamayı başlat:
+   python app.py
+3. Tarayıcıda şu adresi aç:
+   http://127.0.0.1:5000
+4. Durdurmak için cmd'de Ctrl + C tuşlarına bas.
+
+NASIL KULLANILIR
+----------------
+- Kayıt ol: Kullanıcı adı (sadece harf ve rakam) ve şifre gir.
+- Giriş yap: Kayıt olduğun bilgilerle gir.
+- Paylaş: Üst menüden "Paylaş"a tıkla, fotoğraf seç, açıklama yaz.
+- Beğen: Fotoğrafın altındaki kalbe tıkla. Tekrar tıklarsan beğeni kalkar.
+- Yorum: Fotoğrafın altındaki kutuya yaz, "Gönder"e bas.
+- Keşfet: Herkesin son paylaşımlarını gösterir.
+- Takip et: Bir kullanıcı adına tıkla, profilinde "Takip et"e bas.
+  Ana akışta sadece kendi ve takip ettiklerinin gönderileri görünür.
+- Profil: Kendi profilinde biyografini yazıp "Kaydet"e basabilirsin.
+- Sil: Kendi gönderinin altındaki "Gönderiyi sil" düğmesini kullan.
+
+DOSYALAR
+--------
+- app.py   : Uygulamanın kendisi
+- kare.db  : Veritabanı (ilk çalıştırmada otomatik oluşur)
+- uploads  : Yüklenen fotoğraflar (otomatik oluşur)
+
+GÜVENLİK
+--------
+İnternette yayınlayacaksan SECRET_KEY değerini değiştir:
+1. Rastgele anahtar üret:
+   python -c "import secrets; print(secrets.token_hex(32))"
+2. Uygulamayı başlatmadan önce:
+   set SECRET_KEY=uretilen_anahtar
+
+SORUN GİDERME
+-------------
+- "pip is not recognized": Python kurulu değil ya da PATH'e eklenmemiş.
+  Python'u "Add python.exe to PATH" işaretli olarak yeniden kur,
+  sonra cmd'yi kapatıp yeniden aç.
+- Sayfa açılmıyor: cmd penceresinin açık ve uygulamanın çalışıyor olduğundan emin ol.
