@@ -20,3 +20,17 @@ Bash'te: cd ClaudeNotes && git pull   ->   Web -> Reload
 
 BAKIM
 Ayda bir Web sekmesindeki "Run until ..." düğmesine bas, yoksa site kapanır.
+
+HATALAR VE ÇÖZÜMLER
+- ">>>" ekranında "SyntaxError: invalid syntax":
+  Python konsolu açık, Bash değil. Bu ekranda şöyle yaz:
+  import os; os.system("cd ~/ClaudeNotes && git pull")
+  Ya da Consoles -> Bash aç ($ işareti olmalı).
+- Bilgisayarda "'git' is not recognized":
+  Komut kendi cmd'nde yazılmış. PythonAnywhere Bash'te yaz.
+- "destination path 'ClaudeNotes' already exists":
+  Klasör zaten var. git clone yerine git pull kullan.
+- Değişiklik sitede görünmüyor:
+  git pull sonrası Web -> Reload bas.
+- Site hata veriyor:
+  Web sekmesinde "Error log" bağlantısına bak.
