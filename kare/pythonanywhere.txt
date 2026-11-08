@@ -1,67 +1,22 @@
-KARE - PYTHONANYWHERE ÜZERİNDE ÜCRETSİZ YAYINLAMA
-=================================================
+KARE - PYTHONANYWHERE
+=====================
+Kullanıcı adı: hak122hak1
+Site adresi:   https://hak122hak1.pythonanywhere.com
+Kod:           https://github.com/HAKANMAZI/ClaudeNotes/tree/main/kare
 
-ÖNEMLİ: Aşağıdaki komutlar KENDİ BİLGİSAYARINDAKİ cmd'de DEĞİL,
-PythonAnywhere sitesindeki Bash konsolunda yazılır.
-Bilgisayarına Git kurmana gerek yok.
-
-GEREKSİNİMLER
--------------
-- Ücretsiz PythonAnywhere hesabı
-- Kodun GitHub'da olması: https://github.com/HAKANMAZI/ClaudeNotes (kare klasörü)
-
-KURULUM (bir kez yapılır)
--------------------------
-1. https://www.pythonanywhere.com adresine gir.
-   "Pricing & signup" -> "Create a Beginner account" ile ücretsiz hesap aç.
-
-2. Üst menüden "Consoles" -> "Bash" tıkla. Açılan siyah ekrana yaz:
+KURULUM
+1. Consoles -> Bash aç ($ işareti olmalı, >>> değil) ve yaz:
    git clone https://github.com/HAKANMAZI/ClaudeNotes.git
-
-3. Üst menüden "Web" -> "Add a new web app" -> "Next"
-   -> "Manual configuration" -> en yeni Python sürümünü seç -> "Next".
-
-4. Web sayfasında "WSGI configuration file" bağlantısına tıkla.
-   İçindeki her şeyi sil, şunu yapıştır
-
+2. Web -> Add a new web app -> Manual configuration -> en yeni Python.
+3. WSGI configuration file içeriğini sil, şunu yapıştır, Save:
    import sys, os
    sys.path.insert(0, '/home/hak122hak1/ClaudeNotes/kare')
-   os.environ['SECRET_KEY'] = 'buraya-uzun-rastgele-bir-yazi'
+   os.environ['SECRET_KEY'] = 'uzun-rastgele-bir-yazi'
    from app import app as application
+4. Web -> Reload.
 
-   Sağ üstte "Save" de.
+GÜNCELLEME
+Bash'te: cd ClaudeNotes && git pull   ->   Web -> Reload
 
-5. "Web" sekmesine dön, yeşil "Reload" düğmesine bas.
-
-6. Site adresin: https://hak122hak1.pythonanywhere.com
-   Bu adresi arkadaşlarına gönder. "Kayıt ol" ile kendi hesaplarını açarlar.
-
-GÜNCELLEME (kodu değiştirdiğinde)
----------------------------------
-1. Değişiklikleri GitHub'a yükle.
-2. PythonAnywhere -> "Consoles" -> "Bash":
-   cd ClaudeNotes
-   git pull
-3. "Web" sekmesi -> "Reload".
-
-AYLIK BAKIM
------------
-Ücretsiz hesapta site bir ay kullanılmazsa kapanır.
-Ayda bir kez "Web" sekmesindeki süre uzatma düğmesine bas
-("Run until ..." yazan düğme).
-
-SINIRLAR (ücretsiz plan)
-------------------------
-- Bir web uygulaması
-- Beş yüz on iki megabayt disk (veritabanı ve fotoğraflar dahil)
-- Veriler kalıcıdır, silinmez.
-
-SORUN GİDERME
--------------
-- ">>>" işaretli ekranda "SyntaxError: invalid syntax": Python konsolu açılmış.
-  Önce exit() yazıp kapat. Sonra "Consoles" -> "Bash" seç.
-  Bash ekranında satır başında "$" işareti olur, ">>>" olmaz.
-- "git is not recognized": Komutu kendi bilgisayarında yazmışsın.
-  PythonAnywhere'deki Bash konsolunda yaz.
-- Site hata veriyor: "Web" sekmesindeki "Error log" bağlantısına bak.
-- Değişiklik görünmüyor: "git pull" sonrası "Reload" basmayı unutma.
+BAKIM
+Ayda bir Web sekmesindeki "Run until ..." düğmesine bas, yoksa site kapanır.
