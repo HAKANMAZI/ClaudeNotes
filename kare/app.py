@@ -26,7 +26,7 @@ from werkzeug.security import generate_password_hash, check_password_hash
 BASE = os.path.dirname(os.path.abspath(__file__))  # app.py'nin bulunduğu klasör
 UPLOADS = os.path.join(BASE, "uploads")            # Fotoğrafların kaydedileceği klasör
 DB = os.path.join(BASE, "kare.db")                 # Veritabanı dosyası
-IZINLI = {"png", "jpg", "jpeg", "gif", "webp"}     # Kabul edilen fotoğraf türleri
+IZINLI = {"png", "jpg", "jpeg", "jfif", "gif", "webp"}  # Kabul edilen fotoğraf türleri
 os.makedirs(UPLOADS, exist_ok=True)                # uploads klasörü yoksa oluştur
 
 app = Flask(__name__)  # Uygulamayı oluştur
@@ -287,8 +287,10 @@ def yukle():
         # Dosya uzantısını al (örnek: jpg)
         uz = f.filename.rsplit(".", 1)[-1].lower() if f and "." in f.filename else ""
         if uz not in IZINLI:
-            flash("Fotoğraf seç: png, jpg, gif veya webp.")
+            flash("Fotoğraf seç: png, jpg, jfif, gif veya webp.")
         else:
+            if uz == "jfif":  # JFIF aslında JPEG'dir, tarayıcıda sorunsuz görünsün diye jpg kaydet
+                uz = "jpg"
             ad = f"{uuid.uuid4().hex}.{uz}"     # Benzersiz dosya adı üret
             f.save(os.path.join(UPLOADS, ad))   # Dosyayı uploads klasörüne kaydet
             db().execute("INSERT INTO posts(user_id,image,caption) VALUES(?,?,?)",
