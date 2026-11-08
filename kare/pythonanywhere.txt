@@ -23,10 +23,9 @@ KURULUM (bir kez yapılır)
 
 4. Web sayfasında "WSGI configuration file" bağlantısına tıkla.
    İçindeki her şeyi sil, şunu yapıştır
-   (KULLANICI yerine PythonAnywhere kullanıcı adını yaz):
 
    import sys, os
-   sys.path.insert(0, '/home/KULLANICI/ClaudeNotes/kare')
+   sys.path.insert(0, '/home/hak122hak1/ClaudeNotes/kare')
    os.environ['SECRET_KEY'] = 'buraya-uzun-rastgele-bir-yazi'
    from app import app as application
 
@@ -34,7 +33,7 @@ KURULUM (bir kez yapılır)
 
 5. "Web" sekmesine dön, yeşil "Reload" düğmesine bas.
 
-6. Site adresin: https://KULLANICI.pythonanywhere.com
+6. Site adresin: https://hak122hak1.pythonanywhere.com
    Bu adresi arkadaşlarına gönder. "Kayıt ol" ile kendi hesaplarını açarlar.
 
 GÜNCELLEME (kodu değiştirdiğinde)
@@ -59,6 +58,9 @@ SINIRLAR (ücretsiz plan)
 
 SORUN GİDERME
 -------------
+- ">>>" işaretli ekranda "SyntaxError: invalid syntax": Python konsolu açılmış.
+  Önce exit() yazıp kapat. Sonra "Consoles" -> "Bash" seç.
+  Bash ekranında satır başında "$" işareti olur, ">>>" olmaz.
 - "git is not recognized": Komutu kendi bilgisayarında yazmışsın.
   PythonAnywhere'deki Bash konsolunda yaz.
 - Site hata veriyor: "Web" sekmesindeki "Error log" bağlantısına bak.
