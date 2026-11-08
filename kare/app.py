@@ -93,6 +93,9 @@ def kur():
         """)
 
 
+kur()  # Tabloları hazırla (sunucuda da çalışsın diye burada çağrılır)
+
+
 # ============================================================
 # YARDIMCI FONKSİYONLAR
 # ============================================================
@@ -396,5 +399,4 @@ def profil(ad):
 # BAŞLAT
 # ============================================================
 if __name__ == "__main__":
-    kur()               # Tabloları hazırla
     app.run(debug=True) # Sunucuyu başlat (debug: hata ayrıntılarını gösterir)
