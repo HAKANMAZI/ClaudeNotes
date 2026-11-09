@@ -1,0 +1,399 @@
+<title>BIST Portföy Masası</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@500;700;800&family=Instrument+Sans:wght@400;500;600&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: sticky toolbar, summary strip, one wide sortable board with a frozen ticker column; detail sheet slides over it. */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --surface-2:#eaeef4; --line:#d6dce6;
+  --fg:#16202e; --muted:#5d6878; --accent:#1d4ed8; --accent-soft:#dbe5fb;
+  --up:#0f7a4b; --up-soft:#d9f1e5; --down:#c22f2f; --down-soft:#f8dddd;
+  --warn:#9a6200; --warn-soft:#fcefd2;
+  --f-display:"Archivo", "Helvetica Neue", Arial, sans-serif;
+  --f-body:"Instrument Sans", "Segoe UI", system-ui, sans-serif;
+  --f-num:"JetBrains Mono", ui-monospace, Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0e131b; --surface:#151c27; --surface-2:#1c2533; --line:#2a3546;
+  --fg:#e5ebf3; --muted:#93a0b3; --accent:#7aa2ff; --accent-soft:#1e2c4d;
+  --up:#3ccf8e; --up-soft:#133528; --down:#ff7a7a; --down-soft:#3c1a1d;
+  --warn:#f2b84b; --warn-soft:#3a2d12; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e131b; --surface:#151c27; --surface-2:#1c2533; --line:#2a3546;
+  --fg:#e5ebf3; --muted:#93a0b3; --accent:#7aa2ff; --accent-soft:#1e2c4d;
+  --up:#3ccf8e; --up-soft:#133528; --down:#ff7a7a; --down-soft:#3c1a1d;
+  --warn:#f2b84b; --warn-soft:#3a2d12; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.45}
+body::before{content:"";position:fixed;inset:0 0 auto;height:env(safe-area-inset-top,0px);z-index:10;background:var(--surface)}
+.wrap{padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px))}
+header.bar{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--surface);border-bottom:1px solid var(--line)}
+.bar-in{display:flex;flex-wrap:wrap;align-items:center;gap:12px;padding-block:12px}
+.brand{display:flex;flex-direction:column;gap:2px;margin-right:auto;min-width:0}
+.brand h1{font-family:var(--f-display);font-weight:800;font-size:20px;letter-spacing:-.01em;margin:0}
+.brand .sub{color:var(--muted);font-size:12px}
+.idx{display:flex;gap:8px;flex-wrap:wrap}
+.idx .chip{font-family:var(--f-num);font-size:12px;background:var(--surface-2);border-radius:6px;padding:4px 8px;white-space:nowrap}
+button{font:inherit;cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:7px 12px;font-weight:600}
+.btn:hover{border-color:var(--accent)}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.btn.danger{color:var(--down);border-color:var(--down)}
+.btn:focus-visible,.tab:focus-visible,th button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+main{display:flex;flex-direction:column;gap:18px;padding-block:18px 40px}
+.notice{border:1px solid var(--line);border-left:4px solid var(--warn);background:var(--warn-soft);border-radius:8px;padding:12px 14px;display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.notice p{margin:0;flex:1 1 260px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:10px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:4px;min-width:0}
+.tile .k{font-size:11px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.tile .v{font-family:var(--f-num);font-size:20px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.tile.hero{border-color:var(--accent);background:var(--accent-soft)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tabs{display:flex;flex-wrap:wrap;gap:4px;background:var(--surface-2);padding:4px;border-radius:9px}
+.tab{border:0;background:transparent;color:var(--muted);padding:6px 11px;border-radius:6px;font-weight:600}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.filter{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:13px}
+input[type=search],input[type=text],input[type=number]{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:7px 10px;min-width:0}
+.board{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto;max-width:100%}
+table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+td{font-family:var(--f-num);font-size:12.5px}
+th{position:sticky;top:0;background:var(--surface-2);font-size:11px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600;z-index:2}
+th button{all:unset;cursor:pointer;display:inline-flex;gap:4px;align-items:center}
+th .dir{color:var(--accent)}
+th:first-child,td:first-child{position:sticky;left:0;text-align:left;background:var(--surface);z-index:1;border-right:1px solid var(--line)}
+th:first-child{z-index:3;background:var(--surface-2)}
+td.txt{font-family:var(--f-body);font-size:13px;text-align:left;white-space:normal;min-width:150px;max-width:260px}
+tbody tr{cursor:pointer}
+tbody tr:hover td{background:var(--surface-2)}
+.tk{font-family:var(--f-display);font-weight:700;font-size:14px;letter-spacing:.02em}
+.tk small{display:block;font-family:var(--f-body);font-weight:400;font-size:11px;color:var(--muted);letter-spacing:0}
+.pos{color:var(--up)} .neg{color:var(--down)}
+.pill{display:inline-block;font-family:var(--f-body);font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--fg)}
+.pill.good{background:var(--up-soft);color:var(--up)} .pill.bad{background:var(--down-soft);color:var(--down)} .pill.mid{background:var(--warn-soft);color:var(--warn)}
+.empty{padding:28px;text-align:center;color:var(--muted)}
+.foot{color:var(--muted);font-size:12px;display:flex;flex-wrap:wrap;gap:6px 16px}
+.sheet-bg{position:fixed;inset:0;background:rgba(10,15,25,.45);z-index:20;display:flex;justify-content:flex-end}
+.sheet{background:var(--surface);width:min(520px,100%);height:100%;overflow-y:auto;padding:calc(20px + env(safe-area-inset-top,0px)) max(20px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) 20px;display:flex;flex-direction:column;gap:16px}
+.sheet h2{font-family:var(--f-display);font-size:24px;margin:0}
+.sheet h3{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0}
+dl.kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;margin:0}
+dl.kv dt{color:var(--muted)} dl.kv dd{margin:0;font-family:var(--f-num);text-align:right;overflow-wrap:anywhere}
+dl.kv dd.t{font-family:var(--f-body)}
+form.edit{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+form.edit label{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+form.edit .row{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.msg{font-size:13px}
+.msg.err{color:var(--down)} .msg.ok{color:var(--up)}
+@media (max-width:520px){.tile .v{font-size:17px}.brand h1{font-size:18px}}
+@media (prefers-reduced-motion:no-preference){.sheet{animation:slide .18s ease-out}@keyframes slide{from{transform:translateX(24px);opacity:.6}}}
+</style>
+
+<header class="bar"><div class="wrap bar-in">
+  <div class="brand"><h1>BIST Portföy Masası</h1><span class="sub" id="fresh">Google Sheets'ten bekleniyor…</span></div>
+  <div class="idx" id="idx"></div>
+  <button class="btn" id="refresh" type="button">Yenile</button>
+</div></header>
+
+<main class="wrap">
+  <div class="notice" id="notice" hidden><p id="noticeText"></p><button class="btn primary" id="noticeBtn" type="button" hidden>Google Sheets'e bağlan</button></div>
+
+  <section class="summary" id="summary" aria-label="Portföy özeti"></section>
+
+  <div class="controls">
+    <div class="tabs" role="tablist" id="tabs"></div>
+    <label class="filter"><input type="checkbox" id="onlyMine"> Sadece portföyüm</label>
+    <input type="search" id="q" placeholder="Hisse ara (ör. ASELS)" aria-label="Hisse ara">
+    <form id="addForm" class="filter" autocomplete="off">
+      <input type="text" id="addTicker" placeholder="Yeni kod" aria-label="Eklenecek hisse kodu" size="8" maxlength="8">
+      <button class="btn" type="submit">Hisse ekle</button>
+    </form>
+  </div>
+  <span class="msg" id="addMsg" role="status"></span>
+
+  <div class="board" id="board"><div class="empty">Tablo yükleniyor…</div></div>
+
+  <div class="foot">
+    <span>Veri kaynağı: kendi Google Sheet'iniz (GOOGLEFINANCE ~15 dk gecikmeli).</span>
+    <span>Satıra tıklayınca ayrıntı ve alım/satım düzenleme açılır.</span>
+    <span>Yatırım tavsiyesi değildir.</span>
+  </div>
+</main>
+
+<div class="sheet-bg" id="sheetBg" hidden><aside class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sTitle"></aside></div>
+
+<script>
+const SHEET_ID = "1JYXC2-b5fGWKfwlyzpFhlIs9-0edZW5zEjexRMlSVlY";
+const SERVER = "Google Sheets";
+const RANGE_MAIN = "Takip!A3:BN35", RANGE_IDX = "Veri!A2:J4";
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/" + SHEET_ID + "/edit";
+
+const GROUPS = {
+  "Özet": ["Fiyat (₺)","Gün","30 Gün","240 Gün","K/Z %","Toplam K/Z (₺)","Reel K/Z %","Temel Not","Değerleme (F/K)","RSI (14)","Sonraki Bilanço"],
+  "Portföy": ["Alınan Adet","Ort. Alış Fiyatı (₺)","Alış Tarihi","Satılan Adet","Ort. Satış Fiyatı (₺)","Satış Tarihi","Eldeki Adet","Eldeki Maliyet (₺)","Güncel Değer (₺)","Gerçekleşen K/Z (₺)","Gerçekleşmemiş K/Z (₺)","Toplam K/Z (₺)","K/Z %","Enflasyon (dönem)","Reel K/Z (₺)","Reel K/Z %"],
+  "Performans": ["Fiyat (₺)","Gün","5 Gün","15 Gün","30 Gün","60 Gün","240 Gün","Günlük Hacim","10 Gün Ort. Hacim","50 Gün Ort. Hacim"],
+  "Teknik": ["Fiyat (₺)","MA10","MA21","MA50","MA200","> MA10","> MA21","> MA50","52H Zirveden Uzaklık","RSI (14)"],
+  "Temel": ["F/K","Piyasa Değeri","PD/DD","Net Borç / FAVÖK","ROE (Özkaynak Kârlılığı)","Temel Not","Değerleme (F/K)","Kârlılık","Borç Durumu","Gelecek Beklentisi","Sonraki Bilanço"],
+  "KAP": ["Son 1 Ay KAP İş/İhale","Son 3 Ay KAP İş/İhale","Toplam Sipariş / İş Bakiyesi"],
+  "Ralli": ["Fiyat (₺)","Giriş Fiyatı","Giriş Tarihi","Max Fiyat","Hedef Fiyat","Stop","Getiri","R/K Oranı","XU100'e Göre","Max Kazanç"]
+};
+const TEXT_COLS = new Set(["Kârlılık","Borç Durumu","Gelecek Beklentisi","Son 1 Ay KAP İş/İhale","Son 3 Ay KAP İş/İhale","Toplam Sipariş / İş Bakiyesi"]);
+const SIGNED = /(%|K\/Z|^Gün$|^\d+ Gün$|Getiri|XU100|Zirveden|Max Kazanç)/;
+const EDIT_COLS = ["Alınan Adet","Ort. Alış Fiyatı (₺)","Alış Tarihi","Satılan Adet","Ort. Satış Fiyatı (₺)","Satış Tarihi"];
+
+const state = { headers: [], rows: [], totals: null, idx: [], storedAt: null, tab: "Özet", sort: null, q: "", mine: false, mcp: null };
+try { const t = localStorage.getItem("bist.tab"); if (t && GROUPS[t]) state.tab = t; } catch (e) {}
+
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function num(s) {
+  if (s == null) return null;
+  s = String(s).trim();
+  if (!s || s === "-" || s.startsWith("#")) return null;
+  let mult = 1;
+  if (/Mr/.test(s)) mult = 1e9; else if (/Mn/.test(s)) mult = 1e6;
+  const m = s.replace(/[^\d,.\-−]/g, "").replace("−", "-");
+  if (!/\d/.test(m)) return null;
+  const n = parseFloat(m.replace(/\./g, "").replace(",", "."));
+  return isFinite(n) ? n * mult : null;
+}
+function colLetter(i) { let s = ""; i++; while (i > 0) { const r = (i - 1) % 26; s = String.fromCharCode(65 + r) + s; i = Math.floor((i - 1) / 26); } return s; }
+function get(row, name) { const i = state.headers.indexOf(name); return i < 0 ? "" : (row.cells[i] ?? ""); }
+
+function parseMain(values) {
+  const v = values || [];
+  const headers = (v[2] || []).map(h => String(h || "").trim());
+  state.headers = headers;
+  state.totals = v[0] || [];
+  state.rows = [];
+  for (let k = 3; k < v.length; k++) {
+    const cells = v[k] || [];
+    const sheetRow = 3 + k;
+    state.rows.push({ sheetRow, cells, ticker: String(cells[0] || "").trim() });
+  }
+}
+
+function cellClass(name, raw) {
+  if (TEXT_COLS.has(name)) return "txt";
+  if (name.startsWith(">")) return raw === "▲" ? "pos" : raw === "▼" ? "neg" : "";
+  if (SIGNED.test(name)) { const n = num(raw); if (n > 0) return "pos"; if (n < 0) return "neg"; }
+  return "";
+}
+function pill(text) {
+  if (!text) return "";
+  const t = String(text);
+  let c = "";
+  if (/^Çok Güçlü$|^Güçlü$|^Ucuz$|Orta–Güçlü/.test(t)) c = "good";
+  else if (/Zayıf|zarar|Çok Pahalı/.test(t)) c = "bad";
+  else if (/Orta|Makul|Pahalı|Kontrol/.test(t)) c = /Makul/.test(t) ? "good" : "mid";
+  return `<span class="pill ${c}">${esc(t)}</span>`;
+}
+function renderCell(name, raw) {
+  if (name === "Temel Not" || name === "Değerleme (F/K)") return pill(raw);
+  if (name === "RSI (14)") { const n = num(raw); if (n == null) return "—"; const c = n < 30 ? "good" : n > 70 ? "bad" : ""; return `<span class="pill ${c}">${esc(raw)}</span>`; }
+  if (raw === "" || raw == null) return "—";
+  return esc(raw);
+}
+
+function renderSummary() {
+  const t = state.totals || [], h = state.headers;
+  const pick = (name) => { const i = h.indexOf(name); return i < 0 ? "" : t[i] || ""; };
+  const items = [
+    ["Toplam K/Z", pick("Toplam K/Z (₺)") ? pick("Toplam K/Z (₺)") + " ₺" : "—", "hero", pick("Toplam K/Z (₺)")],
+    ["K/Z %", pick("K/Z %") || "—", "", pick("K/Z %")],
+    ["Reel K/Z (enflasyona göre)", pick("Reel K/Z (₺)") ? pick("Reel K/Z (₺)") + " ₺ · " + (pick("Reel K/Z %") || "") : "—", "", pick("Reel K/Z (₺)")],
+    ["Eldeki maliyet", pick("Eldeki Maliyet (₺)") ? pick("Eldeki Maliyet (₺)") + " ₺" : "—", "", ""],
+    ["Güncel değer", pick("Güncel Değer (₺)") ? pick("Güncel Değer (₺)") + " ₺" : "—", "", ""],
+    ["Takip edilen hisse", String(state.rows.filter(r => r.ticker).length), "", ""]
+  ];
+  $("summary").innerHTML = items.map(([k, v, cls, signRaw]) => {
+    const n = num(signRaw); const sc = n > 0 ? "pos" : n < 0 ? "neg" : "";
+    return `<div class="tile ${cls}"><span class="k">${esc(k)}</span><span class="v ${sc}">${esc(v)}</span></div>`;
+  }).join("");
+}
+function renderIdx() {
+  $("idx").innerHTML = (state.idx || []).filter(r => r && r[0] && r[0] !== "Endeks").map(r => {
+    const g = num(r[2]); const c = g > 0 ? "pos" : g < 0 ? "neg" : "";
+    return `<span class="chip">${esc(r[0])} ${esc(r[9] || "")} <b class="${c}">${esc(r[2] || "")}</b></span>`;
+  }).join("");
+}
+function renderTabs() {
+  $("tabs").innerHTML = Object.keys(GROUPS).map(g => `<button class="tab" role="tab" type="button" aria-selected="${g === state.tab}" data-tab="${esc(g)}">${esc(g)}</button>`).join("");
+}
+function visibleRows() {
+  let rows = state.rows.filter(r => r.ticker);
+  if (state.mine) rows = rows.filter(r => num(get(r, "Eldeki Adet")) > 0 || num(get(r, "Alınan Adet")) > 0);
+  if (state.q) { const q = state.q.toLocaleUpperCase("tr"); rows = rows.filter(r => r.ticker.toLocaleUpperCase("tr").includes(q) || String(get(r, "Sektör")).toLocaleUpperCase("tr").includes(q)); }
+  if (state.sort) {
+    const { col, dir } = state.sort;
+    rows = rows.slice().sort((a, b) => {
+      const ra = col === "Şirket" ? a.ticker : get(a, col), rb = col === "Şirket" ? b.ticker : get(b, col);
+      const na = num(ra), nb = num(rb);
+      let c;
+      if (na != null || nb != null) c = (na ?? -Infinity) - (nb ?? -Infinity);
+      else c = String(ra).localeCompare(String(rb), "tr");
+      return dir * c;
+    });
+  }
+  return rows;
+}
+function renderBoard() {
+  if (!state.headers.length) return;
+  const cols = GROUPS[state.tab].filter(c => state.headers.includes(c));
+  const rows = visibleRows();
+  const th = (name) => {
+    const active = state.sort && state.sort.col === name;
+    const dir = active ? (state.sort.dir > 0 ? "▲" : "▼") : "";
+    return `<th scope="col" aria-sort="${active ? (state.sort.dir > 0 ? "ascending" : "descending") : "none"}"><button type="button" data-sort="${esc(name)}">${esc(name)}<span class="dir">${dir}</span></button></th>`;
+  };
+  if (!rows.length) { $("board").innerHTML = `<div class="empty">${state.mine ? "Portföyünüzde alım girilmiş hisse yok. Bir satıra tıklayıp alım bilgisini girin." : "Eşleşen hisse yok."}</div>`; return; }
+  $("board").innerHTML = `<table><thead><tr>${th("Şirket")}${cols.map(th).join("")}</tr></thead><tbody>${rows.map(r => `<tr data-row="${r.sheetRow}" tabindex="0"><td><span class="tk">${esc(r.ticker)}<small>${esc(get(r, "Sektör"))}</small></span></td>${cols.map(c => { const raw = get(r, c); return `<td class="${cellClass(c, raw)}">${renderCell(c, raw)}</td>`; }).join("")}</tr>`).join("")}</tbody></table>`;
+}
+function renderFresh() {
+  const when = state.storedAt ? new Date(state.storedAt) : new Date();
+  $("fresh").innerHTML = `Son okuma ${when.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" })} · <a href="${SHEET_URL}" target="_blank" rel="noopener">Sheet'i aç</a>`;
+}
+function renderAll() { renderSummary(); renderIdx(); renderTabs(); renderBoard(); renderFresh(); }
+
+function showNotice(text, withBtn) { $("noticeText").textContent = text; $("noticeBtn").hidden = !withBtn; $("notice").hidden = false; }
+function hideNotice() { $("notice").hidden = true; }
+function handleError(err) {
+  const code = err && err.code;
+  if (code === "server_not_connected" || code === "selection_required") showNotice("Google Sheets bağlı değil. claude.ai Ayarlar → Connectors bölümünden Google Sheets'i ekleyin, sonra Yenile'ye basın.", false);
+  else if (code === "needs_reauth") showNotice("Google Sheets bağlantınızın süresi dolmuş. claude.ai Ayarlar → Connectors'tan yeniden bağlanın.", false);
+  else if (code === "approval_required" || code === "not_in_manifest" || code === "consent_required") showNotice("Bu sayfanın Google Sheet'inizi okuyabilmesi için izin gerekiyor.", true);
+  else if (code === "tool_error") showNotice("Google Sheets isteği reddetti: " + (err.message || "tabloya erişim yok") + ". Tablonun bu hesapla paylaşıldığından emin olun.", false);
+  else if (code === "blocked_by_policy") showNotice("Kuruluş politikası Google Sheets erişimini engelliyor.", false);
+  else showNotice("Veri şu an alınamadı (" + (code || "bilinmeyen hata") + "). Birazdan Yenile'ye basın; son başarılı veri ekranda kalır.", false);
+}
+
+function payloadValues(res) { const p = res && res.payload; return (p && p.values) || []; }
+let unsubMain = null, unsubIdx = null;
+function startWatches() {
+  const mcp = state.mcp;
+  unsubMain && unsubMain(); unsubIdx && unsubIdx();
+  unsubMain = mcp.watchTool(SERVER, "get_values", { spreadsheetId: SHEET_ID, range: RANGE_MAIN }, (ev) => {
+    if (ev.type === "data") { hideNotice(); parseMain(payloadValues(ev.result)); state.storedAt = ev.result.cache ? ev.result.cache.storedAt : Date.now(); renderAll(); }
+    else { const c = ev.error.code; if (["needs_reauth","server_not_connected","blocked_by_policy","approval_required"].includes(c)) { state.rows = []; state.headers = []; $("board").innerHTML = `<div class="empty">Veri gösterilemiyor.</div>`; $("summary").innerHTML = ""; } handleError(ev.error); }
+  }, { cache: { staleTime: 60000, gcTime: 3600000 }, refetchInterval: 120000 });
+  unsubIdx = mcp.watchTool(SERVER, "get_values", { spreadsheetId: SHEET_ID, range: RANGE_IDX }, (ev) => {
+    if (ev.type === "data") { state.idx = payloadValues(ev.result); renderIdx(); }
+  }, { cache: { staleTime: 60000, gcTime: 3600000 }, refetchInterval: 120000 });
+}
+async function refreshNow() {
+  if (!state.mcp) return;
+  $("refresh").disabled = true;
+  try {
+    const res = await state.mcp.callTool(SERVER, "get_values", { spreadsheetId: SHEET_ID, range: RANGE_MAIN }, { cache: { staleTime: 0, gcTime: 3600000, refresh: true } });
+    hideNotice(); parseMain(payloadValues(res)); state.storedAt = Date.now(); renderAll();
+    state.mcp.callTool(SERVER, "get_values", { spreadsheetId: SHEET_ID, range: RANGE_IDX }, { cache: { staleTime: 0, gcTime: 3600000, refresh: true } }).then(r => { state.idx = payloadValues(r); renderIdx(); }).catch(() => {});
+  } catch (e) { handleError(e); }
+  finally { $("refresh").disabled = false; }
+}
+async function writeRange(range, values) {
+  await state.mcp.callTool(SERVER, "update_values", { spreadsheetId: SHEET_ID, range, values }, { cache: false });
+  try { await state.mcp.invalidate(SERVER, "get_values"); } catch (e) {}
+  await refreshNow();
+}
+
+/* Detail sheet */
+function openSheet(sheetRow) {
+  const r = state.rows.find(x => x.sheetRow === sheetRow); if (!r) return;
+  const sec = (title, names) => {
+    const items = names.filter(n => state.headers.includes(n)).map(n => { const raw = get(r, n); const cls = cellClass(n, raw); return `<dt>${esc(n)}</dt><dd class="${cls === "txt" ? "t" : cls}">${renderCell(n, raw)}</dd>`; }).join("");
+    return items ? `<section><h3>${esc(title)}</h3><dl class="kv">${items}</dl></section>` : "";
+  };
+  const firstEdit = state.headers.indexOf(EDIT_COLS[0]);
+  const editable = firstEdit >= 0 && EDIT_COLS.every((n, i) => state.headers[firstEdit + i] === n);
+  const val = (n) => esc(get(r, n));
+  $("sheet").innerHTML = `
+    <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+      <div><h2 id="sTitle">${esc(r.ticker)}</h2><span style="color:var(--muted)">${esc(get(r, "Sektör"))}</span></div>
+      <button class="btn" type="button" id="closeSheet">Kapat</button>
+    </div>
+    ${editable ? `<section><h3>Alım / satım bilgim</h3>
+    <form class="edit" id="editForm" autocomplete="off">
+      <label>Alınan adet<input id="f0" type="text" inputmode="decimal" value="${val(EDIT_COLS[0])}"></label>
+      <label>Ort. alış fiyatı (₺)<input id="f1" type="text" inputmode="decimal" value="${val(EDIT_COLS[1])}"></label>
+      <label>Alış tarihi (GG.AA.YYYY)<input id="f2" type="text" value="${val(EDIT_COLS[2])}"></label>
+      <label>Satılan adet<input id="f3" type="text" inputmode="decimal" value="${val(EDIT_COLS[3])}"></label>
+      <label>Ort. satış fiyatı (₺)<input id="f4" type="text" inputmode="decimal" value="${val(EDIT_COLS[4])}"></label>
+      <label>Satış tarihi (GG.AA.YYYY)<input id="f5" type="text" value="${val(EDIT_COLS[5])}"></label>
+      <div class="row"><button class="btn primary" type="submit">Sheet'e kaydet</button><span class="msg" id="editMsg" role="status"></span></div>
+    </form></section>` : ""}
+    ${sec("Portföy sonucu", ["Eldeki Adet","Eldeki Maliyet (₺)","Güncel Değer (₺)","Gerçekleşen K/Z (₺)","Gerçekleşmemiş K/Z (₺)","Toplam K/Z (₺)","K/Z %","Enflasyon (dönem)","Reel K/Z (₺)","Reel K/Z %"])}
+    ${sec("Fiyat ve teknik", ["Fiyat (₺)","Gün","5 Gün","30 Gün","240 Gün","MA21","MA50","MA200","52H Zirveden Uzaklık","RSI (14)"])}
+    ${sec("Temel analiz", ["Temel Not","Değerleme (F/K)","F/K","PD/DD","Net Borç / FAVÖK","ROE (Özkaynak Kârlılığı)","Piyasa Değeri","Kârlılık","Borç Durumu","Gelecek Beklentisi","Sonraki Bilanço"])}
+    ${sec("KAP iş / ihale", ["Son 1 Ay KAP İş/İhale","Son 3 Ay KAP İş/İhale","Toplam Sipariş / İş Bakiyesi"])}
+    ${sec("Ralli takip", ["Giriş Fiyatı","Giriş Tarihi","Max Fiyat","Hedef Fiyat","Stop","Getiri","R/K Oranı","XU100'e Göre"])}
+    <section><h3>Takipten çıkar</h3>
+      <div class="row" style="display:flex;gap:8px;flex-wrap:wrap;align-items:center">
+        <button class="btn danger" type="button" id="rmAsk">${esc(r.ticker)} hissesini çıkar</button>
+        <span id="rmConfirm" hidden>Hisse kodu ve alım/satım bilgileri silinecek. <button class="btn danger" type="button" id="rmYes">Evet, çıkar</button> <button class="btn" type="button" id="rmNo">Vazgeç</button></span>
+        <span class="msg" id="rmMsg" role="status"></span>
+      </div>
+    </section>`;
+  $("sheetBg").hidden = false;
+  $("closeSheet").focus();
+  $("closeSheet").onclick = closeSheet;
+  if (editable) {
+    $("editForm").onsubmit = async (e) => {
+      e.preventDefault();
+      const msg = $("editMsg");
+      const vals = [0,1,2,3,4,5].map(i => $("f" + i).value.trim());
+      for (const i of [2,5]) if (vals[i] && !/^\d{1,2}\.\d{1,2}\.\d{4}$/.test(vals[i])) { msg.className = "msg err"; msg.textContent = "Tarihi GG.AA.YYYY biçiminde yazın (ör. 01.08.2026)."; return; }
+      const out = vals.map((v, i) => { if (!v) return ""; if (i === 2 || i === 5) return v; const n = num(v); return n == null ? v : n; });
+      for (const i of [0,1,3,4]) if (vals[i] && num(vals[i]) == null) { msg.className = "msg err"; msg.textContent = "Adet ve fiyat alanlarına sayı yazın."; return; }
+      const range = `Takip!${colLetter(firstEdit)}${r.sheetRow}:${colLetter(firstEdit + 5)}${r.sheetRow}`;
+      msg.className = "msg"; msg.textContent = "Kaydediliyor…";
+      try { await writeRange(range, [out]); msg.className = "msg ok"; msg.textContent = "Kaydedildi. Hesaplar Sheet'te güncellendi."; }
+      catch (err) { msg.className = "msg err"; msg.textContent = err.code === "approval_required" ? "Kaydetmek için Google Sheets yazma iznini onaylamanız gerekiyor." : "Kaydedilemedi (" + err.code + "). Sheet'i açıp kontrol edin, sonra tekrar deneyin."; }
+    };
+  }
+  $("rmAsk").onclick = () => { $("rmConfirm").hidden = false; };
+  $("rmNo").onclick = () => { $("rmConfirm").hidden = true; };
+  $("rmYes").onclick = async () => {
+    const m = $("rmMsg"); m.className = "msg"; m.textContent = "Çıkarılıyor…";
+    const last = editable ? firstEdit + 5 : 1;
+    try { await writeRange(`Takip!A${r.sheetRow}:${colLetter(last)}${r.sheetRow}`, [Array(last + 1).fill("")]); closeSheet(); }
+    catch (err) { m.className = "msg err"; m.textContent = "Çıkarılamadı (" + err.code + ")."; }
+  };
+}
+function closeSheet() { $("sheetBg").hidden = true; }
+$("sheetBg").addEventListener("click", (e) => { if (e.target === $("sheetBg")) closeSheet(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("sheetBg").hidden) closeSheet(); });
+
+/* Events */
+$("tabs").addEventListener("click", (e) => { const b = e.target.closest("[data-tab]"); if (!b) return; state.tab = b.dataset.tab; try { localStorage.setItem("bist.tab", state.tab); } catch (x) {} renderTabs(); renderBoard(); });
+$("board").addEventListener("click", (e) => {
+  const s = e.target.closest("[data-sort]");
+  if (s) { const col = s.dataset.sort; state.sort = state.sort && state.sort.col === col ? { col, dir: -state.sort.dir } : { col, dir: -1 }; renderBoard(); return; }
+  const tr = e.target.closest("tr[data-row]"); if (tr) openSheet(Number(tr.dataset.row));
+});
+$("board").addEventListener("keydown", (e) => { if (e.key === "Enter") { const tr = e.target.closest("tr[data-row]"); if (tr) openSheet(Number(tr.dataset.row)); } });
+$("q").addEventListener("input", (e) => { state.q = e.target.value.trim(); renderBoard(); });
+$("onlyMine").addEventListener("change", (e) => { state.mine = e.target.checked; renderBoard(); });
+$("refresh").addEventListener("click", refreshNow);
+$("noticeBtn").addEventListener("click", refreshNow);
+$("addForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const m = $("addMsg"); const t = $("addTicker").value.trim().toLocaleUpperCase("tr").replace(/[^A-Z0-9ÇĞİÖŞÜ]/g, "");
+  if (!state.mcp) { m.className = "msg err"; m.textContent = "Ekleme için sayfayı claude.ai içinde açın."; return; }
+  if (!/^[A-Z0-9]{3,6}$/.test(t)) { m.className = "msg err"; m.textContent = "BIST kodunu yazın (ör. TOASO)."; return; }
+  if (state.rows.some(r => r.ticker === t)) { m.className = "msg err"; m.textContent = t + " zaten listede."; return; }
+  const slot = state.rows.find(r => !r.ticker);
+  if (!slot) { m.className = "msg err"; m.textContent = "30 hisselik liste dolu. Önce bir hisse çıkarın."; return; }
+  m.className = "msg"; m.textContent = "Ekleniyor…";
+  try { await writeRange(`Takip!A${slot.sheetRow}`, [[t]]); $("addTicker").value = ""; m.className = "msg ok"; m.textContent = t + " eklendi. Fiyat verileri birkaç saniye içinde Sheet'te hesaplanır; Sheet'i bir kez açmak geçmiş verileri tamamlar."; }
+  catch (err) { m.className = "msg err"; m.textContent = err.code === "approval_required" ? "Eklemek için Google Sheets yazma iznini onaylamanız gerekiyor." : "Eklenemedi (" + err.code + ")."; }
+});
+
+renderTabs();
+(async () => {
+  const mcp = window.claude && window.claude.use ? await window.claude.use("mcp") : null;
+  if (!mcp) { showNotice("Bu uygulama verilerini claude.ai içinden, Google Sheets bağlantınızla okur. Sayfayı claude.ai'de açın.", false); $("board").innerHTML = `<div class="empty">Google Sheets bağlantısı bu görünümde yok.</div>`; return; }
+  state.mcp = mcp;
+  startWatches();
+})();
+</script>
