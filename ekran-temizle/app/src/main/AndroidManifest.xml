@@ -2,10 +2,12 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
-    <!-- Tüm dosyalara erişim: arka planda onaysız silmek için gerekli -->
+    <!-- Tüm dosyalara erişim: arka planda onaysız çöpe atmak için -->
     <uses-permission
         android:name="android.permission.MANAGE_EXTERNAL_STORAGE"
         tools:ignore="ScopedStorage" />
+    <!-- "Şu kadar foto çöpe atıldı" bildirimi için -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 
     <application
         android:label="Ekran Temizle"
