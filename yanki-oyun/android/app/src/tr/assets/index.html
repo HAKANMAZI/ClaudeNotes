@@ -1,0 +1,374 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<title>Yankı</title>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@500;800&family=Lora:ital@1&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#05060E;--ink:#E9F1FF;--ring:#7FE7D8;--win:#5BE37D;--lose:#FF4D5E;--panel:rgba(10,14,32,.93);
+  color-scheme:dark;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#05060E}}
+:root[data-theme="dark"]{--bg:#05060E}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:"Baloo 2",system-ui,sans-serif;overflow:hidden;touch-action:none;user-select:none;-webkit-user-select:none}
+#wrap{position:relative;height:100%;max-width:620px;margin:0 auto}
+canvas{display:block;width:100%;height:100%}
+#hud{position:absolute;top:8px;left:14px;right:14px;display:flex;justify-content:space-between;align-items:center;gap:8px;font-weight:800;font-size:1.05rem;pointer-events:none;text-shadow:0 0 10px rgba(0,0,0,.9)}
+#hud small{font-weight:500;opacity:.7;font-size:.85rem}
+#score{display:flex;align-items:center;gap:3px;color:var(--win);transition:transform .15s;white-space:nowrap}
+#score.pop{transform:scale(1.25)}
+.dot{width:11px;height:11px;border-radius:50%;display:inline-block;border:1.5px solid rgba(233,241,255,.35)}
+.dot.on{border:0;box-shadow:0 0 8px currentColor}
+#ping{position:absolute;right:20px;bottom:24px;width:86px;height:86px;border-radius:50%;border:2px solid var(--ring);background:radial-gradient(circle,rgba(127,231,216,.28),rgba(127,231,216,.05) 70%);color:var(--ring);font:800 1.05rem "Baloo 2",sans-serif;box-shadow:0 0 24px rgba(127,231,216,.35)}
+#ping:active{transform:scale(.94)}
+#snd{position:absolute;left:16px;bottom:30px;width:44px;height:44px;border-radius:50%;border:1px solid rgba(233,241,255,.25);background:rgba(10,14,32,.6);color:var(--ink);font-size:1.1rem}
+#overlay{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:18px;background:radial-gradient(circle at 50% 45%,rgba(5,6,14,.2),rgba(5,6,14,.86))}
+.card{background:var(--panel);border-radius:24px;padding:22px 20px;text-align:center;max-width:360px;width:100%;max-height:100%;overflow:auto;border:1px solid rgba(127,231,216,.18)}
+.card h1{margin:0;font-size:2.4rem;line-height:1.05;color:var(--ring);text-shadow:0 0 18px currentColor}
+.card h2{margin:.2rem 0 0;font-size:1rem;font-weight:500;opacity:.8}
+.card p{margin:.7rem 0 .5rem;font-family:"Lora",Georgia,serif;font-style:italic;line-height:1.55;font-size:1rem}
+#goal{margin:.4rem 0 .6rem;padding:.6rem .8rem;border-radius:14px;background:rgba(255,209,102,.1);border:1px solid rgba(255,209,102,.35);color:#FFD166;font-weight:800;font-size:1.1rem}
+#goal .dots{display:flex;gap:5px;justify-content:center;margin-top:5px}
+#goal .dot{width:13px;height:13px;border-color:rgba(255,209,102,.6)}
+.card .new{margin:0 0 1rem;font-size:.92rem;line-height:1.4;color:#9AE6FF}
+#list{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin:.6rem 0 1rem;max-height:46vh;overflow:auto}
+.chip{padding:2px 9px;border-radius:999px;font-size:.85rem;font-weight:500;background:rgba(255,255,255,.06);border:1px solid currentColor}
+.card.win{border-color:rgba(91,227,125,.5)} .card.win h1,.card.win h2,.card.win p{color:var(--win)}
+.card.lose{border-color:rgba(255,77,94,.5)} .card.lose h1,.card.lose h2,.card.lose p{color:var(--lose)}
+.btns{display:flex;gap:8px;justify-content:center;flex-wrap:wrap}
+.card button{font:800 1.05rem "Baloo 2",sans-serif;border:0;border-radius:999px;padding:.5rem 1.4rem;background:var(--ring);color:#05060E}
+.card.win button#go{background:var(--win)} .card.lose button#go{background:var(--lose);color:#fff}
+.card button.alt{background:transparent;color:var(--ink);border:1px solid rgba(233,241,255,.3)}
+button:focus-visible{outline:3px solid #FFD166;outline-offset:3px}
+.hidden{display:none!important}
+</style>
+</head>
+<body>
+<div id="wrap">
+  <canvas id="c"></canvas>
+  <div id="hud" class="hidden"><span id="lvl"></span><span id="score"></span></div>
+  <button id="ping" class="hidden"></button>
+  <button id="snd" class="hidden" aria-label="Sound">🔊</button>
+  <div id="overlay"><div class="card" id="card">
+    <h1 id="title"></h1><h2 id="sub"></h2>
+    <p id="msg"></p><div id="goal" class="hidden"></div><div class="new" id="new"></div><div id="list" class="hidden"></div>
+    <div class="btns"><button id="go"></button><button id="alt" class="alt hidden"></button><button id="alt2" class="alt hidden"></button><button id="alt3" class="alt hidden"></button></div>
+  </div></div>
+</div>
+<script>
+const DEF_LANG='tr';
+// ortak bölüm verisi: [kurtarılacak kardeş, gözler (h avcı, f kurnaz, p gezgin, s uykucu), nesneler]
+const LVD=[
+[3,'',{rocks:3}],[3,'h',{rocks:4}],[3,'h',{rocks:5,crystals:3}],[4,'h',{rocks:5,drops:2,crystals:1}],
+[4,'h',{rocks:6,tunnels:1,crystals:1}],[4,'hs',{rocks:6,drops:2}],[4,'hs',{rocks:6,webs:3}],[5,'hs',{rocks:7,mush:3,webs:1}],
+[5,'hp',{rocks:7,mush:2,crystals:2}],[5,'hp',{rocks:4,thorns:8,crystals:1}],[5,'hp',{rocks:7,bats:2,mush:1}],[5,'hs',{rocks:7,fog:2,crystals:2}],
+[6,'hp',{rocks:7,wind:2,drops:1}],[6,'hf',{rocks:8,webs:2,crystals:1}],[6,'hf',{rocks:12,tunnels:2}],[6,'hfs',{rocks:8,bats:2,mush:2}],
+[6,'hps',{rocks:7,drops:3,fog:1,wind:1}],[7,'hf',{rocks:5,thorns:12,bats:1}],[7,'hfs',{rocks:9,webs:2,crystals:2}],[7,'hfp',{rocks:8,wind:3,bats:2}],
+[7,'hfps',{rocks:9,crystals:3,tunnels:1,fog:1}],[8,'hfps',{rocks:9,mush:3,drops:2,thorns:5}],[8,'hffs',{rocks:10,bats:3,webs:2,wind:1}],
+[8,'hfps',{rocks:10,bats:2,webs:2,wind:2,mush:2,drops:2,crystals:2,tunnels:1,thorns:4,fog:1}]];
+const TX={
+tr:{title:'Yankı',tag:'Karanlıkta bir ateşböceğinin yolculuğu',menuMsg:'Görmek için ses çıkar. Ama her ses, Göz’leri sana çağırır.',
+ flock:(a,b)=>`Sürün: ${a} / ${b} kardeş kurtarıldı`,cont:n=>'Devam et: Bölüm '+n,start:'Başla',again:'Yeniden oyna',restart:'Baştan başla',roster:'Sürüm',back:'Geri',
+ lvl:n=>'Bölüm '+n,goal:n=>`Bu bölümde ${n} kardeşini kurtar`,nw:'Yeni: ',menu:'Menü',retry:'Tekrar dene',loseMsg:'Kardeşlerin yeniden karanlığa dağıldı. Bir daha dene, Işık.',
+ winT:'Bölüm tamam',withYou:s=>s+' artık seninle.',next:'Sonraki bölüm',free:'Özgürsün',allDone:'Yirmi dört bölüm tamam',ping:'Ses',
+ die:{rock:'Kayaya çarptın',thorn:'Dikene değdin',bat:'Yarasaya çarptın',eye:'Göz seni buldu'},saved:n=>n+' kurtuldu',shout:'Işık!',langBtn:'English',kardes:'kardeş',
+ ending:'Mağaranın ağzında sürü yeniden bir araya geldi. Göz’ler ışığa çıkamadı. O gece vadide yüzlerce küçük yıldız yandı ve hepsi senin adını fısıldadı: Işık.',
+ pre:['','Küçük ','Parlak '],
+ names:'Pırıl Minik Ziya Nur Fıstık Yıldız Tan Işıl Kıvılcım Şule Alev Çakıl Damla Bulut Sedef İnci Mercan Fındık Badem Boncuk Pamuk Zeytin Kiraz Nane Tarçın Mavi Gökçe Lale Papatya Nergis Defne Seher Şafak Ilgaz Mehtap Ayla Nilüfer Zümrüt Yakut Elmas Kehribar Firuze Leblebi Dolunay',
+ traits:[
+  [['Yaşasın, buldun beni!','Hadi, devam edelim!'],'Ay ay, göz var!',['Bu mağara aslında güzelmiş.','Şarkı söylesem mi? Yok, söylemeyeyim.']],
+  [['Çok korkmuştum…','Beni bırakma, olur mu?'],'Saklanalım, ne olur!',['Karanlıktan hiç hoşlanmıyorum.','Sen yanımdayken korkmuyorum.']],
+  [['Seni bekliyordum, kahraman!','Ben de geliyorum, korkma!'],'Ben buradayım, devam!',['O göz bana bakarsa ben de ona bakarım!','Sürü için her şey.']],
+  [['Sabırlıydın, aferin.','Sesini az kullan, Işık.'],'Ses çıkarma, bekle.',['Her yankı bir iz bırakır.','Karanlık, ışığın beklediği yerdir.']],
+  [['Saklambaçta beni kimse bulamaz sanmıştım!','Ebe sensin!'],'Göz de mi oynamak istiyor?',['Yarasalar baş aşağı uyur, biliyor muydun?','Bir göz bir mağaraya girmiş…']],
+  [['Şu kristalleri gördün mü?','Buraları keşfettim bile!'],'Bu göz neden hep bize bakıyor?',['Bu taşlar kaç yaşında acaba?','Çıkış hangi yönde sence?']],
+  [['Hmm… sabah mı oldu?','Biraz kestirmiştim, kusura bakma.'],'Uyan, uyan! Göz geliyor!',['Esniyorum…','Eve varınca günlerce uyuyacağım.']]],
+ lv:[
+ ['İlk Işık','Fırtına sürünü mağaraya savurdu. Sen Işık’sın. Kardeşlerin karanlıkta, ara sıra parlayıp sana sesleniyor.','Ses düğmesi etrafı gösterir. Kardeşlerin arada bir kendiliğinden parlar ve ses verir.'],
+ ['Kırmızı Göz','Bir şey sesini duydu. Karanlıkta kırmızı bir göz açıldı.','Kırmızı Göz (Avcı): sesin geldiği yere gider.'],
+ ['Kristal Salon','Duvarlarda soğuk kristaller var. Yankın değince bir süre parlarlar.','Kristal: sesle yanar, çevresini aydınlatır.'],
+ ['Damlalar','Tavandan su damlıyor. Her damla küçük bir yankı. Göz de duyuyor.','Damla: kendi kendine ses çıkarır, Göz’ü oyalar.'],
+ ['Tüneller','Eski kökler duvarlarda gizli geçitler açmış.','Tünel: bir ağzından girip öbüründen çıkarsın.'],
+ ['Uyuyan Bekçi','Köşede bir şey uyuyor. Yanında ses çıkarma.','Pembe Göz (Uykucu): yakında ses olursa uyanır, hızla atılır.'],
+ ['Örümcek Ağları','Görünmez ağlar geçitleri kaplamış.','Ağ: içinde çok yavaşlarsın.'],
+ ['Sessiz Mantarlar','Mor mantarlar dokununca sessizce parlar. Göz’ler bu ışığı duyamaz.','Mantar: dokun, sessiz yankı yayar.'],
+ ['Mor Gezgin','Bir göz durmadan dolaşıyor. Yolunu oku.','Mor Göz (Gezgin): kendi yolunda dolaşır, yakın sese döner.'],
+ ['Dikenler','Zemin dikenli sarmaşıklarla kaplı. Küçük ama tehlikeli.','Diken: küçüktür, değme.'],
+ ['Yarasa Yuvası','Kanat sesleri. Yarasalar kör ama durmadan uçuyor.','Yarasa: hareket eder, çarpma.'],
+ ['Sis Vadisi','Ağır bir sis çökmüş. Yankı sisin içini gösteremez.','Sis: içi sesle görünmez, yaklaşman gerek.'],
+ ['Yeraltı Rüzgârı','Derinden esen akıntılar seni sürüklüyor.','Rüzgâr: seni iter.'],
+ ['Kurnaz Göz','Yeni bir göz. Nerede olduğuna değil, nereye gittiğine bakıyor.','Turuncu Göz (Kurnaz): gideceğin yere pusu kurar.'],
+ ['Labirent','Kayalar bir labirent örmüş. Tüneller kaçış yolun olabilir.',''],
+ ['Gece Yarısı','Üç bekçi uyanık. Mantarların sessiz ışığı en iyi dostun.',''],
+ ['Karanlık Göl','Damlaların yankısı gölün üstünde kaybolup gidiyor.',''],
+ ['Diken Koridoru','Dar, dikenli bir koridor. Acele etme.',''],
+ ['Üç Bekçi','Avcı, Kurnaz ve Uykucu. Hepsi aynı anda.',''],
+ ['Fırtına','Yukarıdaki fırtına mağarayı da sarsıyor.',''],
+ ['Unutulmuş Tapınak','Eski kristal sütunlar. Dört göz burayı bekliyor.',''],
+ ['Sessizlik','Burada en küçük ses bile çok uzağa gider.',''],
+ ['Son Geçit','İki kurnaz göz, iki yandan. Çıkışa çok az kaldı.','İki Kurnaz Göz farklı yönlerden pusu kurar.'],
+ ['Sürünün Sesi','Yukarıdan ılık bir rüzgâr. Karanlığın bütün bekçileri son kez karşında.','Son bölüm. Her şey burada.']]},
+en:{title:'Echo',tag:'A firefly’s journey through the dark',menuMsg:'Make a sound to see. But every sound calls the Eyes to you.',
+ flock:(a,b)=>`Your flock: ${a} / ${b} siblings rescued`,cont:n=>'Continue: Level '+n,start:'Start',again:'Play again',restart:'Start over',roster:'My Flock',back:'Back',
+ lvl:n=>'Level '+n,goal:n=>`Rescue ${n} siblings in this level`,nw:'New: ',menu:'Menu',retry:'Try again',loseMsg:'Your siblings scattered into the dark again. Try once more, Lumi.',
+ winT:'Level complete',withYou:s=>s+' joined your flock.',next:'Next level',free:'You’re free',allDone:'All twenty-four levels complete',ping:'Echo',
+ die:{rock:'You hit a rock',thorn:'You touched a thorn',bat:'You hit a bat',eye:'The Eye found you'},saved:n=>n+' saved',shout:'Lumi!',langBtn:'Türkçe',kardes:'siblings',
+ ending:'At the mouth of the cave, the swarm gathered once more. The Eyes could not follow into the light. That night hundreds of tiny stars lit up the valley, and every one of them whispered your name: Lumi.',
+ pre:['','Little ','Bright '],
+ names:'Glim Pip Ember Nova Peanut Star Dawn Sparky Flicker Blaze Pebble Drop Cloud Pearl Coral Hazel Almond Button Cotton Olive Cherry Mint Cinnamon Blue Sky Tulip Daisy Laurel Twilight Aurora Misty Moon Luna Lily Jade Ruby Opal Amber Topaz Nutmeg Biscuit Sunny Willow Comet',
+ traits:[
+  [['Yay, you found me!','Come on, let’s keep going!'],'Eek, an eye!',['This cave is kind of pretty.','Should I sing? No, better not.']],
+  [['I was so scared…','Don’t leave me, okay?'],'Let’s hide, please!',['I really don’t like the dark.','I’m not scared when you’re here.']],
+  [['I knew you’d come, hero!','I’m coming too, don’t worry!'],'I’m right here, keep going!',['If that eye stares at me, I’ll stare back!','Anything for the swarm.']],
+  [['You were patient. Well done.','Use your voice sparingly, Lumi.'],'Stay silent. Wait.',['Every echo leaves a trace.','Darkness is where light waits.']],
+  [['Thought nobody could find me at hide and seek!','Tag, you’re it!'],'Does the Eye want to play too?',['Did you know bats sleep upside down?','An eye walks into a cave…']],
+  [['Did you see those crystals?','I’ve explored this place already!'],'Why does that eye keep staring at us?',['I wonder how old these rocks are.','Which way is the exit, you think?']],
+  [['Hmm… is it morning?','Sorry, I was napping.'],'Wake up! The Eye is coming!',['*yawn*…','I’ll sleep for days when we get home.']]],
+ lv:[
+ ['First Light','A storm swept your swarm into the cave. You are Lumi. Your siblings are out there in the dark, glowing now and then to call you.','The Echo button reveals your surroundings. Siblings sometimes glow and chime on their own.'],
+ ['The Red Eye','Something heard you. A red eye opened in the dark.','Red Eye (Hunter): goes where the sound came from.'],
+ ['Crystal Hall','Cold crystals line the walls. When your echo touches them, they glow for a while.','Crystal: lights up from sound and lights its surroundings.'],
+ ['Drips','Water drips from the ceiling. Every drop is a tiny echo. The Eye hears them too.','Drip: makes sound on its own. Use it to distract the Eye.'],
+ ['Tunnels','Old roots have carved hidden passages through the walls.','Tunnel: enter one mouth, come out the other.'],
+ ['Sleeping Guard','Something sleeps in the corner. Don’t make noise near it.','Pink Eye (Sleeper): wakes at nearby sounds and lunges fast.'],
+ ['Spider Webs','Invisible webs cover the passages.','Web: you move very slowly inside.'],
+ ['Silent Mushrooms','Purple mushrooms glow silently when touched. The Eyes can’t hear this light.','Mushroom: touch it to send a silent echo.'],
+ ['Purple Wanderer','One eye never stops roaming. Read its path.','Purple Eye (Wanderer): roams on its own, turns to nearby sounds.'],
+ ['Thorns','The floor is covered in thorny vines. Small but dangerous.','Thorn: small, don’t touch it.'],
+ ['Bat Roost','Wingbeats. The bats are blind, but they never stop flying.','Bat: always moving, don’t collide.'],
+ ['Valley of Mist','A heavy mist has settled. Echoes can’t see inside it.','Mist: hidden from echoes, you must get close.'],
+ ['Underground Wind','Currents from the deep drag you along.','Wind: pushes you.'],
+ ['The Cunning Eye','A new eye. It watches not where you are, but where you’re going.','Orange Eye (Cunning): ambushes where you’re heading.'],
+ ['Labyrinth','The rocks have woven a maze. Tunnels may be your way out.',''],
+ ['Midnight','Three guards are awake. The mushrooms’ silent light is your best friend.',''],
+ ['Dark Lake','The echoes of the drips fade away over the lake.',''],
+ ['Thorn Corridor','A narrow, thorny corridor. Don’t rush.',''],
+ ['Three Guards','Hunter, Cunning and Sleeper. All at once.',''],
+ ['Storm','The storm above shakes the cave too.',''],
+ ['Forgotten Temple','Ancient crystal pillars. Four eyes guard this place.',''],
+ ['Silence','Here, even the smallest sound travels far.',''],
+ ['Last Passage','Two cunning eyes, from both sides. The exit is close.','Two Cunning Eyes ambush from different directions.'],
+ ['Song of the Swarm','A warm breeze from above. All the guardians of the dark stand before you one last time.','Final level. Everything is here.']]}};
+const TCOL=['255,209,102','154,208,255','255,159,67','140,255,193','255,138,216','198,255,107','201,182,255'];
+const TBASE=[880,988,1109,1319,1480,1661,1760];
+let LANG;try{LANG=localStorage.getItem('yankiLang')}catch(e){}
+if(!TX[LANG])LANG=DEF_LANG!=='auto'?DEF_LANG:((navigator.language||'').toLowerCase().startsWith('tr')?'tr':'en');
+let T=TX[LANG],NAMES=T.names.split(' ');
+function setLang(l){LANG=l;T=TX[l];NAMES=T.names.split(' ');document.documentElement.lang=l;document.title=T.title;$('ping').textContent=T.ping;try{localStorage.setItem('yankiLang',l)}catch(e){}}
+const BASE=[];LVD.reduce((s,l,i)=>(BASE[i]=s,s+l[0]),0);const TOTAL=LVD.reduce((s,l)=>s+l[0],0);
+const sibInfo=k=>{const ti=(k*3+Math.floor(k/7))%7;return{name:T.pre[Math.floor(k/NAMES.length)%3]+NAMES[k%NAMES.length],ti,c:TCOL[ti]}};
+const ECOL={h:'255,77,109',f:'255,159,67',p:'181,124,255',s:'255,111,181'};
+const WW=400,WH=720;
+const cv=document.getElementById('c'),ctx=cv.getContext('2d'),$=id=>document.getElementById(id);
+let W,H,DPR,SC,OX,OY,li=0,LD,P,PV={x:0,y:0},placed,O,rings,eyes,follow,trail,floats,bubble,score,running=false,last=0,target=null,keys={},shake=0,fade=0,flash=0,tpCd=0,chat=0,dangerCd=0,beat=0,inWeb=false;
+let saved=0;try{saved=Math.min(+localStorage.getItem('yanki24')||0,LVD.length)}catch(e){}
+function size(){DPR=devicePixelRatio||1;const r=cv.getBoundingClientRect();W=r.width||360;H=r.height||640;cv.width=W*DPR;cv.height=H*DPR;SC=Math.min(W/WW,H/WH);OX=(W-WW*SC)/2;OY=(H-WH*SC)/2;if(!running&&P)draw(performance.now())}
+addEventListener('resize',size);size();
+const rnd=(a,b)=>a+Math.random()*(b-a),dist=(a,b)=>Math.hypot(a.x-b.x,a.y-b.y),pick=a=>a[Math.floor(Math.random()*a.length)];
+const dust=Array.from({length:60},()=>({x:Math.random(),y:Math.random(),s:rnd(.4,1.6),v:rnd(3,10)}));
+const inCorner=p=>p.x>WW-115&&p.y>WH-115;
+function freeSpot(r,avoid=120,list=placed){
+  for(const m of[14,6,0])for(let i=0;i<300;i++){const p={x:rnd(r+12,WW-r-12),y:rnd(r+60,WH-r-12)};
+    if(!inCorner(p)&&dist(p,P)>avoid*(m?1:.6)&&list.every(k=>dist(p,k)>k.r+r+m))return p}
+  for(let y=70;y<WH-20;y+=8)for(let x=20;x<WW-20;x+=8){const p={x,y};if(!inCorner(p)&&dist(p,P)>40&&list.every(k=>dist(p,k)>k.r+r+2))return p}
+  return{x:60,y:90}}
+function put(r,extra,avoid){const o={...freeSpot(r,avoid),r,seen:0,...extra};placed.push(o);return o}
+function zone(r,extra,avoid){return{...freeSpot(r,avoid,[]),r,seen:0,...extra}}
+function makeRock(){const r=rnd(15,34),n=9,pts=[];for(let i=0;i<n;i++){const a=i/n*Math.PI*2,rr=r*rnd(.78,1.18);pts.push([Math.cos(a)*rr,Math.sin(a)*rr])}return put(r,{pts})}
+
+/* ---------- SES ---------- */
+const AU={c:null,m:null,on:true,nb:null};try{AU.on=localStorage.getItem('yankiSnd')!=='0'}catch(e){}
+function audio(){try{if(AU.c){AU.c.resume&&AU.c.resume();return}const C=window.AudioContext||window.webkitAudioContext;if(!C)return;const c=AU.c=new C();
+  AU.m=c.createGain();AU.m.gain.value=AU.on?.9:0;AU.m.connect(c.destination);
+  const b=c.createBuffer(1,c.sampleRate,c.sampleRate),d=b.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1;AU.nb=b;
+  const g=c.createGain();g.gain.value=.035;g.connect(AU.m);for(const f of[55,55.6,82.4]){const o=c.createOscillator();o.frequency.value=f;o.connect(g);o.start()}
+  const n=c.createBufferSource();n.buffer=b;n.loop=true;const lp=c.createBiquadFilter();lp.type='lowpass';lp.frequency.value=180;const ng=c.createGain();ng.gain.value=.05;n.connect(lp);lp.connect(ng);ng.connect(AU.m);n.start()}catch(e){}}
+function sndToggle(){AU.on=!AU.on;try{localStorage.setItem('yankiSnd',AU.on?'1':'0')}catch(e){}if(AU.m)AU.m.gain.value=AU.on?.9:0;$('snd').textContent=AU.on?'🔊':'🔇'}
+function dest(pan){const c=AU.c;if(c.createStereoPanner){const p=c.createStereoPanner();p.pan.value=Math.max(-1,Math.min(1,pan||0));p.connect(AU.m);return p}return AU.m}
+function tone(f,dur,o={}){if(!AU.c||!AU.on)return;try{const c=AU.c,t=c.currentTime+(o.delay||0),os=c.createOscillator(),g=c.createGain(),v=Math.max(.0002,o.vol||.15);
+  os.type=o.type||'sine';os.frequency.setValueAtTime(f,t);if(o.to)os.frequency.exponentialRampToValueAtTime(o.to,t+dur);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(v,t+(o.att||.01));g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  let n=os;if(o.lp){const f2=c.createBiquadFilter();f2.type='lowpass';f2.frequency.value=o.lp;os.connect(f2);n=f2}n.connect(g);g.connect(dest(o.pan));os.start(t);os.stop(t+dur+.05)}catch(e){}}
+function noise(dur,o={}){if(!AU.c||!AU.on)return;try{const c=AU.c,t=c.currentTime+(o.delay||0),s=c.createBufferSource(),f=c.createBiquadFilter(),g=c.createGain();
+  s.buffer=AU.nb;f.type=o.type||'bandpass';f.frequency.setValueAtTime(o.freq||800,t);if(o.to)f.frequency.exponentialRampToValueAtTime(o.to,t+dur);
+  g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(o.vol||.15,t+.02);g.gain.exponentialRampToValueAtTime(.0001,t+dur);
+  s.connect(f);f.connect(g);g.connect(dest(o.pan));s.start(t);s.stop(t+dur+.05)}catch(e){}}
+const panOf=x=>(x-P.x)/180,prox=o=>Math.max(.12,1-dist(o,P)/520);
+const SFX={
+ ping(){tone(1100,.35,{to:380,vol:.2});tone(720,.5,{to:300,vol:.07,delay:.22});tone(520,.6,{to:260,vol:.035,delay:.45})},
+ drop(d){const v=prox(d);tone(1400,.1,{to:2300,vol:.09*v,pan:panOf(d.x)});tone(760,.3,{vol:.045*v,delay:.06,pan:panOf(d.x)})},
+ call(s){const v=prox(s),b=TBASE[s.ti];tone(b,.22,{type:'triangle',vol:.07*v,pan:panOf(s.x)});tone(b*1.5,.3,{type:'triangle',vol:.05*v,pan:panOf(s.x),delay:.13})},
+ rescue(s){const b=TBASE[s.ti]/2;[1,1.25,1.5,2].forEach((m,i)=>tone(b*m,.35,{type:'triangle',vol:.11,delay:i*.08}))},
+ mush(m){noise(.7,{type:'lowpass',freq:300,to:1500,vol:.07,pan:panOf(m.x)});tone(220,.7,{to:440,vol:.05,pan:panOf(m.x)})},
+ tunnel(){tone(260,.45,{to:900,vol:.12});tone(390,.45,{to:1300,vol:.05,delay:.06})},
+ web(){noise(.25,{freq:2600,vol:.05})},
+ growl(e){tone(75,.7,{type:'sawtooth',to:52,vol:.09,lp:420,pan:panOf(e.x)})},
+ beat(v){tone(62,.16,{vol:.28*v});tone(56,.16,{vol:.2*v,delay:.19})},
+ bat(b){tone(3200,.05,{to:4400,vol:.03*prox(b),pan:panOf(b.x)})},
+ die(){noise(.5,{type:'lowpass',freq:700,to:120,vol:.35});tone(220,.7,{type:'sawtooth',to:40,vol:.1,lp:900})},
+ win(){[523,659,784,1047].forEach((f,i)=>tone(f,.45,{type:'triangle',vol:.12,delay:i*.11}))},
+ lose(){[392,311,262].forEach((f,i)=>tone(f,.45,{type:'triangle',vol:.09,delay:i*.16}))},
+ click(){tone(660,.06,{vol:.05})}};
+
+/* ---------- ARAYÜZ ---------- */
+const dotsHTML=(n,got)=>Array.from({length:n},(_,i)=>i<got.length?`<span class="dot on" style="background:rgb(${got[i].c});color:rgb(${got[i].c})"></span>`:'<span class="dot"></span>').join('');
+function btnAct(f){return()=>{audio();SFX.click();f()}}
+function showCard(o){const c=$('card');c.className='card '+(o.cls||'');$('title').textContent=o.t;$('sub').textContent=o.s||'';$('msg').textContent=o.m||'';$('msg').classList.toggle('hidden',!o.m);
+  $('goal').innerHTML=o.goal||'';$('goal').classList.toggle('hidden',!o.goal);$('new').textContent=o.nw||'';$('new').classList.toggle('hidden',!o.nw);
+  $('list').innerHTML=o.list||'';$('list').classList.toggle('hidden',!o.list);$('go').textContent=o.b;$('go').onclick=btnAct(o.go);
+  for(const[id,a]of[['alt',o.a1],['alt2',o.a2],['alt3',o.a3]]){$(id).classList.toggle('hidden',!a);if(a){$(id).textContent=a[0];$(id).onclick=btnAct(a[1])}}
+  $('overlay').classList.remove('hidden');$('ping').classList.add('hidden');$('snd').classList.add('hidden');$('hud').classList.add('hidden')}
+function chips(n){let h='';for(let k=0;k<n;k++){const s=sibInfo(k);h+=`<span class="chip" style="color:rgb(${s.c})">${s.name}</span>`}return h}
+function menu(){const cont=saved>0&&saved<LVD.length,res=BASE[saved]??TOTAL;
+  showCard({t:T.title,s:T.tag,m:T.menuMsg,goal:T.flock(res,TOTAL),b:cont?T.cont(saved+1):(saved>=LVD.length?T.again:T.start),go:()=>intro(cont?saved:0),
+    a1:saved>0?[T.restart,()=>intro(0)]:null,a2:res>0?[T.roster,roster]:null,a3:[T.langBtn,()=>{setLang(LANG==='tr'?'en':'tr');menu()}]})}
+function roster(){const res=BASE[saved]??TOTAL;showCard({t:T.roster,s:res+' / '+TOTAL+' '+T.kardes,list:chips(res),b:T.back,go:menu})}
+function intro(i){li=i;LD=LVD[i];const tx=T.lv[i];showCard({t:T.lvl(i+1),s:tx[0],m:tx[1],goal:T.goal(LD[0])+`<div class="dots">${dotsHTML(LD[0],[])}</div>`,nw:tx[2]?T.nw+tx[2]:'',b:T.start,go:startLevel,a1:[T.menu,menu]})}
+function startLevel(){const ob=LD[2];P={x:WW/2,y:WH/2,r:8};placed=[];rings=[];follow=[];trail=[];floats=[];bubble=null;score=0;tpCd=0;chat=rnd(8,12);dangerCd=3;beat=0;inWeb=false;
+  O={rocks:[],crystals:[],drops:[],mush:[],thorns:[],tunnels:[],webs:[],winds:[],fogs:[],bats:[],sibs:[]};
+  for(let i=0;i<(ob.rocks||0);i++)O.rocks.push(makeRock());
+  for(let i=0;i<(ob.tunnels||0);i++){const a=put(16,{pair:i,ph:0},90),b=put(16,{pair:i,ph:0},90);a.to=b;b.to=a;O.tunnels.push(a,b)}
+  for(let i=0;i<(ob.crystals||0);i++)O.crystals.push(put(9,{lit:0,rot:rnd(-.4,.4)}));
+  for(let i=0;i<(ob.drops||0);i++)O.drops.push(put(8,{t:rnd(2,5)},160));
+  for(let i=0;i<(ob.mush||0);i++)O.mush.push(put(11,{cd:0}));
+  for(let i=0;i<(ob.thorns||0);i++)O.thorns.push(put(9,{rot:rnd(0,6)},70));
+  for(let i=0;i<(ob.webs||0);i++)O.webs.push(zone(rnd(32,46),{},70));
+  for(let i=0;i<(ob.wind||0);i++){const a=rnd(0,6.28);O.winds.push(zone(rnd(55,72),{dx:Math.cos(a),dy:Math.sin(a),ph:0},90))}
+  for(let i=0;i<(ob.fog||0);i++)O.fogs.push(zone(rnd(70,90),{ph:rnd(0,6)},110));
+  for(let i=0;i<(ob.bats||0);i++){const p=freeSpot(10,200,[]),a=rnd(0,6.28);O.bats.push({...p,r:10,vx:Math.cos(a)*55,vy:Math.sin(a)*55,seen:0,ph:0,ch:rnd(1,3)})}
+  for(let j=0;j<LD[0];j++)O.sibs.push(put(7,{...sibInfo(BASE[li]+j),ph:rnd(0,6),call:rnd(1,4)+j*.7,glow:0},110));
+  let fi=0;eyes=[...LD[1]].map(k=>{const e=freeSpot(15,210,placed);return{...e,r:15,k,home:{...e},tx:e.x,ty:e.y,seen:0,base:18+li*1.3,sp:(18+li*1.3)*(k==='p'?.8:1),wait:0,awake:0,side:k==='f'?(fi++%2?-1:1):0}});
+  running=true;fade=1;$('overlay').classList.add('hidden');$('ping').classList.remove('hidden');$('snd').classList.remove('hidden');$('hud').classList.remove('hidden');hud();last=performance.now();requestAnimationFrame(loop)}
+const sight=()=>88-li*1.6;
+function hud(){$('lvl').innerHTML=T.lvl(li+1)+' <small>'+T.lv[li][0]+'</small>';$('score').innerHTML=dotsHTML(LD[0],follow)+'&nbsp;'+score+'/'+LD[0]}
+function sound(x,y,src){for(const e of eyes){const d=Math.hypot(e.x-x,e.y-y);
+  if(e.k==='h'&&(src==='p'||d<260)){e.tx=x;e.ty=y;if(src==='p')e.sp=Math.min(e.base*1.8,e.sp+2)}
+  else if(e.k==='f'&&src==='p'){const vx=PV.x*1.6,vy=PV.y*1.6,m=Math.hypot(vx,vy)||1;
+    e.tx=Math.max(20,Math.min(WW-20,P.x+vx-vy/m*70*e.side));e.ty=Math.max(60,Math.min(WH-20,P.y+vy+vx/m*70*e.side));e.sp=Math.min(e.base*1.8,e.sp+2)}
+  else if(e.k==='p'&&d<210){e.tx=x;e.ty=y;e.wait=2}
+  else if(e.k==='s'&&d<230){if(e.awake<=0)SFX.growl(e);e.tx=x;e.ty=y;e.awake=4}}}
+function ping(){if(!running)return;audio();rings.push({x:P.x,y:P.y,r:0,max:460,c:'127,231,216'});SFX.ping();sound(P.x,P.y,'p');navigator.vibrate&&navigator.vibrate(15)}
+function say(who,txt){bubble={who,txt,t:2.6}}
+function lose(why){running=false;shake=0;SFX.lose();showCard({cls:'lose',t:why,s:T.lvl(li+1)+': '+T.lv[li][0],m:T.loseMsg,b:T.retry,go:startLevel,a1:[T.menu,menu]})}
+function win(){running=false;SFX.win();const n=li+1;if(n>saved){saved=n;try{localStorage.setItem('yanki24',saved)}catch(e){}}
+  const names=follow.map(f=>f.name).join(', ');
+  if(n>=LVD.length)showCard({cls:'win',t:T.free,s:T.allDone,m:T.ending,goal:T.flock(TOTAL,TOTAL),b:T.roster,go:roster,a1:[T.menu,menu]});
+  else showCard({cls:'win',t:T.winT,s:T.lvl(n)+': '+T.lv[li][0],m:T.withYou(names),goal:T.flock(BASE[n],TOTAL),b:T.next,go:()=>intro(n),a1:[T.menu,menu]})}
+function die(why){running=false;shake=1;flash=1;SFX.die();floats.push({x:P.x,y:P.y-14,t:1,txt:'✕',c:'255,77,94'});if(follow.length)say(pick(follow),T.shout);
+  const t0=performance.now();const anim=t=>{const dt=.016;shake=Math.max(0,shake-dt*2);flash=Math.max(0,flash-dt*2);draw(t);if(t-t0<550)requestAnimationFrame(anim)};requestAnimationFrame(anim);setTimeout(()=>lose(why),600)}
+function toWorld(e){const r=cv.getBoundingClientRect();return{x:(e.clientX-r.left-OX)/SC,y:(e.clientY-r.top-OY)/SC}}
+cv.addEventListener('pointerdown',e=>{audio();target=toWorld(e)});
+cv.addEventListener('pointermove',e=>{if(e.buttons||e.pointerType!=='mouse')target=toWorld(e)});
+addEventListener('pointerup',()=>target=null);
+$('ping').addEventListener('pointerdown',e=>{e.stopPropagation();ping()});
+$('snd').addEventListener('pointerdown',e=>{e.stopPropagation();audio();sndToggle()});
+addEventListener('keydown',e=>{keys[e.key]=true;if(e.key===' '&&running){e.preventDefault();ping()}});addEventListener('keyup',e=>keys[e.key]=false);
+const inFog=o=>O.fogs.some(f=>dist(o,f)<f.r);
+function loop(t){if(!running)return;const dt=Math.min((t-last)/1000,.05);last=t;
+  let vx=0,vy=0,sp=125;const w0=O.webs.some(w=>dist(P,w)<w.r);if(w0){sp=45;if(!inWeb)SFX.web()}inWeb=w0;
+  if(target){const dx=target.x-P.x,dy=target.y-P.y,d=Math.hypot(dx,dy);if(d>4){vx=dx/d*sp;vy=dy/d*sp}}
+  if(keys.ArrowLeft)vx=-sp;if(keys.ArrowRight)vx=sp;if(keys.ArrowUp)vy=-sp;if(keys.ArrowDown)vy=sp;
+  PV={x:vx,y:vy};for(const w of O.winds){w.ph+=dt;if(dist(P,w)<w.r){vx+=w.dx*70;vy+=w.dy*70}}
+  P.x=Math.max(P.r,Math.min(WW-P.r,P.x+vx*dt));P.y=Math.max(P.r+44,Math.min(WH-P.r,P.y+vy*dt));
+  tpCd-=dt;for(const tn of O.tunnels){tn.ph+=dt;if(tpCd<=0&&dist(P,tn)<tn.r){const m=Math.hypot(PV.x,PV.y)||1;P.x=tn.to.x+PV.x/m*26;P.y=tn.to.y+PV.y/m*26;tpCd=1;tn.seen=tn.to.seen=1;target=null;SFX.tunnel();break}}
+  trail.unshift({x:P.x,y:P.y});trail.length=Math.min(trail.length,140);
+  for(const k of O.rocks)if(dist(P,k)<k.r*.86+P.r)return die(T.die.rock);
+  for(const k of O.thorns)if(dist(P,k)<k.r+P.r-2)return die(T.die.thorn);
+  for(const b of O.bats){b.ph+=dt*12;b.x+=b.vx*dt;b.y+=b.vy*dt;if(b.x<12||b.x>WW-12)b.vx*=-1;if(b.y<56||b.y>WH-12)b.vy*=-1;
+    for(const k of O.rocks){const d=dist(b,k);if(d<k.r+b.r&&d>0){const nx=(b.x-k.x)/d,ny=(b.y-k.y)/d,dot=b.vx*nx+b.vy*ny;if(dot<0){b.vx-=2*dot*nx;b.vy-=2*dot*ny}}}
+    b.ch-=dt;if(b.ch<=0){b.ch=rnd(1.2,2.5);if(dist(b,P)<220)SFX.bat(b)}
+    if(dist(P,b)<b.r+P.r-2)return die(T.die.bat)}
+  for(const e of eyes){
+    if(e.k==='p'){e.wait-=dt;if(e.wait<=0&&Math.hypot(e.tx-e.x,e.ty-e.y)<6){const q=freeSpot(15,0,[]);e.tx=q.x;e.ty=q.y}}
+    if(e.k==='s'&&e.awake>0){e.awake-=dt;if(e.awake<=0){e.tx=e.home.x;e.ty=e.home.y}}
+    const spd=e.k==='s'?(e.awake>0?e.sp*2.2:e.sp*.6):e.sp,d=Math.hypot(e.tx-e.x,e.ty-e.y);
+    if(d>2){e.x+=(e.tx-e.x)/d*spd*dt;e.y+=(e.ty-e.y)/d*spd*dt}}
+  for(let i=0;i<eyes.length;i++)for(let j=i+1;j<eyes.length;j++){const a=eyes[i],b=eyes[j],d=dist(a,b);if(d<90&&d>0){const p=(90-d)*.06,nx=(a.x-b.x)/d,ny=(a.y-b.y)/d;a.x+=nx*p;a.y+=ny*p;b.x-=nx*p;b.y-=ny*p}}
+  for(const e of eyes)if(dist(P,e)<e.r+P.r)return die(T.die.eye);
+  for(const s of O.sibs){s.ph+=dt*3;s.call-=dt;if(s.call<=0){s.call=rnd(5,8);s.glow=1;SFX.call(s)}s.glow=Math.max(0,s.glow-dt*.8);
+    if(!s.got&&dist(P,s)<s.r+P.r+5){s.got=1;score++;follow.push(s);floats.push({x:s.x,y:s.y-10,t:1.3,txt:T.saved(s.name),c:'91,227,125'});say(s,pick(T.traits[s.ti][0]));hud();SFX.rescue(s);
+      $('score').classList.add('pop');setTimeout(()=>$('score').classList.remove('pop'),150);navigator.vibrate&&navigator.vibrate(10)}}
+  O.sibs=O.sibs.filter(s=>!s.got);
+  for(const d of O.drops){d.t-=dt;if(d.t<=0){d.t=rnd(3.5,6.5);rings.push({x:d.x,y:d.y,r:0,max:170,c:'120,170,255'});SFX.drop(d);sound(d.x,d.y,'d')}}
+  for(const m of O.mush){m.cd-=dt;if(m.cd<=0&&dist(P,m)<m.r+P.r+6){m.cd=4;rings.push({x:m.x,y:m.y,r:0,max:380,c:'200,130,255'});SFX.mush(m)}}
+  follow.forEach((f,i)=>{const tp=trail[Math.min(trail.length-1,(i+1)*10)]||P;f.x+=(tp.x-f.x)*dt*6;f.y+=(tp.y-f.y)*dt*6;f.ph+=dt*4});
+  const dn=eyes.length?Math.min(...eyes.map(e=>dist(e,P))):999;
+  beat-=dt;if(dn<170&&beat<=0){SFX.beat(1-dn/170);beat=.5+dn/170*.6}
+  dangerCd-=dt;chat-=dt;if(bubble){bubble.t-=dt;if(bubble.t<=0)bubble=null}
+  if(follow.length&&dn<140&&dangerCd<=0){const f=pick(follow);say(f,T.traits[f.ti][1]);dangerCd=7}
+  else if(follow.length&&chat<=0&&!bubble){const f=pick(follow);say(f,pick(T.traits[f.ti][2]));chat=rnd(10,15)}
+  const all=[...O.rocks,...O.sibs,...eyes,...O.crystals,...O.drops,...O.mush,...O.webs,...O.winds,...O.bats,...O.thorns,...O.tunnels];
+  for(const g of rings){const pr=g.r;g.r+=330*dt;for(const o of all){const d=dist(g,o);if(d>=pr-o.r&&d<g.r&&d<g.max&&!inFog(o)){o.seen=1;if(o.lit!==undefined)o.lit=5}}}
+  rings=rings.filter(g=>g.r<g.max);
+  for(const o of all)o.seen=Math.max(0,o.seen-dt*.5);
+  for(const c of O.crystals)c.lit=Math.max(0,c.lit-dt);
+  for(const f of floats){f.t-=dt;f.y-=dt*26}floats=floats.filter(f=>f.t>0);
+  fade=Math.max(0,fade-dt*1.5);shake=Math.max(0,shake-dt*3);flash=Math.max(0,flash-dt*2);
+  draw(t);if(score>=LD[0]){floats.push({x:P.x,y:P.y-24,t:1,txt:'✓',c:'91,227,125'});running=false;draw(t);return setTimeout(win,650)}requestAnimationFrame(loop)}
+
+/* ---------- ÇİZİM ---------- */
+function glowDot(x,y,r,col,a,blur){const g=ctx.createRadialGradient(x,y,0,x,y,blur);g.addColorStop(0,col.replace('A',a*.55));g.addColorStop(1,col.replace('A',0));ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,blur,0,7);ctx.fill();if(r){ctx.fillStyle=col.replace('A',a);ctx.beginPath();ctx.arc(x,y,r,0,7);ctx.fill()}}
+function fly(x,y,r,a,ph,c){ctx.save();ctx.translate(x,y);ctx.globalAlpha=a;const w=Math.abs(Math.sin(ph*4))*r*1.3+r*.4;
+  ctx.fillStyle='rgba(220,240,255,.35)';ctx.beginPath();ctx.ellipse(-r*.7,-r*.4,w,r*.55,-.5,0,7);ctx.ellipse(r*.7,-r*.4,w,r*.55,.5,0,7);ctx.fill();ctx.restore();glowDot(x,y,r,`rgba(${c},A)`,a,r*5)}
+function rrect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath()}
+function draw(t){ctx.setTransform(DPR,0,0,DPR,0,0);ctx.fillStyle='#020308';ctx.fillRect(0,0,W,H);
+  ctx.setTransform(DPR*SC,0,0,DPR*SC,DPR*OX,DPR*OY);ctx.save();ctx.beginPath();ctx.rect(0,0,WW,WH);ctx.clip();if(shake)ctx.translate(rnd(-6,6)*shake,rnd(-6,6)*shake);
+  const bg=ctx.createRadialGradient(P.x,P.y,10,P.x,P.y,WH);bg.addColorStop(0,'#0F1430');bg.addColorStop(.35,'#070916');bg.addColorStop(1,'#030409');ctx.fillStyle=bg;ctx.fillRect(-10,-10,WW+20,WH+20);
+  for(const d of dust){d.y-=d.v/WH*.016;if(d.y<0)d.y=1;const x=d.x*WW,y=d.y*WH,a=Math.max(.05,.5-dist({x,y},P)/300);ctx.fillStyle=`rgba(180,220,255,${a})`;ctx.fillRect(x,y,d.s,d.s)}
+  if(!O){ctx.restore();return}
+  for(const g of rings){const a=Math.max(0,1-g.r/g.max);ctx.lineWidth=3;ctx.strokeStyle=`rgba(${g.c},${a})`;ctx.shadowColor=`rgb(${g.c})`;ctx.shadowBlur=18;ctx.beginPath();ctx.arc(g.x,g.y,g.r,0,7);ctx.stroke();
+    ctx.lineWidth=1;ctx.strokeStyle=`rgba(${g.c},${a*.4})`;ctx.beginPath();ctx.arc(g.x,g.y,g.r*.82,0,7);ctx.stroke();ctx.shadowBlur=0}
+  const S=sight(),near=o=>{let v=Math.max(o.seen,1-dist(o,P)/((inFog(o)?S*.6:S)+o.r));for(const c of O.crystals)if(c.lit>0)v=Math.max(v,Math.min(1,c.lit/2)*(1-dist(o,c)/(110+o.r)));return v};
+  for(const w of O.winds){const a=near(w);if(a<=0)continue;ctx.strokeStyle=`rgba(160,230,255,${a*.5})`;ctx.lineWidth=1.5;
+    for(let i=0;i<7;i++){const o=((w.ph*50+i*22)%(w.r*2))-w.r,s=(i-3)*w.r/4,cx=w.x+w.dx*o-w.dy*s,cy=w.y+w.dy*o+w.dx*s;if(Math.hypot(cx-w.x,cy-w.y)>w.r)continue;ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+w.dx*14,cy+w.dy*14);ctx.stroke()}}
+  for(const w of O.webs){const a=near(w);if(a<=0)continue;ctx.strokeStyle=`rgba(220,225,240,${a*.55})`;ctx.lineWidth=1;
+    for(let i=0;i<8;i++){const an=i/8*6.28;ctx.beginPath();ctx.moveTo(w.x,w.y);ctx.lineTo(w.x+Math.cos(an)*w.r,w.y+Math.sin(an)*w.r);ctx.stroke()}
+    for(let k=1;k<=3;k++){ctx.beginPath();for(let i=0;i<=8;i++){const an=i/8*6.28,rr=w.r*k/3.4;i?ctx.lineTo(w.x+Math.cos(an)*rr,w.y+Math.sin(an)*rr):ctx.moveTo(w.x+Math.cos(an)*rr,w.y+Math.sin(an)*rr)}ctx.stroke()}}
+  for(const tn of O.tunnels){const a=near(tn);if(a<=0)continue;const c=tn.pair?'255,190,90':'110,240,220';ctx.save();ctx.translate(tn.x,tn.y);ctx.globalAlpha=a;
+    ctx.fillStyle='#000';ctx.beginPath();ctx.arc(0,0,tn.r,0,7);ctx.fill();ctx.lineWidth=2;
+    for(let i=0;i<3;i++){ctx.strokeStyle=`rgba(${c},${.8-i*.22})`;ctx.beginPath();ctx.arc(0,0,tn.r-i*4,tn.ph*2+i,tn.ph*2+i+4);ctx.stroke()}ctx.restore()}
+  for(const k of O.rocks){const a=near(k);if(a<=0)continue;ctx.save();ctx.translate(k.x,k.y);ctx.globalAlpha=a;
+    const g=ctx.createLinearGradient(-k.r,-k.r,k.r,k.r);g.addColorStop(0,'#6F7FB8');g.addColorStop(.5,'#3A4573');g.addColorStop(1,'#1A1F3D');ctx.fillStyle=g;
+    ctx.beginPath();k.pts.forEach((p,i)=>i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]));ctx.closePath();ctx.fill();ctx.strokeStyle='rgba(127,231,216,.55)';ctx.lineWidth=1.5;ctx.stroke();ctx.restore()}
+  for(const k of O.thorns){const a=near(k);if(a<=0)continue;ctx.save();ctx.translate(k.x,k.y);ctx.rotate(k.rot);ctx.globalAlpha=a;ctx.fillStyle='#7A2E3A';ctx.strokeStyle='rgba(255,120,130,.7)';ctx.lineWidth=1;
+    ctx.beginPath();for(let i=0;i<14;i++){const an=i/14*6.28,rr=i%2?4:k.r+3;ctx.lineTo(Math.cos(an)*rr,Math.sin(an)*rr)}ctx.closePath();ctx.fill();ctx.stroke();ctx.restore()}
+  for(const c of O.crystals){const a=Math.max(near(c),Math.min(1,c.lit));if(a<=0)continue;if(c.lit>0)glowDot(c.x,c.y,0,'rgba(140,255,240,A)',Math.min(1,c.lit/2)*.6,110);
+    ctx.save();ctx.translate(c.x,c.y);ctx.rotate(c.rot);ctx.globalAlpha=a;ctx.fillStyle='#8CFFF0';ctx.shadowColor='#8CFFF0';ctx.shadowBlur=c.lit>0?20:4;
+    for(const s of[[0,-14,5],[-7,-8,4],[7,-9,4]]){ctx.beginPath();ctx.moveTo(s[0],s[1]);ctx.lineTo(s[0]+s[2],4);ctx.lineTo(s[0]-s[2],4);ctx.closePath();ctx.fill()}ctx.restore()}
+  for(const d of O.drops){const a=near(d);if(a<=0)continue;ctx.fillStyle=`rgba(120,170,255,${a})`;ctx.beginPath();ctx.moveTo(d.x-7,d.y-10);ctx.lineTo(d.x+7,d.y-10);ctx.lineTo(d.x,d.y+2);ctx.fill();
+    const k=1-Math.min(1,d.t/1.2);if(k>0){ctx.beginPath();ctx.arc(d.x,d.y+4+k*8,2.5,0,7);ctx.fill()}}
+  for(const m of O.mush){const a=near(m);if(a<=0)continue;ctx.globalAlpha=a;if(m.cd>3)glowDot(m.x,m.y,0,'rgba(200,130,255,A)',.6,50);
+    ctx.fillStyle='#D8CFE8';ctx.fillRect(m.x-2.5,m.y-2,5,11);ctx.fillStyle='#B57CFF';ctx.beginPath();ctx.ellipse(m.x,m.y-2,m.r,m.r*.65,0,Math.PI,0);ctx.fill();
+    ctx.fillStyle='#F3E8FF';for(const s of[[-4,-6],[3,-8],[6,-4]]){ctx.beginPath();ctx.arc(m.x+s[0],m.y+s[1],1.5,0,7);ctx.fill()}ctx.globalAlpha=1}
+  for(const s of O.sibs){const a=Math.max(near(s),s.glow*.7);if(a<=0)continue;const y=s.y+Math.sin(s.ph)*3;
+    if(s.glow>0){ctx.strokeStyle=`rgba(${s.c},${s.glow*.6})`;ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(s.x,y,8+(1-s.glow)*26,0,7);ctx.stroke()}
+    fly(s.x,y,4.5,a,s.ph,s.c);if(near(s)>.4){ctx.globalAlpha=near(s);ctx.fillStyle=`rgb(${s.c})`;ctx.font='500 11px "Baloo 2",sans-serif';ctx.textAlign='center';ctx.fillText(s.name,s.x,y-12);ctx.textAlign='start';ctx.globalAlpha=1}}
+  for(const b of O.bats){const a=near(b);if(a<=0)continue;ctx.save();ctx.translate(b.x,b.y);ctx.globalAlpha=a;const fl=Math.sin(b.ph)*6;ctx.fillStyle='#2B2440';ctx.strokeStyle='rgba(200,190,230,.6)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(0,0);ctx.quadraticCurveTo(-10,-8-fl,-20,-2+fl*.5);ctx.quadraticCurveTo(-12,0,-8,4);ctx.lineTo(0,2);ctx.lineTo(8,4);ctx.quadraticCurveTo(12,0,20,-2+fl*.5);ctx.quadraticCurveTo(10,-8-fl,0,0);ctx.fill();ctx.stroke();
+    ctx.fillStyle='#FFD166';ctx.fillRect(-3,-1,1.6,1.6);ctx.fillRect(1.5,-1,1.6,1.6);ctx.restore()}
+  for(const e of eyes){const a=near(e);if(a<=0)continue;const col=ECOL[e.k],sl=e.k==='s'&&e.awake<=0;
+    const open=sl?.12:Math.max(.08,Math.min(1,Math.abs(Math.sin(t/900+e.home.x))*3));ctx.save();ctx.globalAlpha=a;
+    glowDot(e.x,e.y,0,`rgba(${col},A)`,a,e.r*3.5);ctx.fillStyle='#1E0A16';ctx.beginPath();ctx.ellipse(e.x,e.y,e.r*1.25,e.r*.75*open+1,0,0,7);ctx.fill();
+    const dd=dist(P,e)||1,ix=e.x+(P.x-e.x)/dd*5,iy=e.y+(P.y-e.y)/dd*3*open;
+    ctx.fillStyle=`rgb(${col})`;ctx.beginPath();ctx.ellipse(ix,iy,e.r*.55,e.r*.55*open,0,0,7);ctx.fill();
+    ctx.fillStyle='#05060E';ctx.beginPath();ctx.ellipse(ix,iy,2.5,e.r*.45*open,0,0,7);ctx.fill();
+    if(sl){ctx.fillStyle=`rgba(${col},.8)`;ctx.font='800 11px "Baloo 2",sans-serif';ctx.fillText('z',e.x+16,e.y-12-Math.sin(t/400)*3)}ctx.restore()}
+  for(const f of O.fogs){f.ph+=.004;for(let i=0;i<3;i++){const x=f.x+Math.cos(f.ph+i*2)*f.r*.25,y=f.y+Math.sin(f.ph*1.3+i*2)*f.r*.2,g=ctx.createRadialGradient(x,y,0,x,y,f.r);
+    g.addColorStop(0,'rgba(150,160,190,.28)');g.addColorStop(1,'rgba(150,160,190,0)');ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,f.r,0,7);ctx.fill()}}
+  for(let i=1;i<trail.length;i+=6){const p=trail[i];ctx.fillStyle=`rgba(127,231,216,${.22*(1-i/trail.length)})`;ctx.beginPath();ctx.arc(p.x,p.y,2,0,7);ctx.fill()}
+  for(const f of follow)fly(f.x,f.y,3.6,.95,f.ph,f.c);
+  fly(P.x,P.y,6+Math.sin(t/260)*.8,1,t/400,'233,250,255');
+  if(bubble){const b=bubble.who,a=Math.min(1,bubble.t*2);ctx.font='500 12px "Baloo 2",sans-serif';const txt=b.name+': '+bubble.txt,w=Math.min(ctx.measureText(txt).width+16,WW-16),bx=Math.max(8,Math.min(WW-w-8,b.x-w/2)),by=Math.max(48,b.y-44);
+    ctx.globalAlpha=a;ctx.fillStyle='rgba(10,14,32,.88)';ctx.strokeStyle=`rgb(${b.c})`;ctx.lineWidth=1;rrect(bx,by,w,24,10);ctx.fill();ctx.stroke();
+    ctx.fillStyle=`rgb(${b.c})`;ctx.fillText(txt,bx+8,by+16,w-16);ctx.globalAlpha=1}
+  for(const f of floats){ctx.fillStyle=`rgba(${f.c},${Math.min(1,f.t)})`;ctx.font='800 15px "Baloo 2",sans-serif';ctx.textAlign='center';ctx.fillText(f.txt,f.x,f.y);ctx.textAlign='start'}
+  const dn=eyes.length?Math.min(...eyes.map(e=>dist(e,P))):999;if(dn<170){const v=ctx.createRadialGradient(WW/2,WH/2,WW*.3,WW/2,WH/2,WH*.75);v.addColorStop(0,'rgba(255,77,94,0)');v.addColorStop(1,`rgba(255,77,94,${(1-dn/170)*.45*(0.7+0.3*Math.sin(t/120))})`);ctx.fillStyle=v;ctx.fillRect(0,0,WW,WH)}
+  if(flash){ctx.fillStyle=`rgba(255,77,94,${flash*.35})`;ctx.fillRect(0,0,WW,WH)}
+  if(fade){ctx.fillStyle=`rgba(3,4,9,${fade})`;ctx.fillRect(0,0,WW,WH)}
+  ctx.restore();ctx.strokeStyle='rgba(127,231,216,.12)';ctx.lineWidth=1;ctx.strokeRect(0,0,WW,WH)}
+P={x:WW/2,y:WH/2};setLang(LANG);$('snd').textContent=AU.on?'🔊':'🔇';draw(0);menu();
+</script>
+</body>
+</html>

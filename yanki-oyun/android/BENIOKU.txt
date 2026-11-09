@@ -1,0 +1,5 @@
+Yankı (Türkçe) / Echo (English) - Android Studio projesi
+- Android Studio'da bu klasörü aç.
+- Build Variants: trRelease = Yankı, enRelease = Echo.
+- Build > Generate Signed App Bundle ile .aab oluştur, Google Play'e yükle.
+- Mağaza simgesi: play-store-icon-512.png
