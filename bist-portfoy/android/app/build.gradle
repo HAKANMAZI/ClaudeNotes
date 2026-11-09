@@ -1,0 +1,12 @@
+plugins { id 'com.android.application' }
+android {
+    namespace 'com.hasan.bistportfoy'
+    compileSdk 34
+    defaultConfig { applicationId 'com.hasan.bistportfoy'; minSdk 24; targetSdk 34; versionCode 1; versionName '1.0' }
+    // Sabit imza: güncellemeler eski sürümün üstüne kurulabilsin
+    signingConfigs {
+        debug { storeFile file('sabit.keystore'); storePassword 'bistportfoy'; keyAlias 'bist'; keyPassword 'bistportfoy' }
+    }
+    buildTypes { release { minifyEnabled false } }
+    compileOptions { sourceCompatibility JavaVersion.VERSION_1_8; targetCompatibility JavaVersion.VERSION_1_8 }
+}

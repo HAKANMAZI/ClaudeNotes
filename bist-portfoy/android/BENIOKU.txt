@@ -1,0 +1,7 @@
+BIST Portföy - Android (WebView) projesi
+- Arayüz: app/src/main/assets/index.html
+- APK'yı GitHub Actions derler (.github/workflows/bist-portfoy.yml).
+  Son sürüm: https://github.com/HAKANMAZI/claudenotes/releases/download/bist-portfoy/BistPortfoy.apk
+- Android Studio ile de açılabilir: bu klasörü açın, Run.
+- İmza: app/sabit.keystore (güncellemeler eskisinin üstüne kurulsun diye sabit).
+- Mağaza simgesi: play-store-icon-512.png

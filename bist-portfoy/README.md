@@ -4,6 +4,7 @@ Google Sheets üzerinde çalışan BIST hisse takip tablosu ve onu okuyan web uy
 
 - **Google Sheet:** [BIST Sağlam 10 Hisse Takip](https://docs.google.com/spreadsheets/d/1JYXC2-b5fGWKfwlyzpFhlIs9-0edZW5zEjexRMlSVlY/edit) (gizli, yalnızca sahibi açabilir)
 - **Web uygulaması:** [BIST Portföy Masası](https://claude.ai/artifact/LkvR34YvKy2C8UbrysNjdA) (claude.ai Artifact)
+- **Android uygulaması:** [BistPortfoy.apk indir](https://github.com/HAKANMAZI/claudenotes/releases/download/bist-portfoy/BistPortfoy.apk)
 
 ## Klasörler
 
@@ -12,6 +13,8 @@ Google Sheets üzerinde çalışan BIST hisse takip tablosu ve onu okuyan web uy
 | `web-app/index.html` | Web uygulaması. Google Sheet'i claude.ai'deki Google Sheets bağlantısıyla okur ve alım/satım bilgilerini Sheet'e yazar. Yalnızca claude.ai içinde açıldığında veri gelir. |
 | `excel/BIST_Saglam_10_Hisse_Takip.xlsx` | İlk sürüm tablo. Google Sheets'e içe aktarılınca GOOGLEFINANCE formülleri çalışır. |
 | `scripts/build_xlsx.py` | Excel dosyasını üreten openpyxl betiği. |
+| `android/` | Android uygulaması (WebView). Fiyat ve teknik veriler Yahoo Finance'ten, portföy/temel analiz/KAP Google Sheet'ten (Apps Script) gelir. APK'yı GitHub Actions derler. |
+| `apps-script/Code.gs` | Android uygulamasının Sheet'i okuyup yazması için Sheet'e eklenen Apps Script. |
 | `haftalik-gorev.md` | Her pazartesi 07:41'de (İstanbul) çalışan Claude görevinin talimatı. |
 
 ## Google Sheet yapısı
@@ -41,3 +44,13 @@ Sarı hücreler girdi: Hedef %, Stop %, ROE eşiği, Giriş Tarihi ve portföy a
 - Sheet `tr_TR` yerel ayarında. API ile formül yazarken yerel ayar geçici olarak `en_US` yapılıp sonra geri alındı.
 - GOOGLEFINANCE geçmiş verisi yalnızca Sheet tarayıcıda açıkken hesaplanır. API ile okunduğunda bazı teknik hücreler boş gelebilir.
 - Temel analiz metinleri ve KAP verileri elle ya da haftalık görevle güncellenir; yatırım tavsiyesi değildir.
+
+## Android uygulaması kurulumu
+
+1. Telefondan [BistPortfoy.apk](https://github.com/HAKANMAZI/claudenotes/releases/download/bist-portfoy/BistPortfoy.apk) dosyasını indirip kurun (bilinmeyen kaynaklara izin vermeniz gerekebilir).
+2. Uygulama ilk açılışta yerel modda çalışır: fiyatlar gelir, portföy telefonda tutulur.
+3. Google Sheet ile eşitlemek için:
+   - Sheet → Uzantılar → Apps Script → `apps-script/Code.gs` içeriğini yapıştırın.
+   - `TOKEN` satırına kendi şifrenizi yazın.
+   - Dağıt → Yeni dağıtım → Web uygulaması (Yürüten: Ben, Erişim: Herkes).
+   - Uygulamada Ayarlar → /exec adresi ve şifre → Kaydet ve bağlan.

@@ -1,0 +1,35 @@
+name: BIST Portföy APK
+on:
+  workflow_dispatch:
+  push:
+    paths: ['bist-portfoy/android/**', '.github/workflows/bist-portfoy.yml']
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: bist-portfoy/android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - run: gradle assembleDebug
+      - run: cp app/build/outputs/apk/debug/app-debug.apk BistPortfoy.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: BistPortfoy-apk
+          path: bist-portfoy/android/BistPortfoy.apk
+      # Sabit indirme linki: .../releases/download/bist-portfoy/BistPortfoy.apk
+      - name: Sabit linke koy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete bist-portfoy --yes --cleanup-tag || true
+          gh release create bist-portfoy BistPortfoy.apk --target "$GITHUB_SHA" --title "BIST Portföy (son sürüm)" --notes "Telefondan indirip kurun."

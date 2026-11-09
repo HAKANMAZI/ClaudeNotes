@@ -1,0 +1,520 @@
+<!doctype html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>BIST Portföy</title>
+<style>
+/* Layout: sticky header with indices, portfolio summary, tabbed board with frozen ticker column, slide-over detail and settings sheets. */
+:root{
+  --bg:#f3f5f8; --surface:#ffffff; --surface-2:#eaeef4; --line:#d6dce6;
+  --fg:#16202e; --muted:#5d6878; --accent:#1d4ed8; --accent-soft:#dbe5fb;
+  --up:#0f7a4b; --up-soft:#d9f1e5; --down:#c22f2f; --down-soft:#f8dddd;
+  --warn:#9a6200; --warn-soft:#fcefd2; color-scheme:light;
+  --f-display:"Archivo","Roboto Condensed","Helvetica Neue",Arial,sans-serif;
+  --f-body:system-ui,"Roboto","Segoe UI",sans-serif;
+  --f-num:ui-monospace,"Roboto Mono","JetBrains Mono",Menlo,Consolas,monospace;
+}
+@media (prefers-color-scheme: dark){:root{
+  --bg:#0e131b; --surface:#151c27; --surface-2:#1c2533; --line:#2a3546;
+  --fg:#e5ebf3; --muted:#93a0b3; --accent:#7aa2ff; --accent-soft:#1e2c4d;
+  --up:#3ccf8e; --up-soft:#133528; --down:#ff7a7a; --down-soft:#3c1a1d;
+  --warn:#f2b84b; --warn-soft:#3a2d12; color-scheme:dark}}
+*{box-sizing:border-box}
+[hidden]{display:none!important}
+html,body{margin:0}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.45;-webkit-tap-highlight-color:transparent}
+.wrap{padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
+header.bar{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+.bar-in{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding-block:10px}
+.brand{display:flex;flex-direction:column;margin-right:auto;min-width:0}
+.brand h1{font-family:var(--f-display);font-weight:800;font-size:19px;letter-spacing:-.01em;margin:0}
+.brand .sub{color:var(--muted);font-size:12px}
+.idx{display:flex;gap:6px;flex-wrap:wrap;width:100%}
+.chip{font-family:var(--f-num);font-size:12px;background:var(--surface-2);border-radius:6px;padding:3px 8px;white-space:nowrap}
+button{font:inherit;cursor:pointer}
+.btn{border:1px solid var(--line);background:var(--surface);color:var(--fg);border-radius:8px;padding:7px 12px;font-weight:600}
+.btn.primary{background:var(--accent);border-color:var(--accent);color:var(--surface)}
+.btn.danger{color:var(--down);border-color:var(--down)}
+.btn:disabled{opacity:.55}
+.btn:focus-visible,.tab:focus-visible,th button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+main{display:flex;flex-direction:column;gap:14px;padding-block:14px calc(32px + env(safe-area-inset-bottom,0px))}
+.notice{border:1px solid var(--line);border-left:4px solid var(--warn);background:var(--warn-soft);border-radius:8px;padding:10px 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.notice p{margin:0;flex:1 1 220px}
+.summary{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px}
+.tile{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.tile .k{font-size:10.5px;text-transform:uppercase;letter-spacing:.06em;color:var(--muted)}
+.tile .v{font-family:var(--f-num);font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
+.tile.hero{border-color:var(--accent);background:var(--accent-soft)}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tabs{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:9px;overflow-x:auto;max-width:100%}
+.tab{border:0;background:transparent;color:var(--muted);padding:6px 10px;border-radius:6px;font-weight:600;white-space:nowrap}
+.tab[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}
+.filter{display:flex;gap:6px;align-items:center;color:var(--muted);font-size:13px}
+input[type=search],input[type=text],input[type=password],input[type=url]{font:inherit;color:var(--fg);background:var(--surface);border:1px solid var(--line);border-radius:7px;padding:8px 10px;min-width:0;width:100%}
+.controls input[type=search]{flex:1 1 140px;width:auto}
+.board{background:var(--surface);border:1px solid var(--line);border-radius:10px;overflow-x:auto;max-width:100%}
+table{border-collapse:separate;border-spacing:0;width:max-content;min-width:100%}
+th,td{padding:8px 10px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;font-variant-numeric:tabular-nums}
+td{font-family:var(--f-num);font-size:12.5px}
+th{background:var(--surface-2);font-size:10.5px;text-transform:uppercase;letter-spacing:.05em;color:var(--muted);font-weight:600}
+th button{all:unset;cursor:pointer;display:inline-flex;gap:3px;align-items:center}
+th .dir{color:var(--accent)}
+th:first-child,td:first-child{position:sticky;left:0;text-align:left;background:var(--surface);z-index:1;border-right:1px solid var(--line)}
+th:first-child{background:var(--surface-2)}
+td.txt{font-family:var(--f-body);font-size:13px;text-align:left;white-space:normal;min-width:150px;max-width:240px}
+tbody tr:active td{background:var(--surface-2)}
+.tk{font-family:var(--f-display);font-weight:700;font-size:14px;letter-spacing:.02em}
+.tk small{display:block;font-family:var(--f-body);font-weight:400;font-size:11px;color:var(--muted);letter-spacing:0;max-width:110px;overflow:hidden;text-overflow:ellipsis}
+.pos{color:var(--up)} .neg{color:var(--down)}
+.pill{display:inline-block;font-family:var(--f-body);font-size:11.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--surface-2);color:var(--fg)}
+.pill.good{background:var(--up-soft);color:var(--up)} .pill.bad{background:var(--down-soft);color:var(--down)} .pill.mid{background:var(--warn-soft);color:var(--warn)}
+svg.spark{display:block}
+.empty{padding:26px;text-align:center;color:var(--muted)}
+.foot{color:var(--muted);font-size:12px;display:flex;flex-direction:column;gap:4px}
+.sheet-bg{position:fixed;inset:0;background:rgba(10,15,25,.45);z-index:20;display:flex;justify-content:flex-end}
+.sheet{background:var(--surface);width:min(520px,100%);height:100%;overflow-y:auto;padding:calc(16px + env(safe-area-inset-top,0px)) max(16px,env(safe-area-inset-right,0px)) calc(24px + env(safe-area-inset-bottom,0px)) max(16px,env(safe-area-inset-left,0px));display:flex;flex-direction:column;gap:16px}
+.sheet h2{font-family:var(--f-display);font-size:22px;margin:0}
+.sheet h3{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:0 0 6px}
+.shead{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+dl.kv{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;margin:0}
+dl.kv dt{color:var(--muted)} dl.kv dd{margin:0;font-family:var(--f-num);text-align:right;overflow-wrap:anywhere}
+dl.kv dd.t{font-family:var(--f-body);text-align:left;grid-column:1/-1;color:var(--fg)}
+form.edit{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+form.edit label,.field{display:flex;flex-direction:column;gap:4px;font-size:12px;color:var(--muted)}
+.row{grid-column:1/-1;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.msg{font-size:13px} .msg.err{color:var(--down)} .msg.ok{color:var(--up)}
+.help{color:var(--muted);font-size:13px;margin:0}
+.help ol{padding-left:18px;margin:6px 0}
+</style>
+</head>
+<body>
+<header class="bar"><div class="wrap bar-in">
+  <div class="brand"><h1>BIST Portföy</h1><span class="sub" id="fresh">Yükleniyor…</span></div>
+  <button class="btn" id="refresh" type="button">Yenile</button>
+  <button class="btn" id="openSettings" type="button" aria-label="Ayarlar">Ayarlar</button>
+  <div class="idx" id="idx"></div>
+</div></header>
+
+<main class="wrap">
+  <div class="notice" id="notice" hidden><p id="noticeText"></p><button class="btn primary" id="noticeBtn" type="button" hidden>Ayarları aç</button></div>
+  <section class="summary" id="summary" aria-label="Portföy özeti"></section>
+  <div class="controls">
+    <div class="tabs" role="tablist" id="tabs"></div>
+  </div>
+  <div class="controls">
+    <label class="filter"><input type="checkbox" id="onlyMine"> Sadece portföyüm</label>
+    <input type="search" id="q" placeholder="Hisse ara" aria-label="Hisse ara">
+  </div>
+  <form id="addForm" class="controls" autocomplete="off">
+    <input type="text" id="addTicker" placeholder="Yeni kod (ör. TOASO)" aria-label="Eklenecek hisse kodu" maxlength="8" style="flex:1 1 140px;width:auto">
+    <button class="btn" type="submit">Hisse ekle</button>
+    <span class="msg" id="addMsg" role="status"></span>
+  </form>
+  <div class="board" id="board"><div class="empty">Tablo yükleniyor…</div></div>
+  <div class="foot">
+    <span>Fiyat ve teknik veriler: Yahoo Finance (gecikmeli). Portföy, temel analiz ve KAP: Google Sheet'iniz.</span>
+    <span>Satıra dokununca ayrıntı ve alım/satım düzenleme açılır. Yatırım tavsiyesi değildir.</span>
+  </div>
+</main>
+
+<div class="sheet-bg" id="sheetBg" hidden><aside class="sheet" id="sheet" role="dialog" aria-modal="true"></aside></div>
+
+<script>
+"use strict";
+const SHEET_URL = "https://docs.google.com/spreadsheets/d/1JYXC2-b5fGWKfwlyzpFhlIs9-0edZW5zEjexRMlSVlY/edit";
+const DEFAULT_TICKERS = ["ASELS","BIMAS","THYAO","TUPRS","FROTO","MGROS","CCOLA","ENKAI","TCELL","KCHOL","ARDYZ","DOAS","TERA","KOTON","PAPIL","TUREX","KFEIN","FONET"];
+const INDICES = [["XU100","BIST 100"],["XU030","BIST 30"]];
+const PF = ["Alınan Adet","Ort. Alış Fiyatı (₺)","Alış Tarihi","Satılan Adet","Ort. Satış Fiyatı (₺)","Satış Tarihi"];
+
+/* ---------- storage ---------- */
+function load(k, d) { try { const v = localStorage.getItem(k); return v ? JSON.parse(v) : d; } catch (e) { return d; } }
+function save(k, v) { try { localStorage.setItem(k, JSON.stringify(v)); } catch (e) {} }
+const cfg = load("bist.cfg", { url: "", token: "" });
+const local = load("bist.local", { tickers: DEFAULT_TICKERS.slice(), pf: {} });
+
+const state = { tab: load("bist.tab", "Özet"), sort: null, q: "", mine: false,
+  sheet: null, enf: [], mkt: {}, idx: {}, items: [], sheetAt: null, mktAt: null, busy: false };
+
+/* ---------- http (Android köprüsü, yoksa fetch) ---------- */
+const pending = {}; let seq = 0;
+window.__nativeCb = (id, ok, body) => { const p = pending[id]; if (!p) return; delete pending[id]; ok ? p.res(body) : p.rej(new Error(body)); };
+function httpGet(url) {
+  if (window.Native && window.Native.get) return new Promise((res, rej) => {
+    const id = "r" + (++seq); pending[id] = { res, rej }; window.Native.get(id, url);
+    setTimeout(() => { if (pending[id]) { delete pending[id]; rej(new Error("zaman aşımı")); } }, 60000);
+  });
+  return fetch(url).then(r => { if (!r.ok) throw new Error("HTTP " + r.status); return r.text(); });
+}
+
+/* ---------- format ---------- */
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const fin = (n) => typeof n === "number" && isFinite(n);
+function tr(n, d) { return fin(n) ? n.toLocaleString("tr-TR", { minimumFractionDigits: d, maximumFractionDigits: d }) : "—"; }
+function pct(n) { return fin(n) ? tr(n * 100, 1) + "%" : "—"; }
+function big(n) { if (!fin(n)) return "—"; const a = Math.abs(n); return a >= 1e9 ? tr(n / 1e9, 1) + " Mr" : a >= 1e6 ? tr(n / 1e6, 1) + " Mn" : tr(n, 0); }
+function num(s) {
+  if (s == null) return null; s = String(s).trim();
+  if (!s || s === "-" || s.startsWith("#")) return null;
+  let mult = 1; if (/Mr/.test(s)) mult = 1e9; else if (/Mn/.test(s)) mult = 1e6;
+  const m = s.replace(/[^\d,.\-−]/g, "").replace("−", "-");
+  if (!/\d/.test(m)) return null;
+  const n = parseFloat(m.replace(/\./g, "").replace(",", "."));
+  if (!isFinite(n)) return null;
+  return /%/.test(s) ? n / 100 * mult : n * mult;
+}
+function parseDate(s) { const m = /^(\d{1,2})\.(\d{1,2})\.(\d{4})$/.exec(String(s || "").trim()); return m ? new Date(+m[3], +m[2] - 1, +m[1]) : null; }
+const sign = (n) => fin(n) ? (n > 0 ? "pos" : n < 0 ? "neg" : "") : "";
+
+/* ---------- market data (Yahoo Finance) ---------- */
+async function yahoo(t) {
+  const body = await httpGet("https://query1.finance.yahoo.com/v8/finance/chart/" + encodeURIComponent(t) + ".IS?range=1y&interval=1d");
+  const r = JSON.parse(body).chart.result[0];
+  const q = r.indicators.quote[0], m = r.meta;
+  const c = (q.close || []).filter(fin);
+  const price = fin(m.regularMarketPrice) ? m.regularMarketPrice : c[c.length - 1];
+  if (c.length && c[c.length - 1] !== price) c.push(price);
+  const back = (k) => c.length > k ? price / c[c.length - 1 - k] - 1 : null;
+  const ma = (k) => c.length >= k ? c.slice(-k).reduce((a, b) => a + b, 0) / k : null;
+  let g = 0, l = 0; const w = c.slice(-15);
+  for (let i = 1; i < w.length; i++) { const d = w[i] - w[i - 1]; if (d > 0) g += d; else l -= d; }
+  const rsi = w.length === 15 ? (l === 0 ? 100 : 100 - 100 / (1 + g / l)) : null;
+  const prev = fin(m.chartPreviousClose) && c.length < 3 ? m.chartPreviousClose : c[c.length - 2];
+  return { price, name: m.longName || m.shortName || "",
+    chg: fin(m.regularMarketChangePercent) ? m.regularMarketChangePercent / 100 : (prev ? price / prev - 1 : null),
+    ch5: back(5), ch15: back(15), ch30: back(30), ch60: back(60), ch240: back(240),
+    ma10: ma(10), ma21: ma(21), ma50: ma(50), ma200: ma(200), rsi,
+    hi: fin(m.fiftyTwoWeekHigh) ? price / m.fiftyTwoWeekHigh - 1 : null,
+    vol: m.regularMarketVolume, spark: c.slice(-120) };
+}
+async function loadMarket(tickers) {
+  const list = tickers.slice(); const out = {};
+  const worker = async () => { while (list.length) { const t = list.shift(); try { out[t] = await yahoo(t); } catch (e) { out[t] = null; } } };
+  await Promise.all([worker(), worker(), worker(), worker(), worker()]);
+  return out;
+}
+
+/* ---------- sheet (Apps Script) ---------- */
+function scriptUrl(params) {
+  const u = new URL(cfg.url); u.searchParams.set("token", cfg.token);
+  Object.entries(params || {}).forEach(([k, v]) => u.searchParams.set(k, v));
+  return u.toString();
+}
+async function sheetCall(params) {
+  const body = await httpGet(scriptUrl(params));
+  let j; try { j = JSON.parse(body); } catch (e) { throw new Error("Apps Script JSON döndürmedi. URL'nin /exec ile bittiğinden ve erişimin 'Herkes' olduğundan emin olun."); }
+  if (j.error === "yetkisiz") throw new Error("Şifre (TOKEN) uyuşmuyor. Apps Script'teki TOKEN ile Ayarlar'daki şifre aynı olmalı.");
+  if (j.error) throw new Error("Apps Script hatası: " + j.error);
+  return j;
+}
+function parseSheet(j) {
+  const v = j.values || []; const headers = (v[2] || []).map(h => String(h || "").trim());
+  const rows = []; for (let k = 3; k < v.length; k++) rows.push({ sheetRow: 3 + k, cells: v[k] || [] });
+  return { headers, rows };
+}
+const hcell = (row, name) => { if (!state.sheet || !row) return ""; const i = state.sheet.headers.indexOf(name); return i < 0 ? "" : (row.cells[i] ?? ""); };
+
+/* ---------- inflation ---------- */
+function cpiTable() { let c = 100; const map = {}; const keys = []; for (const [k, r] of state.enf) { c *= 1 + r; map[k] = c; keys.push(k); } return { map, keys }; }
+function inflation(from, to) {
+  const { map, keys } = cpiTable(); if (!keys.length || !from) return null;
+  const key = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0");
+  const pick = (d) => { let k = key(d); if (k > keys[keys.length - 1]) k = keys[keys.length - 1]; return map[k]; };
+  const a = pick(from), b = pick(to); return a && b ? b / a - 1 : null;
+}
+
+/* ---------- build items ---------- */
+function buildItems() {
+  const items = [];
+  if (state.sheet) {
+    for (const r of state.sheet.rows) {
+      const t = String(r.cells[0] || "").trim().toUpperCase(); if (!t) continue;
+      items.push({ ticker: t, sheetRow: r.sheetRow, row: r, sector: hcell(r, "Sektör"),
+        pf: { adet: num(hcell(r, PF[0])), alis: num(hcell(r, PF[1])), alisT: hcell(r, PF[2]), satilan: num(hcell(r, PF[3])), satis: num(hcell(r, PF[4])), satisT: hcell(r, PF[5]) } });
+    }
+  } else {
+    for (const t of local.tickers) { const p = local.pf[t] || {}; items.push({ ticker: t, sector: p.sector || "", pf: { adet: p.adet ?? null, alis: p.alis ?? null, alisT: p.alisT || "", satilan: p.satilan ?? null, satis: p.satis ?? null, satisT: p.satisT || "" } }); }
+  }
+  for (const it of items) {
+    const m = state.mkt[it.ticker]; it.m = m || null;
+    const p = it.pf, price = m ? m.price : num(hcell(it.row, "Fiyat (₺)"));
+    const c = {};
+    if (fin(p.adet) && p.adet > 0 && fin(p.alis)) {
+      const sold = fin(p.satilan) ? p.satilan : 0, held = p.adet - sold;
+      c.held = held; c.cost = held * p.alis; c.value = fin(price) ? held * price : null;
+      c.real = sold * ((fin(p.satis) ? p.satis : 0) - p.alis);
+      c.unreal = fin(price) ? held * (price - p.alis) : null;
+      c.total = c.real + (c.unreal || 0); c.pct = c.total / (p.adet * p.alis);
+      const from = parseDate(p.alisT), now = new Date(), sd = parseDate(p.satisT) || now;
+      const iSold = sold ? inflation(from, sd) : 0, iHeld = inflation(from, now);
+      if (from && fin(iHeld) && fin(iSold)) {
+        c.infl = (sold * iSold + held * iHeld) / p.adet;
+        c.reel = sold * (fin(p.satis) ? p.satis : 0) + (fin(price) ? held * price : 0) - p.adet * p.alis * (1 + c.infl);
+        c.reelPct = (1 + c.pct) / (1 + c.infl) - 1;
+      }
+    }
+    it.c = c;
+  }
+  state.items = items;
+}
+
+/* ---------- columns ---------- */
+const S = (name, opts) => Object.assign({ label: name, val: (it) => num(hcell(it.row, name)), show: (it) => { const s = hcell(it.row, name); return s ? esc(s) : "—"; } }, opts || {});
+const M = (label, key, f, signed) => ({ label, val: (it) => it.m ? it.m[key] : num(hcell(it.row, label)), show: (it) => it.m ? f(it.m[key]) : (hcell(it.row, label) ? esc(hcell(it.row, label)) : "—"), signed });
+const C = (label, key, f, signed) => ({ label, val: (it) => it.c[key], show: (it) => f(it.c[key]), signed });
+const TXT = (name) => S(name, { text: true, val: (it) => hcell(it.row, name) });
+const PILL = (name) => S(name, { val: (it) => hcell(it.row, name), show: (it) => pill(hcell(it.row, name)) });
+const COL = {
+  spark: { label: "1 Yıl", val: (it) => it.m ? it.m.ch240 : null, show: (it) => it.m ? spark(it.m.spark) : "—" },
+  price: M("Fiyat (₺)", "price", (v) => tr(v, 2)),
+  chg: M("Gün", "chg", pct, true), ch5: M("5 Gün", "ch5", pct, true), ch15: M("15 Gün", "ch15", pct, true),
+  ch30: M("30 Gün", "ch30", pct, true), ch60: M("60 Gün", "ch60", pct, true), ch240: M("240 Gün", "ch240", pct, true),
+  vol: M("Günlük Hacim", "vol", big),
+  ma10: M("MA10", "ma10", (v) => tr(v, 2)), ma21: M("MA21", "ma21", (v) => tr(v, 2)), ma50: M("MA50", "ma50", (v) => tr(v, 2)), ma200: M("MA200", "ma200", (v) => tr(v, 2)),
+  a10: { label: "> MA10", val: (it) => arrowVal(it, "ma10"), show: (it) => arrow(it, "ma10") },
+  a21: { label: "> MA21", val: (it) => arrowVal(it, "ma21"), show: (it) => arrow(it, "ma21") },
+  a50: { label: "> MA50", val: (it) => arrowVal(it, "ma50"), show: (it) => arrow(it, "ma50") },
+  hi: M("52H Zirveden Uzaklık", "hi", pct, true),
+  rsi: { label: "RSI (14)", val: (it) => it.m ? it.m.rsi : num(hcell(it.row, "RSI (14)")), show: (it) => { const n = it.m ? it.m.rsi : num(hcell(it.row, "RSI (14)")); if (!fin(n)) return "—"; return `<span class="pill ${n < 30 ? "good" : n > 70 ? "bad" : ""}">${tr(n, 0)}</span>`; } },
+  adet: { label: "Alınan Adet", val: (it) => it.pf.adet, show: (it) => fin(it.pf.adet) ? tr(it.pf.adet, 0) : "—" },
+  alis: { label: "Ort. Alış (₺)", val: (it) => it.pf.alis, show: (it) => fin(it.pf.alis) ? tr(it.pf.alis, 2) : "—" },
+  alisT: { label: "Alış Tarihi", val: (it) => { const d = parseDate(it.pf.alisT); return d ? d.getTime() : null; }, show: (it) => esc(it.pf.alisT || "—") },
+  held: C("Eldeki Adet", "held", (v) => tr(v, 0)), cost: C("Eldeki Maliyet (₺)", "cost", (v) => tr(v, 2)), value: C("Güncel Değer (₺)", "value", (v) => tr(v, 2)),
+  real: C("Gerçekleşen K/Z (₺)", "real", (v) => tr(v, 2), true), unreal: C("Gerçekleşmemiş K/Z (₺)", "unreal", (v) => tr(v, 2), true),
+  total: C("Toplam K/Z (₺)", "total", (v) => tr(v, 2), true), pct: C("K/Z %", "pct", pct, true),
+  infl: C("Enflasyon (dönem)", "infl", pct), reel: C("Reel K/Z (₺)", "reel", (v) => tr(v, 2), true), reelPct: C("Reel K/Z %", "reelPct", pct, true),
+  fk: S("F/K"), pd: S("Piyasa Değeri"), pddd: S("PD/DD"), nb: S("Net Borç / FAVÖK"), roe: S("ROE (Özkaynak Kârlılığı)"),
+  tnot: PILL("Temel Not"), deg: PILL("Değerleme (F/K)"), bil: S("Sonraki Bilanço", { val: (it) => { const d = parseDate(hcell(it.row, "Sonraki Bilanço")); return d ? d.getTime() : null; } }),
+  kar: TXT("Kârlılık"), borc: TXT("Borç Durumu"), bek: TXT("Gelecek Beklentisi"),
+  kap1: TXT("Son 1 Ay KAP İş/İhale"), kap3: TXT("Son 3 Ay KAP İş/İhale"), kapB: TXT("Toplam Sipariş / İş Bakiyesi"),
+  gf: S("Giriş Fiyatı"), gt: S("Giriş Tarihi"), hf: S("Hedef Fiyat"), st: S("Stop"), get: S("Getiri", { signed: true }), rk: S("R/K Oranı"), xu: S("XU100'e Göre", { signed: true })
+};
+const GROUPS = {
+  "Özet": ["price","chg","ch30","spark","total","pct","reelPct","tnot","deg","rsi","bil"],
+  "Portföy": ["adet","alis","alisT","held","cost","value","real","unreal","total","pct","infl","reel","reelPct"],
+  "Performans": ["price","chg","ch5","ch15","ch30","ch60","ch240","spark","vol"],
+  "Teknik": ["price","ma10","ma21","ma50","ma200","a10","a21","a50","hi","rsi"],
+  "Temel": ["fk","pd","pddd","nb","roe","tnot","deg","bil","kar","borc","bek"],
+  "KAP": ["kap1","kap3","kapB"],
+  "Ralli": ["price","gf","gt","hf","st","get","rk","xu"]
+};
+const SHEET_ONLY = new Set(["Temel","KAP","Ralli"]);
+function arrowVal(it, k) { return it.m && fin(it.m[k]) ? (it.m.price > it.m[k] ? 1 : -1) : null; }
+function arrow(it, k) { const v = arrowVal(it, k); return v == null ? "—" : v > 0 ? '<span class="pos">▲</span>' : '<span class="neg">▼</span>'; }
+function pill(text) {
+  if (!text) return "—"; const t = String(text); let c = "";
+  if (/^Çok Güçlü$|^Güçlü$|^Ucuz$|Orta–Güçlü|^Makul$/.test(t)) c = "good";
+  else if (/Zayıf|zarar|Çok Pahalı/.test(t)) c = "bad";
+  else if (/Orta|Pahalı|Kontrol/.test(t)) c = "mid";
+  return `<span class="pill ${c}">${esc(t)}</span>`;
+}
+function spark(arr, w = 84, h = 24) {
+  if (!arr || arr.length < 2) return "—";
+  const mn = Math.min(...arr), mx = Math.max(...arr), sx = w / (arr.length - 1), sy = mx > mn ? (h - 4) / (mx - mn) : 0;
+  const pts = arr.map((v, i) => (i * sx).toFixed(1) + "," + (h - 2 - (v - mn) * sy).toFixed(1)).join(" ");
+  const col = arr[arr.length - 1] >= arr[0] ? "var(--up)" : "var(--down)";
+  const last = pts.split(" ").pop().split(",");
+  return `<svg class="spark" width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" aria-hidden="true"><polyline fill="none" stroke="${col}" stroke-width="1.5" points="${pts}"/><circle cx="${last[0]}" cy="${last[1]}" r="2" fill="${col}"/></svg>`;
+}
+
+/* ---------- render ---------- */
+function renderIdx() {
+  $("idx").innerHTML = INDICES.map(([t, n]) => { const m = state.idx[t]; if (!m) return ""; return `<span class="chip">${n} ${tr(m.price, 0)} <b class="${sign(m.chg)}">${pct(m.chg)}</b></span>`; }).join("");
+}
+function renderSummary() {
+  let cost = 0, value = 0, total = 0, base = 0, reel = 0, hasReel = false, n = 0;
+  for (const it of state.items) { const c = it.c; if (!fin(c.total)) continue; n++; cost += c.cost || 0; value += c.value || 0; total += c.total; base += it.pf.adet * it.pf.alis; if (fin(c.reel)) { reel += c.reel; hasReel = true; } }
+  const tiles = n ? [
+    ["Toplam K/Z", tr(total, 2) + " ₺", "hero", total], ["K/Z %", pct(base ? total / base : null), "", total],
+    ["Reel K/Z (enflasyona göre)", hasReel ? tr(reel, 2) + " ₺" : "—", "", hasReel ? reel : null],
+    ["Eldeki maliyet", tr(cost, 2) + " ₺", "", null], ["Güncel değer", tr(value, 2) + " ₺", "", null], ["Portföydeki hisse", String(n), "", null]
+  ] : [["Portföy", "Henüz alım girilmedi", "", null], ["Takip edilen hisse", String(state.items.length), "", null]];
+  $("summary").innerHTML = tiles.map(([k, v, cls, s]) => `<div class="tile ${cls}"><span class="k">${esc(k)}</span><span class="v ${sign(s)}">${esc(v)}</span></div>`).join("");
+}
+function renderTabs() { $("tabs").innerHTML = Object.keys(GROUPS).map(g => `<button class="tab" role="tab" type="button" aria-selected="${g === state.tab}" data-tab="${esc(g)}">${esc(g)}</button>`).join(""); }
+function rowsToShow() {
+  let rows = state.items.slice();
+  if (state.mine) rows = rows.filter(it => fin(it.pf.adet) && it.pf.adet > 0);
+  if (state.q) { const q = state.q.toLocaleUpperCase("tr"); rows = rows.filter(it => it.ticker.includes(q) || String(it.sector).toLocaleUpperCase("tr").includes(q)); }
+  if (state.sort) {
+    const { key, dir } = state.sort;
+    const v = (it) => key === "ticker" ? it.ticker : COL[key].val(it);
+    rows.sort((a, b) => { const x = v(a), y = v(b);
+      if (typeof x === "string" || typeof y === "string") return dir * String(x || "").localeCompare(String(y || ""), "tr");
+      return dir * ((fin(x) ? x : -Infinity) - (fin(y) ? y : -Infinity)); });
+  }
+  return rows;
+}
+function renderBoard() {
+  if (SHEET_ONLY.has(state.tab) && !state.sheet) { $("board").innerHTML = `<div class="empty">Bu sekme Google Sheet'inizden gelir. Ayarlar'dan Apps Script bağlantısını kurun.</div>`; return; }
+  const keys = GROUPS[state.tab]; const rows = rowsToShow();
+  if (!rows.length) { $("board").innerHTML = `<div class="empty">${state.mine ? "Portföyünüzde alım girilmiş hisse yok. Bir satıra dokunup alım bilginizi girin." : state.items.length ? "Eşleşen hisse yok." : "Liste boş. Yukarıdan hisse ekleyin."}</div>`; return; }
+  const th = (key, label) => { const a = state.sort && state.sort.key === key; return `<th scope="col" aria-sort="${a ? (state.sort.dir > 0 ? "ascending" : "descending") : "none"}"><button type="button" data-sort="${key}">${esc(label)}<span class="dir">${a ? (state.sort.dir > 0 ? "▲" : "▼") : ""}</span></button></th>`; };
+  $("board").innerHTML = `<table><thead><tr>${th("ticker", "Hisse")}${keys.map(k => th(k, COL[k].label)).join("")}</tr></thead><tbody>${rows.map(it => `<tr data-t="${esc(it.ticker)}" tabindex="0"><td><span class="tk">${esc(it.ticker)}<small>${esc(it.sector || (it.m && it.m.name) || "")}</small></span></td>${keys.map(k => { const c = COL[k]; const v = c.val(it); const cls = c.text ? "txt" : c.signed ? sign(v) : ""; return `<td class="${cls}">${c.show(it)}</td>`; }).join("")}</tr>`).join("")}</tbody></table>`;
+}
+function renderFresh() {
+  const t = (d) => d ? d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : "—";
+  $("fresh").textContent = `Fiyat ${t(state.mktAt)} · Sheet ${state.sheet ? t(state.sheetAt) : "bağlı değil"}`;
+}
+function renderAll() { buildItems(); renderIdx(); renderSummary(); renderTabs(); renderBoard(); renderFresh(); }
+function showNotice(text, btn) { $("noticeText").textContent = text; $("noticeBtn").hidden = !btn; $("notice").hidden = false; }
+
+/* ---------- refresh ---------- */
+async function refresh() {
+  if (state.busy) return; state.busy = true; $("refresh").disabled = true; $("notice").hidden = true;
+  let sheetErr = null;
+  if (cfg.url && cfg.token) {
+    try { const j = await sheetCall(); state.sheet = parseSheet(j); state.enf = j.enflasyon || []; state.sheetAt = new Date(); save("bist.cache", j); }
+    catch (e) { sheetErr = e; }
+  }
+  const tickers = state.sheet ? state.sheet.rows.map(r => String(r.cells[0] || "").trim().toUpperCase()).filter(Boolean) : local.tickers;
+  renderAll();
+  try {
+    const [mk, ix] = await Promise.all([loadMarket(tickers), loadMarket(INDICES.map(i => i[0]))]);
+    state.mkt = mk; state.idx = ix; state.mktAt = new Date();
+    const failed = tickers.filter(t => !mk[t]);
+    if (failed.length === tickers.length && tickers.length) showNotice("Fiyatlar alınamadı. İnternet bağlantınızı kontrol edip Yenile'ye basın.", false);
+    else if (failed.length) showNotice("Fiyatı alınamayan kodlar: " + failed.join(", ") + ". Kodun doğru yazıldığını kontrol edin.", false);
+  } catch (e) { showNotice("Fiyatlar alınamadı: " + e.message, false); }
+  if (sheetErr) showNotice("Google Sheet okunamadı. " + sheetErr.message, true);
+  else if (!cfg.url) showNotice("Uygulama şu an yerel modda: portföy bu telefonda tutulur. Google Sheet'inizle eşitlemek için Apps Script bağlantısını kurun.", true);
+  state.busy = false; $("refresh").disabled = false; renderAll();
+}
+
+/* ---------- writes ---------- */
+async function sheetWrite(range, values) { const j = await sheetCall({ action: "write", range, values: JSON.stringify(values) }); state.sheet = parseSheet(j); state.enf = j.enflasyon || state.enf; state.sheetAt = new Date(); }
+const colLetter = (i) => String.fromCharCode(65 + i);
+async function savePortfolio(it, vals) {
+  if (state.sheet) {
+    const first = state.sheet.headers.indexOf(PF[0]);
+    if (first !== 2 || !PF.every((n, i) => state.sheet.headers[first + i] === n)) throw new Error("Sheet'teki portföy sütunları beklenen yerde değil (C–H).");
+    await sheetWrite(`C${it.sheetRow}:H${it.sheetRow}`, [vals.map((v) => v ?? "")]);
+  } else {
+    const p = local.pf[it.ticker] || {};
+    [p.adet, p.alis, p.alisT, p.satilan, p.satis, p.satisT] = vals; local.pf[it.ticker] = p; save("bist.local", local);
+  }
+}
+async function addTicker(t) {
+  if (state.sheet) {
+    const slot = state.sheet.rows.find(r => !String(r.cells[0] || "").trim());
+    if (!slot) throw new Error("Sheet'teki 30 hisselik liste dolu. Önce bir hisse çıkarın.");
+    await sheetWrite(`A${slot.sheetRow}`, [[t]]);
+  } else { local.tickers.push(t); save("bist.local", local); }
+}
+async function removeTicker(it) {
+  if (state.sheet) await sheetWrite(`A${it.sheetRow}:H${it.sheetRow}`, [["", "", "", "", "", "", "", ""]]);
+  else { local.tickers = local.tickers.filter(x => x !== it.ticker); delete local.pf[it.ticker]; save("bist.local", local); }
+}
+
+/* ---------- sheets (detail, settings) ---------- */
+function openPanel(html) { $("sheet").innerHTML = html; $("sheetBg").hidden = false; const b = $("sheet").querySelector("[data-close]"); if (b) { b.focus(); b.onclick = closePanel; } }
+function closePanel() { $("sheetBg").hidden = true; }
+window.onAndroidBack = () => { if (!$("sheetBg").hidden) { closePanel(); return true; } return false; };
+
+function openDetail(ticker) {
+  const it = state.items.find(x => x.ticker === ticker); if (!it) return;
+  const kv = (title, keys) => { const items = keys.map(k => { const c = COL[k]; const v = c.val(it); const cls = c.text ? "t" : c.signed ? sign(v) : ""; return c.text ? `<dt>${esc(c.label)}</dt><dd class="t">${c.show(it)}</dd>` : `<dt>${esc(c.label)}</dt><dd class="${cls}">${c.show(it)}</dd>`; }).join(""); return `<section><h3>${esc(title)}</h3><dl class="kv">${items}</dl></section>`; };
+  const p = it.pf, f = (v, d) => fin(v) ? String(v).replace(".", ",") : "";
+  openPanel(`
+    <div class="shead"><div><h2>${esc(it.ticker)}</h2><span class="help">${esc(it.sector || (it.m && it.m.name) || "")}</span></div><button class="btn" type="button" data-close>Kapat</button></div>
+    ${it.m ? `<div>${spark(it.m.spark, 300, 70)}</div>` : ""}
+    <section><h3>Alım / satım bilgim${state.sheet ? " (Sheet'e kaydedilir)" : " (bu telefonda)"}</h3>
+      <form class="edit" id="editForm" autocomplete="off">
+        <label>Alınan adet<input id="f0" type="text" inputmode="decimal" value="${esc(f(p.adet))}"></label>
+        <label>Ort. alış fiyatı (₺)<input id="f1" type="text" inputmode="decimal" value="${esc(f(p.alis))}"></label>
+        <label>Alış tarihi (GG.AA.YYYY)<input id="f2" type="text" inputmode="numeric" value="${esc(p.alisT || "")}"></label>
+        <label>Satılan adet<input id="f3" type="text" inputmode="decimal" value="${esc(f(p.satilan))}"></label>
+        <label>Ort. satış fiyatı (₺)<input id="f4" type="text" inputmode="decimal" value="${esc(f(p.satis))}"></label>
+        <label>Satış tarihi (GG.AA.YYYY)<input id="f5" type="text" inputmode="numeric" value="${esc(p.satisT || "")}"></label>
+        <div class="row"><button class="btn primary" type="submit">Kaydet</button><span class="msg" id="editMsg" role="status"></span></div>
+      </form></section>
+    ${it.c && fin(it.c.total) ? kv("Portföy sonucu", ["held","cost","value","real","unreal","total","pct","infl","reel","reelPct"]) : ""}
+    ${kv("Fiyat ve teknik", ["price","chg","ch5","ch30","ch240","ma21","ma50","ma200","hi","rsi","vol"])}
+    ${state.sheet ? kv("Temel analiz", ["tnot","deg","fk","pddd","nb","roe","pd","bil","kar","borc","bek"]) + kv("KAP iş / ihale", ["kap1","kap3","kapB"]) : ""}
+    <section><h3>Takipten çıkar</h3><div class="row">
+      <button class="btn danger" type="button" id="rmAsk">${esc(it.ticker)} hissesini çıkar</button>
+      <span id="rmConfirm" hidden>Kod ve alım/satım bilgileri silinecek. <button class="btn danger" type="button" id="rmYes">Evet, çıkar</button> <button class="btn" type="button" id="rmNo">Vazgeç</button></span>
+      <span class="msg" id="rmMsg" role="status"></span></div></section>`);
+  $("editForm").onsubmit = async (e) => {
+    e.preventDefault(); const msg = $("editMsg");
+    const raw = [0,1,2,3,4,5].map(i => $("f" + i).value.trim());
+    for (const i of [2,5]) if (raw[i] && !parseDate(raw[i])) { msg.className = "msg err"; msg.textContent = "Tarihi GG.AA.YYYY biçiminde yazın (ör. 01.08.2026)."; return; }
+    for (const i of [0,1,3,4]) if (raw[i] && num(raw[i]) == null) { msg.className = "msg err"; msg.textContent = "Adet ve fiyat alanlarına sayı yazın."; return; }
+    const vals = raw.map((v, i) => !v ? null : (i === 2 || i === 5) ? v : num(v));
+    msg.className = "msg"; msg.textContent = "Kaydediliyor…";
+    try { await savePortfolio(it, vals); renderAll(); msg.className = "msg ok"; msg.textContent = "Kaydedildi."; }
+    catch (err) { msg.className = "msg err"; msg.textContent = "Kaydedilemedi: " + err.message; }
+  };
+  $("rmAsk").onclick = () => { $("rmConfirm").hidden = false; };
+  $("rmNo").onclick = () => { $("rmConfirm").hidden = true; };
+  $("rmYes").onclick = async () => { const m = $("rmMsg"); m.className = "msg"; m.textContent = "Çıkarılıyor…";
+    try { await removeTicker(it); closePanel(); renderAll(); } catch (err) { m.className = "msg err"; m.textContent = "Çıkarılamadı: " + err.message; } };
+}
+
+function openSettings() {
+  openPanel(`
+    <div class="shead"><h2>Ayarlar</h2><button class="btn" type="button" data-close>Kapat</button></div>
+    <section><h3>Google Sheet bağlantısı</h3>
+      <p class="help">Portföy, temel analiz ve KAP verileri Google Sheet'inizden gelir; yaptığınız alım/satım değişiklikleri oraya yazılır. Bunun için Sheet'e küçük bir Apps Script eklenir:</p>
+      <div class="help"><ol>
+        <li>Sheet'i açın → Uzantılar → Apps Script.</li>
+        <li>GitHub'daki <b>bist-portfoy/apps-script/Code.gs</b> kodunu yapıştırın, TOKEN satırına kendi şifrenizi yazın.</li>
+        <li>Dağıt → Yeni dağıtım → Web uygulaması. Yürüten: Ben, Erişim: Herkes.</li>
+        <li>Verilen /exec adresini ve şifreyi aşağıya girin.</li>
+      </ol></div>
+      <form id="cfgForm" class="edit" autocomplete="off">
+        <label class="row" style="flex-direction:column;align-items:stretch">Apps Script adresi (/exec)<input id="cUrl" type="url" value="${esc(cfg.url)}" placeholder="https://script.google.com/macros/s/…/exec"></label>
+        <label class="row" style="flex-direction:column;align-items:stretch">Şifre (TOKEN)<input id="cTok" type="password" value="${esc(cfg.token)}"></label>
+        <div class="row"><button class="btn primary" type="submit">Kaydet ve bağlan</button><button class="btn" type="button" id="cOff">Bağlantıyı kaldır</button><span class="msg" id="cMsg" role="status"></span></div>
+      </form>
+      <p class="help"><a href="${SHEET_URL}">Google Sheet'i aç</a></p>
+    </section>
+    <section><h3>Veri kaynakları</h3><p class="help">Fiyat, performans, ortalamalar, RSI ve endeksler Yahoo Finance'ten anlık hesaplanır (gecikmeli). Enflasyon (TÜFE) Sheet'teki Enflasyon sekmesinden gelir.</p></section>`);
+  $("cfgForm").onsubmit = async (e) => {
+    e.preventDefault(); const m = $("cMsg"); const url = $("cUrl").value.trim(), token = $("cTok").value.trim();
+    if (!/^https:\/\/script\.google\.com\/.+\/exec$/.test(url)) { m.className = "msg err"; m.textContent = "Adres https://script.google.com/… ile başlayıp /exec ile bitmeli."; return; }
+    if (!token) { m.className = "msg err"; m.textContent = "Şifreyi yazın."; return; }
+    cfg.url = url; cfg.token = token; m.className = "msg"; m.textContent = "Bağlanılıyor…";
+    try { const j = await sheetCall(); save("bist.cfg", cfg); state.sheet = parseSheet(j); state.enf = j.enflasyon || []; state.sheetAt = new Date(); m.className = "msg ok"; m.textContent = "Bağlandı. " + state.sheet.rows.filter(r => r.cells[0]).length + " hisse okundu."; refresh(); }
+    catch (err) { m.className = "msg err"; m.textContent = err.message; }
+  };
+  $("cOff").onclick = () => { cfg.url = ""; cfg.token = ""; save("bist.cfg", cfg); state.sheet = null; $("cMsg").className = "msg"; $("cMsg").textContent = "Bağlantı kaldırıldı; yerel moda geçildi."; refresh(); };
+}
+
+/* ---------- events ---------- */
+$("tabs").addEventListener("click", (e) => { const b = e.target.closest("[data-tab]"); if (!b) return; state.tab = b.dataset.tab; save("bist.tab", state.tab); renderTabs(); renderBoard(); });
+$("board").addEventListener("click", (e) => {
+  const s = e.target.closest("[data-sort]");
+  if (s) { const key = s.dataset.sort; state.sort = state.sort && state.sort.key === key ? { key, dir: -state.sort.dir } : { key, dir: key === "ticker" ? 1 : -1 }; renderBoard(); return; }
+  const tr = e.target.closest("tr[data-t]"); if (tr) openDetail(tr.dataset.t);
+});
+$("board").addEventListener("keydown", (e) => { if (e.key === "Enter") { const tr = e.target.closest("tr[data-t]"); if (tr) openDetail(tr.dataset.t); } });
+$("q").addEventListener("input", (e) => { state.q = e.target.value.trim(); renderBoard(); });
+$("onlyMine").addEventListener("change", (e) => { state.mine = e.target.checked; renderBoard(); });
+$("refresh").addEventListener("click", refresh);
+$("openSettings").addEventListener("click", openSettings);
+$("noticeBtn").addEventListener("click", openSettings);
+$("sheetBg").addEventListener("click", (e) => { if (e.target === $("sheetBg")) closePanel(); });
+document.addEventListener("keydown", (e) => { if (e.key === "Escape" && !$("sheetBg").hidden) closePanel(); });
+$("addForm").addEventListener("submit", async (e) => {
+  e.preventDefault(); const m = $("addMsg");
+  const t = $("addTicker").value.trim().toLocaleUpperCase("tr").replace(/[^A-Z0-9]/g, "");
+  if (!/^[A-Z0-9]{3,6}$/.test(t)) { m.className = "msg err"; m.textContent = "BIST kodunu yazın (ör. TOASO)."; return; }
+  if (state.items.some(it => it.ticker === t)) { m.className = "msg err"; m.textContent = t + " zaten listede."; return; }
+  m.className = "msg"; m.textContent = "Kontrol ediliyor…";
+  try { await yahoo(t); } catch (err) { m.className = "msg err"; m.textContent = t + " için fiyat bulunamadı. Kodu kontrol edin."; return; }
+  try { await addTicker(t); $("addTicker").value = ""; m.className = "msg ok"; m.textContent = t + " eklendi."; refresh(); }
+  catch (err) { m.className = "msg err"; m.textContent = "Eklenemedi: " + err.message; }
+});
+document.addEventListener("visibilitychange", () => { if (!document.hidden && state.mktAt && Date.now() - state.mktAt > 120000) refresh(); });
+setInterval(() => { if (!document.hidden) refresh(); }, 180000);
+
+/* ---------- start ---------- */
+const cached = cfg.url ? load("bist.cache", null) : null;
+if (cached) { state.sheet = parseSheet(cached); state.enf = cached.enflasyon || []; }
+renderAll();
+refresh();
+</script>
+</body>
+</html>
