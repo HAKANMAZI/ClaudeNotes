@@ -1,0 +1,6 @@
+{
+  "appId": "com.hakanmazi.fistakip",
+  "appName": "Fiş Takip",
+  "webDir": "www",
+  "android": { "allowMixedContent": false }
+}
