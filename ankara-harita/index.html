@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ankara Gezi Haritası</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=IBM+Plex+Sans:wght@400;500;600&display=swap">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+/* Düzen: tek ekran uygulama. Telefonda harita üstte, bilgi paneli altta; geniş ekranda panel solda. */
+:root{
+  --bg:#f3f5f8; --panel:#ffffff; --ink:#14213d; --muted:#5b6780; --line:#d9dfe8;
+  --accent:#f2b705; --navy:#14213d;
+  --land:#e8ecf1; --water:#a9cfe8; --green:#c9e2c4; --road:#ffffff; --road-edge:#b8c2d1; --rail:#8a94a6;
+  --c-tarih:#b3261e; --c-muze:#6a3fa0; --c-cami:#0f766e; --c-doga:#2f7d32; --c-sehir:#1d4ed8; --c-avm:#c2410c; --c-okul:#a21668;
+  --display:"Bricolage Grotesque","Trebuchet MS",sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    color-scheme:dark;
+    --bg:#0d1424; --panel:#151e33; --ink:#eef2f9; --muted:#9aa6bd; --line:#2a3550;
+    --land:#1a2439; --water:#1f4e73; --green:#1f3d2c; --road:#3a4763; --road-edge:#0d1424; --rail:#6b7690;
+    --c-tarih:#e0574d; --c-muze:#a07be0; --c-cami:#2bb3a6; --c-doga:#56b35b; --c-sehir:#5b8cf5; --c-avm:#f08a4b; --c-okul:#e879b9;
+  }
+}
+:root[data-theme="dark"]{
+  color-scheme:dark;
+  --bg:#0d1424; --panel:#151e33; --ink:#eef2f9; --muted:#9aa6bd; --line:#2a3550;
+  --land:#1a2439; --water:#1f4e73; --green:#1f3d2c; --road:#3a4763; --road-edge:#0d1424; --rail:#6b7690;
+  --c-tarih:#e0574d; --c-muze:#a07be0; --c-cami:#2bb3a6; --c-doga:#56b35b; --c-sehir:#5b8cf5; --c-avm:#f08a4b; --c-okul:#e879b9;
+}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0}
+body{background:var(--bg);color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.45;display:flex;flex-direction:column;overflow:hidden}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+
+header{padding:10px 16px 8px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;flex-direction:column;gap:8px}
+.top{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
+h1{font-family:var(--display);font-size:20px;line-height:1.1;margin:0;letter-spacing:-.01em}
+h1 span{box-shadow:inset 0 -.38em 0 var(--accent)}
+.count{color:var(--muted);font-size:13px;white-space:nowrap}
+.chips{display:flex;gap:6px;overflow-x:auto;padding-bottom:2px;scrollbar-width:none}
+.chips::-webkit-scrollbar{display:none}
+.chip{flex:none;border:1px solid var(--line);background:var(--bg);border-radius:999px;padding:5px 11px;font-size:13px;font-weight:500;display:flex;align-items:center;gap:6px}
+.chip i{width:9px;height:9px;border-radius:50%;background:var(--muted)}
+.chip[aria-pressed="true"]{background:var(--navy);color:#fff;border-color:var(--navy)}
+:root[data-theme="dark"] .chip[aria-pressed="true"]{background:var(--accent);color:#14213d;border-color:var(--accent)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .chip[aria-pressed="true"]{background:var(--accent);color:#14213d;border-color:var(--accent)}}
+
+main{flex:1;min-height:0;display:flex;flex-direction:column}
+.mapwrap{position:relative;flex:1 1 54%;min-height:230px;background:var(--land);overflow:hidden}
+svg#map{width:100%;height:100%;display:block;touch-action:none;cursor:grab;user-select:none;-webkit-user-select:none}
+svg#map.drag{cursor:grabbing}
+.water{fill:var(--water)} .green{fill:var(--green)}
+.road-e{fill:none;stroke:var(--road-edge);stroke-width:7;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.road{fill:none;stroke:var(--road);stroke-width:4.5;stroke-linecap:round;stroke-linejoin:round;vector-effect:non-scaling-stroke}
+.rail{fill:none;stroke:var(--rail);stroke-width:1.6;stroke-dasharray:7 5;vector-effect:non-scaling-stroke}
+.dlabel{font:600 10.5px var(--body);letter-spacing:.09em;fill:var(--muted);text-anchor:middle;text-transform:uppercase;pointer-events:none;paint-order:stroke;stroke:var(--land);stroke-width:3px}
+.wlabel{font:italic 500 11px var(--body);fill:var(--muted);text-anchor:middle;pointer-events:none}
+.mk{cursor:pointer}
+.mk circle.dot{stroke:#fff;stroke-width:2}
+.mk text.num{font:600 10.5px var(--body);fill:#fff;text-anchor:middle;dominant-baseline:central;pointer-events:none}
+.mk text.name{font:600 12px var(--body);fill:var(--ink);paint-order:stroke;stroke:var(--land);stroke-width:3.5px;stroke-linejoin:round;pointer-events:none}
+.mk .ring{fill:none;stroke:var(--accent);stroke-width:4;opacity:0}
+.mk.sel .ring{opacity:1}
+.mk.sel text.name{font-size:13px}
+.ctrl{position:absolute;right:12px;top:12px;display:flex;flex-direction:column;gap:6px}
+.ctrl button{width:40px;height:40px;border-radius:10px;border:1px solid var(--line);background:var(--panel);font-size:20px;font-weight:600;line-height:1;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.ctrl button.txt{font-size:11px;font-weight:600}
+.scale{position:absolute;left:12px;bottom:10px;font-size:11px;color:var(--muted);display:flex;flex-direction:column;gap:2px;pointer-events:none}
+.scale b{display:block;height:5px;border:1.5px solid var(--muted);border-top:0}
+.north{position:absolute;left:12px;top:12px;width:30px;height:30px;border-radius:50%;background:var(--panel);border:1px solid var(--line);display:grid;place-items:center;font:700 12px var(--body);color:var(--c-tarih);pointer-events:none}
+.note{position:absolute;right:12px;bottom:10px;font-size:11px;color:var(--muted);pointer-events:none}
+
+.panel{flex:1 1 46%;min-height:0;overflow-y:auto;background:var(--panel);border-top:1px solid var(--line);padding:14px 16px 20px;display:flex;flex-direction:column;gap:16px}
+.detail{display:flex;flex-direction:column;gap:8px}
+.tag{align-self:flex-start;font-size:12px;font-weight:600;color:#fff;border-radius:6px;padding:2px 8px}
+.detail h2{font-family:var(--display);font-size:22px;line-height:1.15;margin:0;text-wrap:balance}
+.detail p{margin:0;max-width:65ch}
+.facts{display:grid;grid-template-columns:repeat(auto-fit,minmax(130px,1fr));gap:8px;margin:2px 0}
+.fact{border:1px solid var(--line);border-radius:10px;padding:7px 10px}
+.fact small{display:block;color:var(--muted);font-size:11.5px}
+.fact span{font-weight:600;font-variant-numeric:tabular-nums}
+.tip{border-left:3px solid var(--accent);padding:2px 0 2px 10px;color:var(--muted);font-size:14px}
+.gm{align-self:flex-start;background:var(--navy);color:#fff;text-decoration:none;font-weight:600;font-size:14px;border-radius:10px;padding:9px 14px}
+:root[data-theme="dark"] .gm{background:var(--accent);color:#14213d}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .gm{background:var(--accent);color:#14213d}}
+.listhead{font-size:12px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:0 0 6px}
+ol.list{list-style:none;margin:0;padding:0;display:flex;flex-direction:column}
+ol.list button{width:100%;display:flex;align-items:center;gap:10px;text-align:left;background:none;border:0;border-top:1px solid var(--line);padding:9px 2px}
+ol.list button[aria-current="true"]{font-weight:600}
+ol.list .n{flex:none;width:24px;height:24px;border-radius:50%;color:#fff;font-size:12px;font-weight:600;display:grid;place-items:center}
+ol.list .k{margin-left:auto;color:var(--muted);font-size:12.5px;font-weight:400;white-space:nowrap}
+.foot{color:var(--muted);font-size:12.5px;margin:0}
+
+@media (min-width:860px){
+  main{flex-direction:row-reverse}
+  .mapwrap{flex:1}
+  .panel{flex:0 0 400px;border-top:0;border-right:1px solid var(--line)}
+}
+
+#map{width:100%;height:100%;background:var(--land)}
+.pin{width:26px;height:26px;border-radius:50%;border:2px solid #fff;color:#fff;font:600 11px var(--body);display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.4)}
+.pin.sel{outline:4px solid var(--accent);z-index:999}
+.leaflet-container{font-family:var(--body)}
+</style>
+</head>
+<body>
+<header>
+  <div class="top">
+    <h1><span>Ankara</span> Gezi Haritası</h1>
+    <div class="count" id="count"></div>
+  </div>
+  <div class="chips" id="chips" role="group" aria-label="Kategori süzgeci"></div>
+</header>
+<main>
+  <div class="mapwrap"><div id="map"></div></div>
+  <section class="panel" id="panel">
+    <article class="detail" id="detail" aria-live="polite"></article>
+    <div>
+      <p class="listhead" id="listhead">Mekanlar</p>
+      <ol class="list" id="list"></ol>
+    </div>
+    <p class="foot">Ziyaret saatleri ve ücretler değişebilir. Bazı konumlar yaklaşıktır. Gitmeden önce kontrol edin.</p>
+  </section>
+</main>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+const CATS={
+  tarih:{ad:'Anıt ve Tarih',c:'var(--c-tarih)'},
+  muze:{ad:'Müze',c:'var(--c-muze)'},
+  cami:{ad:'Cami',c:'var(--c-cami)'},
+  doga:{ad:'Park ve Doğa',c:'var(--c-doga)'},
+  sehir:{ad:'Meydan ve Cadde',c:'var(--c-sehir)'},
+  avm:{ad:'AVM',c:'var(--c-avm)'},
+  okul:{ad:'Okul',c:'var(--c-okul)'}
+};
+const P=[
+ {n:'Anıtkabir',c:'tarih',lat:39.9250,lon:32.8369,semt:'Anıttepe',yil:'1944–1953',sure:'1,5–2 saat',
+  s:'Mustafa Kemal Atatürk\'ün anıt mezarı ve Ankara\'nın simgesi. Mimarları Emin Onat ve Orhan Arda. Aslanlı Yol, Tören Meydanı ve Şeref Holü\'nden oluşur. İçinde Atatürk ve Kurtuluş Savaşı Müzesi bulunur.',
+  tip:'Giriş ücretsiz. Nöbet değişimini izlemek için saat başlarını kollayın.'},
+ {n:'Ankara Kalesi',c:'tarih',lat:39.9410,lon:32.8644,semt:'Altındağ',yil:'Antik çağ; surlar Bizans ve Selçuklu',sure:'1–1,5 saat',
+  s:'Şehrin en eski yerleşim çekirdeği. İç kale ve dış kale olmak üzere iki bölümdür. Surların içinde eski Ankara evleri, dar sokaklar ve el sanatı dükkânları vardır.',
+  tip:'Gün batımında burçlardan şehir manzarası çok iyidir.'},
+ {n:'Anadolu Medeniyetleri Müzesi',c:'muze',lat:39.9383,lon:32.8619,semt:'Kale eteği',yil:'Binalar 15. yy',sure:'1,5–2 saat',
+  s:'Mahmut Paşa Bedesteni ile Kurşunlu Han\'da kurulu arkeoloji müzesi. Paleolitik çağdan başlayıp Hitit, Frig ve Urartu eserlerine uzanır. 1997\'de Avrupa\'da Yılın Müzesi seçildi.',
+  tip:'Hitit kabartmaları ve Çatalhöyük bölümü mutlaka görülmeli.'},
+ {n:'Hacı Bayram Camii ve Augustus Tapınağı',c:'cami',lat:39.9444,lon:32.8580,semt:'Ulus',yil:'Cami 15. yy; tapınak MÖ 1. yy sonu',sure:'45 dakika',
+  s:'Hacı Bayram Veli adına yapılan cami ve türbe, Roma dönemi Augustus Tapınağı ile yan yanadır. Tapınak duvarında İmparator Augustus\'un yaptıklarını anlatan ünlü yazıt yer alır.',
+  tip:'Çevredeki meydan ve çarşı da gezilir.'},
+ {n:'Kocatepe Camii',c:'cami',lat:39.9167,lon:32.8606,semt:'Kocatepe',yil:'1967–1987',sure:'30–45 dakika',
+  s:'Ankara\'nın en büyük camilerinden. Klasik Osmanlı üslubunda, dört minareli ve büyük kubbelidir. Kızılay\'a yürüme mesafesindedir.',
+  tip:'Namaz saatleri dışında ziyaret daha rahattır.'},
+ {n:'Atakule',c:'sehir',lat:39.8861,lon:32.8558,semt:'Çankaya',yil:'1989',sure:'1 saat',
+  s:'Yaklaşık 125 metre yüksekliğindeki seyir kulesi. Seyir terasından şehrin büyük bölümü görülür. Altında alışveriş merkezi vardır.',
+  tip:'Açık havada akşam üstü çıkın; şehir ışıkları iyi görünür.'},
+ {n:'Kızılay Meydanı',c:'sehir',lat:39.9208,lon:32.8541,semt:'Kızılay',yil:'Cumhuriyet dönemi',sure:'Serbest',
+  s:'Ankara\'nın kalbi ve ulaşım merkezi. Metro hatları burada buluşur. Güvenpark, yaya sokakları, kitapçılar ve lokantalarla çevrilidir.',
+  tip:'Gezinin başlangıç noktası olarak uygundur.'},
+ {n:'Gençlik Parkı',c:'doga',lat:39.9367,lon:32.8497,semt:'Ulus',yil:'1943',sure:'1 saat',
+  s:'Cumhuriyet\'in ilk büyük kent parklarından. Büyük havuzu, lunaparkı ve çay bahçeleriyle bilinir. Tren garının hemen yanındadır.',
+  tip:'Akşam ışıklandırması güzeldir.'},
+ {n:'Hamamönü',c:'tarih',lat:39.9336,lon:32.8650,semt:'Altındağ',yil:'19. yy sonu evleri',sure:'1–1,5 saat',
+  s:'Restore edilmiş eski Ankara evleriyle dolu tarihî mahalle. 15. yüzyıldan kalma Karacabey Hamamı buradadır. Kafeler, el sanatı tezgâhları ve sanat sokağı vardır.',
+  tip:'Ramazan akşamlarında çok kalabalık olur.'},
+ {n:'Birinci Meclis (Kurtuluş Savaşı Müzesi)',c:'muze',lat:39.9419,lon:32.8536,semt:'Ulus',yil:'1920',sure:'45 dakika',
+  s:'Türkiye Büyük Millet Meclisi 23 Nisan 1920\'de bu binada açıldı. Kurtuluş Savaşı buradan yönetildi. Bina 1924\'e kadar meclis olarak kullanıldı.',
+  tip:'Ulus Meydanı\'ndaki Zafer Anıtı ile birlikte gezin.'},
+ {n:'Roma Hamamı',c:'tarih',lat:39.9461,lon:32.8533,semt:'Ulus',yil:'3. yy',sure:'30–45 dakika',
+  s:'İmparator Caracalla döneminde yapılan büyük hamam kompleksinin kalıntıları. Açık hava müzesi olarak gezilir. Alanda mezar taşları ve yazıtlar da sergilenir.',
+  tip:'Gölge azdır; yazın sabah gidin.'},
+ {n:'Julianus Sütunu',c:'tarih',lat:39.9437,lon:32.8553,semt:'Ulus',yil:'362',sure:'10 dakika',
+  s:'Roma İmparatoru Julianus\'un Ankara ziyareti anısına dikildiği kabul edilir. Yaklaşık on beş metre yüksekliğindedir. Halk arasında Belkıs Minaresi diye de anılır.',
+  tip:'Hacı Bayram\'a giderken yol üstündedir.'},
+ {n:'Etnografya Müzesi',c:'muze',lat:39.9331,lon:32.8556,semt:'Namazgâh Tepesi',yil:'1930',sure:'1 saat',
+  s:'Anadolu halk kültürünü sergileyen müze. Mimarı Arif Hikmet Koyunoğlu. Atatürk\'ün naaşı 1938\'den 1953\'e kadar burada kaldı.',
+  tip:'Yanındaki Resim ve Heykel Müzesi ile birlikte gezilir.'},
+ {n:'Rahmi M. Koç Müzesi',c:'muze',lat:39.9395,lon:32.8650,semt:'Kale kapısı',yil:'Han 16. yy; müze 2005',sure:'1–1,5 saat',
+  s:'Tarihî Çengelhan\'da kurulu sanayi ve ulaşım müzesi. Eski otomobiller, makineler, oyuncaklar ve dükkân canlandırmaları sergilenir.',
+  tip:'Çocuklu aileler için iyi bir seçenek.'},
+ {n:'CerModern',c:'muze',lat:39.9320,lon:32.8480,semt:'Sıhhiye',yil:'2010',sure:'1 saat',
+  s:'Eski demiryolu bakım atölyelerinden dönüştürülen çağdaş sanat merkezi. Sergiler, konserler ve film gösterimleri yapılır.',
+  tip:'Güncel sergi programına önceden bakın.'},
+ {n:'Ulucanlar Cezaevi Müzesi',c:'muze',lat:39.9360,lon:32.8730,semt:'Altındağ',yil:'1925; müze 2011',sure:'1 saat',
+  s:'1925\'ten 2006\'ya kadar cezaevi olarak kullanıldı. Pek çok yazar, gazeteci ve siyasetçi burada yattı. Koğuşlar ve hücreler özgün hâliyle gezilir.',
+  tip:'Hamamönü\'ne yürüyerek gidilir.'},
+ {n:'Kuğulu Park',c:'doga',lat:39.9020,lon:32.8603,semt:'Kavaklıdere',yil:'Cumhuriyet dönemi',sure:'30 dakika',
+  s:'Göletindeki kuğularıyla tanınan küçük ama çok sevilen park. Tunalı Hilmi Caddesi\'nin ucundadır.',
+  tip:'Kahvenizi alıp göl kenarında oturun.'},
+ {n:'Tunalı Hilmi Caddesi',c:'sehir',lat:39.9075,lon:32.8605,semt:'Kavaklıdere',yil:'—',sure:'Serbest',
+  s:'Ankara\'nın en canlı alışveriş ve gezinti caddesi. Mağazalar, pasajlar, kafeler ve lokantalar sıralanır.',
+  tip:'Akşam saatleri en hareketli zamandır.'},
+ {n:'Seğmenler Parkı',c:'doga',lat:39.8960,lon:32.8625,semt:'Çankaya',yil:'1983',sure:'45 dakika',
+  s:'Yamaca kurulu geniş çimenlik park. Açık hava amfisi vardır. Piknik ve yürüyüş için tercih edilir.',
+  tip:'Kuğulu Park\'tan yokuş yukarı kısa bir yürüyüş.'},
+ {n:'Atatürk Orman Çiftliği',c:'doga',lat:39.9420,lon:32.7990,semt:'Yenimahalle',yil:'1925',sure:'1–2 saat',
+  s:'Atatürk\'ün bozkırı yeşertmek için kurduğu örnek çiftlik. Alanda Atatürk Evi müzesi ve çiftlik ürünleri satış yerleri bulunur.',
+  tip:'Çiftliğin dondurması ve süt ürünleri ünlüdür.'},
+ {n:'Eymir Gölü',c:'doga',lat:39.8250,lon:32.8330,semt:'ODTÜ arazisi',yil:'Doğal göl',sure:'2–3 saat',
+  s:'Şehrin güneyinde, orman içinde sakin bir göl. Çevresi yürüyüş ve bisiklet için çok uygundur.',
+  tip:'Bisiklet kiralanabilir. Giriş kuralları değişebilir.'},
+ {n:'Mogan Gölü',c:'doga',lat:39.7750,lon:32.7900,semt:'Gölbaşı',yil:'Doğal göl',sure:'2 saat',
+  s:'Gölbaşı\'ndaki büyük göl. Kıyısında park, yürüyüş yolu ve lokantalar vardır. Kuş gözlemi için de bilinir.',
+  tip:'Hafta sonu kahvaltısı için sık tercih edilir.'},
+ {n:'Altınköy Açık Hava Müzesi',c:'muze',lat:39.9900,lon:32.9300,semt:'Altındağ',yil:'2010\'lar',sure:'2 saat',
+  s:'Eski Anadolu köy yaşamını canlandıran açık hava müzesi. Köy evleri, değirmen, asma köprü ve köy kahvaltısı sunan mekânlar vardır.',
+  tip:'Merkeze uzaktır; araçla gitmek kolaydır.'},
+ {n:'Melike Hatun Camii',c:'cami',lat:39.9385,lon:32.8520,semt:'Ulus',yil:'2017',sure:'30 dakika',
+  s:'Gençlik Parkı\'nın yanında, klasik Osmanlı üslubunda yapılmış büyük cami. Dört minarelidir. Ulus\'un yeni simgelerinden sayılır.',tip:'Gençlik Parkı ile birlikte gezilir.'},
+ {n:'Aslanhane (Ahi Şerafeddin) Camii',c:'cami',lat:39.9372,lon:32.8655,semt:'Kale eteği',yil:'13. yy',sure:'30 dakika',
+  s:'Selçuklu döneminden ahşap direkli cami. Ahşap tavanı ve çini mihrabıyla ünlüdür. 2023\'te UNESCO Dünya Mirası Listesi\'ne girdi.',tip:'Kale ve müze gezisine ekleyin.'},
+ {n:'Alaeddin Camii',c:'cami',lat:39.9414,lon:32.8652,semt:'Ankara Kalesi içi',yil:'12. yy',sure:'20 dakika',
+  s:'Ankara\'nın en eski camilerinden. Selçuklu dönemine aittir. Ceviz ağacından oyma minberi değerlidir.',tip:'İç kalede, burçlara çıkarken uğranır.'},
+ {n:'Karacabey Camii',c:'cami',lat:39.9325,lon:32.8640,semt:'Hamamönü',yil:'15. yy',sure:'20 dakika',
+  s:'Erken Osmanlı dönemi camisi. Yanındaki tarihî hamamla birlikte bir külliyenin parçasıdır.',tip:'Hamamönü sokaklarının girişindedir.'},
+ {n:'Taceddin Dergâhı',c:'tarih',lat:39.9342,lon:32.8668,semt:'Hamamönü',yil:'Dergâh evi 1921\'de kullanıldı',sure:'30 dakika',
+  s:'Mehmet Akif Ersoy İstiklal Marşı\'nı bu dergâhın evinde yazdı. Ev bugün Mehmet Akif Ersoy Müze Evi\'dir. Yanında Taceddin Camii bulunur.',tip:'Hacettepe yerleşkesinin kenarındadır.'},
+ {n:'Maltepe Camii',c:'cami',lat:39.9272,lon:32.8440,semt:'Maltepe',yil:'1950\'ler',sure:'20 dakika',
+  s:'Cumhuriyet döneminin ilk büyük camilerinden. Kızılay ile Anıtkabir arasındadır.',tip:'Anıtkabir yürüyüşünde yol üstündedir.'},
+ {n:'Ahmet Hamdi Akseki Camii',c:'cami',lat:39.9060,lon:32.7570,semt:'Çankaya, Eskişehir Yolu',yil:'2013',sure:'30 dakika',
+  s:'Diyanet İşleri Başkanlığı yerleşkesindeki büyük cami. Geniş kubbesi ve dört minaresiyle uzaktan görülür.',tip:'Araçla ulaşım kolaydır.'},
+ {n:'Beştepe Millet Camii',c:'cami',lat:39.9312,lon:32.7990,semt:'Beştepe',yil:'2015',sure:'30 dakika',
+  s:'Cumhurbaşkanlığı Külliyesi\'nin içindeki cami. Yanında Millet Kütüphanesi bulunur.',tip:'Kütüphane ile birlikte gezilebilir.'},
+ {n:'Kuzey Ankara Camii',c:'cami',lat:39.9790,lon:32.8700,semt:'Keçiören',yil:'2010\'lar',sure:'30 dakika',
+  s:'Şehrin kuzeyinde, tepe üzerine kurulu büyük külliye. Avlusundan geniş bir manzara görülür.',tip:'Konum yaklaşık işaretlenmiştir.'},
+ {n:'Armada AVM',c:'avm',lat:39.9130,lon:32.8090,semt:'Söğütözü',yil:'2002',
+  s:'Eskişehir Yolu üzerinde, şehrin en bilinen alışveriş merkezlerinden. Açık hava sokağı ve lokantaları vardır.',tip:'Metro ile Söğütözü durağından ulaşılır.'},
+ {n:'Next Level AVM',c:'avm',lat:39.9112,lon:32.8115,semt:'Söğütözü',
+  s:'Lüks markaların ve seçkin lokantaların bulunduğu alışveriş merkezi. Armada\'nın yakınındadır.',tip:'Akşam yemeği için de tercih edilir.'},
+ {n:'Ankamall',c:'avm',lat:39.9510,lon:32.8310,semt:'Akköprü',yil:'1999',
+  s:'Ankara\'nın en büyük alışveriş merkezlerinden. Çok sayıda mağaza, sinema ve yemek katı vardır.',tip:'Metro Akköprü durağı kapısındadır.'},
+ {n:'Cepa AVM',c:'avm',lat:39.9100,lon:32.7795,semt:'Eskişehir Yolu',yil:'2007',
+  s:'ODTÜ karşısında büyük alışveriş merkezi. Kentpark ile yan yanadır.',tip:'İki merkez yürüyerek birlikte gezilir.'},
+ {n:'Kentpark AVM',c:'avm',lat:39.9095,lon:32.7770,semt:'Eskişehir Yolu',yil:'2010',
+  s:'Geniş mağaza seçeneği, sineması ve açık alanlarıyla bilinen alışveriş merkezi.',tip:'Cepa\'nın hemen yanındadır.'},
+ {n:'Panora AVM',c:'avm',lat:39.8540,lon:32.8530,semt:'Oran',yil:'2007',
+  s:'Şehrin güneyinde, ferah iç avlusuyla tanınan alışveriş merkezi. Lokanta seçeneği zengindir.',tip:'Çankaya tarafında kalanlar için yakındır.'},
+ {n:'Gordion AVM',c:'avm',lat:39.9000,lon:32.6920,semt:'Çayyolu',yil:'2009',
+  s:'Batı yakasının en bilinen alışveriş merkezi. Çayyolu ve Ümitköy\'e hizmet verir.',tip:'Metro Ümitköy durağına yakındır.'},
+ {n:'Arcadium AVM',c:'avm',lat:39.8870,lon:32.6880,semt:'Çayyolu',
+  s:'Çayyolu\'nda mahalle ölçeğinde alışveriş merkezi. Sinema ve kafeleri vardır.',tip:'Konum yaklaşık işaretlenmiştir.'},
+ {n:'Taurus AVM',c:'avm',lat:39.8880,lon:32.8130,semt:'Balgat, Konya Yolu',
+  s:'Konya Yolu üzerinde orta büyüklükte alışveriş merkezi.',tip:'Konum yaklaşık işaretlenmiştir.'},
+ {n:'Antares AVM',c:'avm',lat:39.9690,lon:32.8320,semt:'Etlik',
+  s:'Kuzey yakasının büyük alışveriş merkezlerinden. Keçiören ve Etlik\'e yakındır.',tip:'Konum yaklaşık işaretlenmiştir.'},
+ {n:'Atlantis AVM',c:'avm',lat:39.9670,lon:32.7280,semt:'Batıkent',
+  s:'Batıkent\'in merkezindeki alışveriş merkezi.',tip:'Metro Batıkent hattı üzerindedir.'},
+ {n:'Acity Outlet',c:'avm',lat:39.9640,lon:32.7800,semt:'Yenimahalle, İstanbul Yolu',
+  s:'İndirimli marka mağazalarının toplandığı outlet merkezi.',tip:'Konum yaklaşık işaretlenmiştir.'},
+ {n:'Optimum Outlet',c:'avm',lat:39.9650,lon:32.6330,semt:'Eryaman',
+  s:'Batıda, Eryaman tarafındaki büyük outlet merkezi.',tip:'Konum yaklaşık işaretlenmiştir.'},
+ {n:'Nata Vega Outlet',c:'avm',lat:39.9330,lon:32.9060,semt:'Mamak',
+  s:'Doğu yakasındaki büyük outlet ve eğlence merkezi. İçinde akvaryum bulunur.',tip:'Konum yaklaşık işaretlenmiştir.'},
+ {n:'Kızılay AVM',c:'avm',lat:39.9203,lon:32.8548,semt:'Kızılay',
+  s:'Kızılay Meydanı\'nın köşesindeki alışveriş merkezi. Metro çıkışının hemen üstündedir.',tip:'Buluşma noktası olarak kullanılır.'},
+ {n:'Orta Doğu Teknik Üniversitesi (ODTÜ)',c:'okul',lat:39.8914,lon:32.7847,semt:'Eskişehir Yolu',yil:'1956',
+  s:'Türkiye\'nin önde gelen teknik üniversitelerinden. Eğitim dili İngilizcedir. Geniş ormanlık yerleşkesi Eymir Gölü\'ne kadar uzanır.',tip:'Yerleşkeye girişte kimlik sorulabilir.'},
+ {n:'Bilkent Üniversitesi',c:'okul',lat:39.8687,lon:32.7494,semt:'Bilkent',yil:'1984',
+  s:'Türkiye\'nin ilk vakıf üniversitesi. İhsan Doğramacı kurdu. Konser salonu ve senfoni orkestrasıyla da tanınır.',tip:'Konser programına bakın.'},
+ {n:'Hacettepe Üniversitesi (Sıhhiye)',c:'okul',lat:39.9315,lon:32.8625,semt:'Sıhhiye',yil:'1967',
+  s:'Tıp ve sağlık bilimleriyle öne çıkan üniversitenin merkez yerleşkesi. Hastaneleri de buradadır.',tip:'Hamamönü\'nün hemen yanındadır.'},
+ {n:'Hacettepe Üniversitesi (Beytepe)',c:'okul',lat:39.8670,lon:32.7350,semt:'Beytepe',yil:'1967',
+  s:'Üniversitenin mühendislik, fen, edebiyat ve iktisat fakültelerinin bulunduğu büyük yerleşke.',tip:'Metro ile Beytepe durağından ulaşılır.'},
+ {n:'Ankara Üniversitesi (Tandoğan)',c:'okul',lat:39.9365,lon:32.8300,semt:'Tandoğan',yil:'1946',
+  s:'Cumhuriyet\'in kurduğu ilk üniversite. Rektörlük ve Fen Fakültesi bu yerleşkededir.',tip:'Anıtkabir\'e yakındır.'},
+ {n:'Dil ve Tarih-Coğrafya Fakültesi',c:'okul',lat:39.9300,lon:32.8550,semt:'Sıhhiye',yil:'1935',
+  s:'Atatürk\'ün isteğiyle kurulan fakülte. Binası Bruno Taut\'un tasarımıdır ve erken Cumhuriyet mimarisinin önemli örneğidir.',tip:'Bina dışarıdan görülmeye değer.'},
+ {n:'Gazi Üniversitesi',c:'okul',lat:39.9390,lon:32.8220,semt:'Beşevler',yil:'Kökeni 1926',
+  s:'Kökeni Gazi Eğitim Enstitüsü\'ne uzanan büyük devlet üniversitesi. Tarihî rektörlük binası mimar Kemaleddin\'in eseridir.',tip:'Metro Beşevler durağındadır.'},
+ {n:'TOBB Ekonomi ve Teknoloji Üniversitesi',c:'okul',lat:39.9210,lon:32.7980,semt:'Söğütözü',yil:'2003',
+  s:'Ortak eğitim modeliyle bilinen vakıf üniversitesi.',tip:'Armada\'ya yakındır.'},
+ {n:'Başkent Üniversitesi',c:'okul',lat:39.8880,lon:32.6550,semt:'Bağlıca',yil:'1993',
+  s:'Sağlık alanında güçlü vakıf üniversitesi. Yerleşkesi şehrin batısındadır.',tip:'Konum yaklaşık işaretlenmiştir.'},
+ {n:'Atılım Üniversitesi',c:'okul',lat:39.8140,lon:32.7230,semt:'İncek',yil:'1997',
+  s:'İncek\'teki vakıf üniversitesi. Mühendislik ve havacılık bölümleriyle bilinir.',tip:'Konum yaklaşık işaretlenmiştir.'},
+ {n:'Ankara Fen Lisesi',c:'okul',lat:39.9030,lon:32.8150,semt:'Balgat',yil:'1964',
+  s:'Türkiye\'nin ilk fen lisesi. Sınavla öğrenci alır.',tip:'Konum yaklaşık işaretlenmiştir.'},
+ {n:'Ankara Atatürk Lisesi',c:'okul',lat:39.9285,lon:32.8500,semt:'Sıhhiye',yil:'Kökeni 1886',
+  s:'Şehrin en eski liselerinden. Kökeni Osmanlı dönemindeki Ankara İdadisi\'ne uzanır.',tip:'Konum yaklaşık işaretlenmiştir.'}
+];
+P.forEach((p,i)=>p.id=i);
+const $=id=>document.getElementById(id);
+let sel=0,filter=null;
+const map=L.map('map',{zoomControl:true});
+L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap katkıcıları'}).addTo(map);
+const icon=p=>L.divIcon({className:'',iconSize:[26,26],iconAnchor:[13,13],
+  html:'<div class="pin'+(p.id===sel?' sel':'')+'" style="background:'+CATS[p.c].c+'">'+(p.id+1)+'</div>'});
+const mk=P.map(p=>L.marker([p.lat,p.lon],{icon:icon(p),title:p.n,keyboard:true}).on('click',()=>select(p.id,false)).addTo(map));
+const visible=()=>P.filter(p=>!filter||p.c===filter);
+function fitAll(){map.fitBounds(L.latLngBounds(visible().map(p=>[p.lat,p.lon])),{padding:[30,30],maxZoom:16})}
+function refreshMarkers(){P.forEach(p=>{const m=mk[p.id],v=!filter||p.c===filter;
+  if(v&&!map.hasLayer(m))m.addTo(map);if(!v&&map.hasLayer(m))map.removeLayer(m);
+  m.setIcon(icon(p));m.setZIndexOffset(p.id===sel?1000:0)})}
+function renderDetail(){
+  const p=P[sel],d=$('detail');d.textContent='';
+  const tag=document.createElement('span');tag.className='tag';tag.style.background=CATS[p.c].c;tag.textContent=CATS[p.c].ad;
+  const h=document.createElement('h2');h.textContent=p.n;
+  const s1=document.createElement('p');s1.textContent=p.s;
+  const f=document.createElement('div');f.className='facts';
+  [['Semt',p.semt],[(p.c==='avm'?'Açılış':p.c==='okul'?'Kuruluş':'Dönem'),p.yil],['Gezi süresi',p.sure]].filter(x=>x[1]).forEach(([k,v])=>{
+    const b=document.createElement('div');b.className='fact';
+    const sm=document.createElement('small');sm.textContent=k;const sp=document.createElement('span');sp.textContent=v;b.append(sm,sp);f.append(b)});
+  const tip=document.createElement('p');tip.className='tip';tip.textContent=p.tip;
+  const a=document.createElement('a');a.className='gm';a.target='_blank';a.rel='noopener';
+  a.href='https://www.google.com/maps/search/?api=1&query='+encodeURIComponent(p.n+' Ankara');
+  a.textContent="Google Haritalar'da aç";
+  d.append(tag,h,s1,f,tip,a);
+}
+function renderList(){
+  const ol=$('list');ol.textContent='';const v=visible();
+  v.forEach(p=>{const li=document.createElement('li'),b=document.createElement('button');
+    if(p.id===sel)b.setAttribute('aria-current','true');
+    const n=document.createElement('span');n.className='n';n.style.background=CATS[p.c].c;n.textContent=p.id+1;
+    const t=document.createElement('span');t.textContent=p.n;
+    const k=document.createElement('span');k.className='k';k.textContent=p.semt;
+    b.append(n,t,k);b.onclick=()=>select(p.id,true);li.append(b);ol.append(li)});
+  $('count').textContent=v.length+' mekan';
+  $('listhead').textContent=filter?CATS[filter].ad:'Tüm mekanlar';
+}
+function select(id,move){sel=id;refreshMarkers();renderDetail();renderList();
+  if(move)map.flyTo([P[id].lat,P[id].lon],Math.max(map.getZoom(),16));
+  $('panel').scrollTo({top:0,behavior:'smooth'})}
+function renderChips(){
+  const c=$('chips');c.textContent='';
+  const add=(key,ad,col)=>{const b=document.createElement('button');b.className='chip';b.id='chip-'+(key||'tum');
+    b.setAttribute('aria-pressed',String(filter===key));
+    if(col){const i=document.createElement('i');i.style.background=col;b.append(i)}
+    b.append(ad);b.onclick=()=>{filter=key;if(filter&&P[sel].c!==filter)sel=P.find(p=>p.c===filter).id;
+      renderChips();refreshMarkers();renderDetail();renderList();fitAll()};c.append(b)};
+  add(null,'Tümü');for(const k in CATS)add(k,CATS[k].ad,CATS[k].c);
+}
+renderChips();renderDetail();renderList();refreshMarkers();fitAll();
+new ResizeObserver(()=>map.invalidateSize()).observe($('map'));
+</script>
+</body>
+</html>
