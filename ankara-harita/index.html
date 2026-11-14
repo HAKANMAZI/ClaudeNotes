@@ -105,6 +105,7 @@ ol.list .k{margin-left:auto;color:var(--muted);font-size:12.5px;font-weight:400;
 .pin{width:26px;height:26px;border-radius:50%;border:2px solid #fff;color:#fff;font:600 11px var(--body);display:grid;place-items:center;box-shadow:0 1px 4px rgba(0,0,0,.4)}
 .pin.sel{outline:4px solid var(--accent);z-index:999}
 .leaflet-container{font-family:var(--body)}
+.warn{position:absolute;left:12px;right:12px;bottom:12px;z-index:1000;background:var(--panel);border-left:4px solid var(--c-tarih);padding:8px 10px;font-size:13px;border-radius:8px;box-shadow:0 1px 6px rgba(0,0,0,.25)}
 </style>
 </head>
 <body>
@@ -283,16 +284,44 @@ const P=[
 P.forEach((p,i)=>p.id=i);
 const $=id=>document.getElementById(id);
 let sel=0,filter=null;
-const map=L.map('map',{zoomControl:true});
-L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap katkıcıları'}).addTo(map);
-const icon=p=>L.divIcon({className:'',iconSize:[26,26],iconAnchor:[13,13],
-  html:'<div class="pin'+(p.id===sel?' sel':'')+'" style="background:'+CATS[p.c].c+'">'+(p.id+1)+'</div>'});
-const mk=P.map(p=>L.marker([p.lat,p.lon],{icon:icon(p),title:p.n,keyboard:true}).on('click',()=>select(p.id,false)).addTo(map));
+/* Google Maps anahtarınızı buraya yazın. Boş kalırsa OpenStreetMap kullanılır. */
+const GOOGLE_KEY='';
+const HEX={tarih:'#b3261e',muze:'#6a3fa0',cami:'#0f766e',doga:'#2f7d32',sehir:'#1d4ed8',avm:'#c2410c',okul:'#a21668'};
 const visible=()=>P.filter(p=>!filter||p.c===filter);
-function fitAll(){map.fitBounds(L.latLngBounds(visible().map(p=>[p.lat,p.lon])),{padding:[30,30],maxZoom:16})}
-function refreshMarkers(){P.forEach(p=>{const m=mk[p.id],v=!filter||p.c===filter;
-  if(v&&!map.hasLayer(m))m.addTo(map);if(!v&&map.hasLayer(m))map.removeLayer(m);
-  m.setIcon(icon(p));m.setZIndexOffset(p.id===sel?1000:0)})}
+let M=null; /* harita uyarlayıcısı */
+function leafletMap(){
+  const map=L.map('map');
+  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap katkıcıları'}).addTo(map);
+  const icon=p=>L.divIcon({className:'',iconSize:[26,26],iconAnchor:[13,13],
+    html:'<div class="pin'+(p.id===sel?' sel':'')+'" style="background:'+HEX[p.c]+'">'+(p.id+1)+'</div>'});
+  const mk=P.map(p=>L.marker([p.lat,p.lon],{icon:icon(p),title:p.n}).on('click',()=>select(p.id,false)).addTo(map));
+  new ResizeObserver(()=>map.invalidateSize()).observe($('map'));
+  return{
+    refresh(){P.forEach(p=>{const m=mk[p.id],v=!filter||p.c===filter;
+      if(v&&!map.hasLayer(m))m.addTo(map);if(!v&&map.hasLayer(m))map.removeLayer(m);
+      m.setIcon(icon(p));m.setZIndexOffset(p.id===sel?1000:0)})},
+    fit(){map.fitBounds(L.latLngBounds(visible().map(p=>[p.lat,p.lon])),{padding:[30,30],maxZoom:16})},
+    go(p){map.flyTo([p.lat,p.lon],Math.max(map.getZoom(),16))}
+  };
+}
+function googleMap(){
+  const g=google.maps;
+  const map=new g.Map($('map'),{center:{lat:39.925,lng:32.855},zoom:11,mapTypeControl:true,streetViewControl:true,fullscreenControl:true});
+  const ic=p=>({path:g.SymbolPath.CIRCLE,scale:p.id===sel?15:12,fillColor:HEX[p.c],fillOpacity:1,
+    strokeColor:p.id===sel?'#f2b705':'#ffffff',strokeWeight:p.id===sel?4:2});
+  const mk=P.map(p=>{const m=new g.Marker({position:{lat:p.lat,lng:p.lon},map,title:p.n,icon:ic(p),
+    label:{text:String(p.id+1),color:'#ffffff',fontSize:'11px',fontWeight:'600'}});
+    m.addListener('click',()=>select(p.id,false));return m});
+  return{
+    refresh(){P.forEach(p=>{const m=mk[p.id];m.setVisible(!filter||p.c===filter);m.setIcon(ic(p));m.setZIndex(p.id===sel?1000:p.id)})},
+    fit(){const b=new g.LatLngBounds();visible().forEach(p=>b.extend({lat:p.lat,lng:p.lon}));map.fitBounds(b,40);
+      g.event.addListenerOnce(map,'idle',()=>{if(map.getZoom()>16)map.setZoom(16)})},
+    go(p){map.panTo({lat:p.lat,lng:p.lon});if(map.getZoom()<16)map.setZoom(16)}
+  };
+}
+function start(useGoogle){M=useGoogle?googleMap():leafletMap();M.refresh();M.fit()}
+function fitAll(){M&&M.fit()}
+function refreshMarkers(){M&&M.refresh()}
 function renderDetail(){
   const p=P[sel],d=$('detail');d.textContent='';
   const tag=document.createElement('span');tag.className='tag';tag.style.background=CATS[p.c].c;tag.textContent=CATS[p.c].ad;
@@ -320,7 +349,7 @@ function renderList(){
   $('listhead').textContent=filter?CATS[filter].ad:'Tüm mekanlar';
 }
 function select(id,move){sel=id;refreshMarkers();renderDetail();renderList();
-  if(move)map.flyTo([P[id].lat,P[id].lon],Math.max(map.getZoom(),16));
+  if(move&&M)M.go(P[id]);
   $('panel').scrollTo({top:0,behavior:'smooth'})}
 function renderChips(){
   const c=$('chips');c.textContent='';
@@ -331,8 +360,16 @@ function renderChips(){
       renderChips();refreshMarkers();renderDetail();renderList();fitAll()};c.append(b)};
   add(null,'Tümü');for(const k in CATS)add(k,CATS[k].ad,CATS[k].c);
 }
-renderChips();renderDetail();renderList();refreshMarkers();fitAll();
-new ResizeObserver(()=>map.invalidateSize()).observe($('map'));
+renderChips();renderDetail();renderList();
+if(GOOGLE_KEY){
+  window.gm_authFailure=()=>{alertBox('Google anahtarı geçersiz. Haritalar JavaScript API açık mı, anahtar bu siteye izin veriyor mu, kontrol edin.')};
+  window.initGoogle=()=>start(true);
+  const s=document.createElement('script');
+  s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(GOOGLE_KEY)+'&callback=initGoogle&language=tr&region=TR';
+  s.async=true;s.onerror=()=>{alertBox('Google Haritalar yüklenemedi. OpenStreetMap gösteriliyor.');start(false)};
+  document.head.append(s);
+}else start(false);
+function alertBox(msg){const d=document.createElement('div');d.className='warn';d.textContent=msg;document.querySelector('.mapwrap').append(d)}
 </script>
 </body>
 </html>

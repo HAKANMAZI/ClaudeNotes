@@ -1,0 +1,342 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<kml xmlns="http://www.opengis.net/kml/2.2"><Document><name>Ankara Gezi Haritası</name>
+<Style id="tarih"><IconStyle><color>ff1e26b3</color><Icon><href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href></Icon></IconStyle></Style>
+<Style id="muze"><IconStyle><color>ffa03f6a</color><Icon><href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href></Icon></IconStyle></Style>
+<Style id="cami"><IconStyle><color>ff6e760f</color><Icon><href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href></Icon></IconStyle></Style>
+<Style id="doga"><IconStyle><color>ff327d2f</color><Icon><href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href></Icon></IconStyle></Style>
+<Style id="sehir"><IconStyle><color>ffd84e1d</color><Icon><href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href></Icon></IconStyle></Style>
+<Style id="avm"><IconStyle><color>ff0c41c2</color><Icon><href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href></Icon></IconStyle></Style>
+<Style id="okul"><IconStyle><color>ff6816a2</color><Icon><href>http://maps.google.com/mapfiles/kml/paddle/wht-blank.png</href></Icon></IconStyle></Style>
+<Folder><name>Anıt ve Tarih</name>
+<Placemark><name>Anıtkabir</name><description>Mustafa Kemal Atatürk'ün anıt mezarı ve Ankara'nın simgesi. Mimarları Emin Onat ve Orhan Arda. Aslanlı Yol, Tören Meydanı ve Şeref Holü'nden oluşur. İçinde Atatürk ve Kurtuluş Savaşı Müzesi bulunur.
+
+Semt: Anıttepe
+Dönem: 1944–1953
+Gezi süresi: 1,5–2 saat
+İpucu: Giriş ücretsiz. Nöbet değişimini izlemek için saat başlarını kollayın.</description><styleUrl>#tarih</styleUrl><Point><coordinates>32.8369,39.925,0</coordinates></Point></Placemark>
+<Placemark><name>Ankara Kalesi</name><description>Şehrin en eski yerleşim çekirdeği. İç kale ve dış kale olmak üzere iki bölümdür. Surların içinde eski Ankara evleri, dar sokaklar ve el sanatı dükkânları vardır.
+
+Semt: Altındağ
+Dönem: Antik çağ; surlar Bizans ve Selçuklu
+Gezi süresi: 1–1,5 saat
+İpucu: Gün batımında burçlardan şehir manzarası çok iyidir.</description><styleUrl>#tarih</styleUrl><Point><coordinates>32.8644,39.941,0</coordinates></Point></Placemark>
+<Placemark><name>Hamamönü</name><description>Restore edilmiş eski Ankara evleriyle dolu tarihî mahalle. 15. yüzyıldan kalma Karacabey Hamamı buradadır. Kafeler, el sanatı tezgâhları ve sanat sokağı vardır.
+
+Semt: Altındağ
+Dönem: 19. yy sonu evleri
+Gezi süresi: 1–1,5 saat
+İpucu: Ramazan akşamlarında çok kalabalık olur.</description><styleUrl>#tarih</styleUrl><Point><coordinates>32.865,39.9336,0</coordinates></Point></Placemark>
+<Placemark><name>Roma Hamamı</name><description>İmparator Caracalla döneminde yapılan büyük hamam kompleksinin kalıntıları. Açık hava müzesi olarak gezilir. Alanda mezar taşları ve yazıtlar da sergilenir.
+
+Semt: Ulus
+Dönem: 3. yy
+Gezi süresi: 30–45 dakika
+İpucu: Gölge azdır; yazın sabah gidin.</description><styleUrl>#tarih</styleUrl><Point><coordinates>32.8533,39.9461,0</coordinates></Point></Placemark>
+<Placemark><name>Julianus Sütunu</name><description>Roma İmparatoru Julianus'un Ankara ziyareti anısına dikildiği kabul edilir. Yaklaşık on beş metre yüksekliğindedir. Halk arasında Belkıs Minaresi diye de anılır.
+
+Semt: Ulus
+Dönem: 362
+Gezi süresi: 10 dakika
+İpucu: Hacı Bayram'a giderken yol üstündedir.</description><styleUrl>#tarih</styleUrl><Point><coordinates>32.8553,39.9437,0</coordinates></Point></Placemark>
+<Placemark><name>Taceddin Dergâhı</name><description>Mehmet Akif Ersoy İstiklal Marşı'nı bu dergâhın evinde yazdı. Ev bugün Mehmet Akif Ersoy Müze Evi'dir. Yanında Taceddin Camii bulunur.
+
+Semt: Hamamönü
+Dönem: Dergâh evi 1921'de kullanıldı
+Gezi süresi: 30 dakika
+İpucu: Hacettepe yerleşkesinin kenarındadır.</description><styleUrl>#tarih</styleUrl><Point><coordinates>32.8668,39.9342,0</coordinates></Point></Placemark>
+</Folder>
+<Folder><name>Müze</name>
+<Placemark><name>Anadolu Medeniyetleri Müzesi</name><description>Mahmut Paşa Bedesteni ile Kurşunlu Han'da kurulu arkeoloji müzesi. Paleolitik çağdan başlayıp Hitit, Frig ve Urartu eserlerine uzanır. 1997'de Avrupa'da Yılın Müzesi seçildi.
+
+Semt: Kale eteği
+Dönem: Binalar 15. yy
+Gezi süresi: 1,5–2 saat
+İpucu: Hitit kabartmaları ve Çatalhöyük bölümü mutlaka görülmeli.</description><styleUrl>#muze</styleUrl><Point><coordinates>32.8619,39.9383,0</coordinates></Point></Placemark>
+<Placemark><name>Birinci Meclis (Kurtuluş Savaşı Müzesi)</name><description>Türkiye Büyük Millet Meclisi 23 Nisan 1920'de bu binada açıldı. Kurtuluş Savaşı buradan yönetildi. Bina 1924'e kadar meclis olarak kullanıldı.
+
+Semt: Ulus
+Dönem: 1920
+Gezi süresi: 45 dakika
+İpucu: Ulus Meydanı'ndaki Zafer Anıtı ile birlikte gezin.</description><styleUrl>#muze</styleUrl><Point><coordinates>32.8536,39.9419,0</coordinates></Point></Placemark>
+<Placemark><name>Etnografya Müzesi</name><description>Anadolu halk kültürünü sergileyen müze. Mimarı Arif Hikmet Koyunoğlu. Atatürk'ün naaşı 1938'den 1953'e kadar burada kaldı.
+
+Semt: Namazgâh Tepesi
+Dönem: 1930
+Gezi süresi: 1 saat
+İpucu: Yanındaki Resim ve Heykel Müzesi ile birlikte gezilir.</description><styleUrl>#muze</styleUrl><Point><coordinates>32.8556,39.9331,0</coordinates></Point></Placemark>
+<Placemark><name>Rahmi M. Koç Müzesi</name><description>Tarihî Çengelhan'da kurulu sanayi ve ulaşım müzesi. Eski otomobiller, makineler, oyuncaklar ve dükkân canlandırmaları sergilenir.
+
+Semt: Kale kapısı
+Dönem: Han 16. yy; müze 2005
+Gezi süresi: 1–1,5 saat
+İpucu: Çocuklu aileler için iyi bir seçenek.</description><styleUrl>#muze</styleUrl><Point><coordinates>32.865,39.9395,0</coordinates></Point></Placemark>
+<Placemark><name>CerModern</name><description>Eski demiryolu bakım atölyelerinden dönüştürülen çağdaş sanat merkezi. Sergiler, konserler ve film gösterimleri yapılır.
+
+Semt: Sıhhiye
+Dönem: 2010
+Gezi süresi: 1 saat
+İpucu: Güncel sergi programına önceden bakın.</description><styleUrl>#muze</styleUrl><Point><coordinates>32.848,39.932,0</coordinates></Point></Placemark>
+<Placemark><name>Ulucanlar Cezaevi Müzesi</name><description>1925'ten 2006'ya kadar cezaevi olarak kullanıldı. Pek çok yazar, gazeteci ve siyasetçi burada yattı. Koğuşlar ve hücreler özgün hâliyle gezilir.
+
+Semt: Altındağ
+Dönem: 1925; müze 2011
+Gezi süresi: 1 saat
+İpucu: Hamamönü'ne yürüyerek gidilir.</description><styleUrl>#muze</styleUrl><Point><coordinates>32.873,39.936,0</coordinates></Point></Placemark>
+<Placemark><name>Altınköy Açık Hava Müzesi</name><description>Eski Anadolu köy yaşamını canlandıran açık hava müzesi. Köy evleri, değirmen, asma köprü ve köy kahvaltısı sunan mekânlar vardır.
+
+Semt: Altındağ
+Dönem: 2010'lar
+Gezi süresi: 2 saat
+İpucu: Merkeze uzaktır; araçla gitmek kolaydır.</description><styleUrl>#muze</styleUrl><Point><coordinates>32.93,39.99,0</coordinates></Point></Placemark>
+</Folder>
+<Folder><name>Cami</name>
+<Placemark><name>Hacı Bayram Camii ve Augustus Tapınağı</name><description>Hacı Bayram Veli adına yapılan cami ve türbe, Roma dönemi Augustus Tapınağı ile yan yanadır. Tapınak duvarında İmparator Augustus'un yaptıklarını anlatan ünlü yazıt yer alır.
+
+Semt: Ulus
+Dönem: Cami 15. yy; tapınak MÖ 1. yy sonu
+Gezi süresi: 45 dakika
+İpucu: Çevredeki meydan ve çarşı da gezilir.</description><styleUrl>#cami</styleUrl><Point><coordinates>32.858,39.9444,0</coordinates></Point></Placemark>
+<Placemark><name>Kocatepe Camii</name><description>Ankara'nın en büyük camilerinden. Klasik Osmanlı üslubunda, dört minareli ve büyük kubbelidir. Kızılay'a yürüme mesafesindedir.
+
+Semt: Kocatepe
+Dönem: 1967–1987
+Gezi süresi: 30–45 dakika
+İpucu: Namaz saatleri dışında ziyaret daha rahattır.</description><styleUrl>#cami</styleUrl><Point><coordinates>32.8606,39.9167,0</coordinates></Point></Placemark>
+<Placemark><name>Melike Hatun Camii</name><description>Gençlik Parkı'nın yanında, klasik Osmanlı üslubunda yapılmış büyük cami. Dört minarelidir. Ulus'un yeni simgelerinden sayılır.
+
+Semt: Ulus
+Dönem: 2017
+Gezi süresi: 30 dakika
+İpucu: Gençlik Parkı ile birlikte gezilir.</description><styleUrl>#cami</styleUrl><Point><coordinates>32.852,39.9385,0</coordinates></Point></Placemark>
+<Placemark><name>Aslanhane (Ahi Şerafeddin) Camii</name><description>Selçuklu döneminden ahşap direkli cami. Ahşap tavanı ve çini mihrabıyla ünlüdür. 2023'te UNESCO Dünya Mirası Listesi'ne girdi.
+
+Semt: Kale eteği
+Dönem: 13. yy
+Gezi süresi: 30 dakika
+İpucu: Kale ve müze gezisine ekleyin.</description><styleUrl>#cami</styleUrl><Point><coordinates>32.8655,39.9372,0</coordinates></Point></Placemark>
+<Placemark><name>Alaeddin Camii</name><description>Ankara'nın en eski camilerinden. Selçuklu dönemine aittir. Ceviz ağacından oyma minberi değerlidir.
+
+Semt: Ankara Kalesi içi
+Dönem: 12. yy
+Gezi süresi: 20 dakika
+İpucu: İç kalede, burçlara çıkarken uğranır.</description><styleUrl>#cami</styleUrl><Point><coordinates>32.8652,39.9414,0</coordinates></Point></Placemark>
+<Placemark><name>Karacabey Camii</name><description>Erken Osmanlı dönemi camisi. Yanındaki tarihî hamamla birlikte bir külliyenin parçasıdır.
+
+Semt: Hamamönü
+Dönem: 15. yy
+Gezi süresi: 20 dakika
+İpucu: Hamamönü sokaklarının girişindedir.</description><styleUrl>#cami</styleUrl><Point><coordinates>32.864,39.9325,0</coordinates></Point></Placemark>
+<Placemark><name>Maltepe Camii</name><description>Cumhuriyet döneminin ilk büyük camilerinden. Kızılay ile Anıtkabir arasındadır.
+
+Semt: Maltepe
+Dönem: 1950'ler
+Gezi süresi: 20 dakika
+İpucu: Anıtkabir yürüyüşünde yol üstündedir.</description><styleUrl>#cami</styleUrl><Point><coordinates>32.844,39.9272,0</coordinates></Point></Placemark>
+<Placemark><name>Ahmet Hamdi Akseki Camii</name><description>Diyanet İşleri Başkanlığı yerleşkesindeki büyük cami. Geniş kubbesi ve dört minaresiyle uzaktan görülür.
+
+Semt: Çankaya, Eskişehir Yolu
+Dönem: 2013
+Gezi süresi: 30 dakika
+İpucu: Araçla ulaşım kolaydır.</description><styleUrl>#cami</styleUrl><Point><coordinates>32.757,39.906,0</coordinates></Point></Placemark>
+<Placemark><name>Beştepe Millet Camii</name><description>Cumhurbaşkanlığı Külliyesi'nin içindeki cami. Yanında Millet Kütüphanesi bulunur.
+
+Semt: Beştepe
+Dönem: 2015
+Gezi süresi: 30 dakika
+İpucu: Kütüphane ile birlikte gezilebilir.</description><styleUrl>#cami</styleUrl><Point><coordinates>32.799,39.9312,0</coordinates></Point></Placemark>
+<Placemark><name>Kuzey Ankara Camii</name><description>Şehrin kuzeyinde, tepe üzerine kurulu büyük külliye. Avlusundan geniş bir manzara görülür.
+
+Semt: Keçiören
+Dönem: 2010'lar
+Gezi süresi: 30 dakika
+İpucu: Konum yaklaşık işaretlenmiştir.</description><styleUrl>#cami</styleUrl><Point><coordinates>32.87,39.979,0</coordinates></Point></Placemark>
+</Folder>
+<Folder><name>Park ve Doğa</name>
+<Placemark><name>Gençlik Parkı</name><description>Cumhuriyet'in ilk büyük kent parklarından. Büyük havuzu, lunaparkı ve çay bahçeleriyle bilinir. Tren garının hemen yanındadır.
+
+Semt: Ulus
+Dönem: 1943
+Gezi süresi: 1 saat
+İpucu: Akşam ışıklandırması güzeldir.</description><styleUrl>#doga</styleUrl><Point><coordinates>32.8497,39.9367,0</coordinates></Point></Placemark>
+<Placemark><name>Kuğulu Park</name><description>Göletindeki kuğularıyla tanınan küçük ama çok sevilen park. Tunalı Hilmi Caddesi'nin ucundadır.
+
+Semt: Kavaklıdere
+Dönem: Cumhuriyet dönemi
+Gezi süresi: 30 dakika
+İpucu: Kahvenizi alıp göl kenarında oturun.</description><styleUrl>#doga</styleUrl><Point><coordinates>32.8603,39.902,0</coordinates></Point></Placemark>
+<Placemark><name>Seğmenler Parkı</name><description>Yamaca kurulu geniş çimenlik park. Açık hava amfisi vardır. Piknik ve yürüyüş için tercih edilir.
+
+Semt: Çankaya
+Dönem: 1983
+Gezi süresi: 45 dakika
+İpucu: Kuğulu Park'tan yokuş yukarı kısa bir yürüyüş.</description><styleUrl>#doga</styleUrl><Point><coordinates>32.8625,39.896,0</coordinates></Point></Placemark>
+<Placemark><name>Atatürk Orman Çiftliği</name><description>Atatürk'ün bozkırı yeşertmek için kurduğu örnek çiftlik. Alanda Atatürk Evi müzesi ve çiftlik ürünleri satış yerleri bulunur.
+
+Semt: Yenimahalle
+Dönem: 1925
+Gezi süresi: 1–2 saat
+İpucu: Çiftliğin dondurması ve süt ürünleri ünlüdür.</description><styleUrl>#doga</styleUrl><Point><coordinates>32.799,39.942,0</coordinates></Point></Placemark>
+<Placemark><name>Eymir Gölü</name><description>Şehrin güneyinde, orman içinde sakin bir göl. Çevresi yürüyüş ve bisiklet için çok uygundur.
+
+Semt: ODTÜ arazisi
+Dönem: Doğal göl
+Gezi süresi: 2–3 saat
+İpucu: Bisiklet kiralanabilir. Giriş kuralları değişebilir.</description><styleUrl>#doga</styleUrl><Point><coordinates>32.833,39.825,0</coordinates></Point></Placemark>
+<Placemark><name>Mogan Gölü</name><description>Gölbaşı'ndaki büyük göl. Kıyısında park, yürüyüş yolu ve lokantalar vardır. Kuş gözlemi için de bilinir.
+
+Semt: Gölbaşı
+Dönem: Doğal göl
+Gezi süresi: 2 saat
+İpucu: Hafta sonu kahvaltısı için sık tercih edilir.</description><styleUrl>#doga</styleUrl><Point><coordinates>32.79,39.775,0</coordinates></Point></Placemark>
+</Folder>
+<Folder><name>Meydan ve Cadde</name>
+<Placemark><name>Atakule</name><description>Yaklaşık 125 metre yüksekliğindeki seyir kulesi. Seyir terasından şehrin büyük bölümü görülür. Altında alışveriş merkezi vardır.
+
+Semt: Çankaya
+Dönem: 1989
+Gezi süresi: 1 saat
+İpucu: Açık havada akşam üstü çıkın; şehir ışıkları iyi görünür.</description><styleUrl>#sehir</styleUrl><Point><coordinates>32.8558,39.8861,0</coordinates></Point></Placemark>
+<Placemark><name>Kızılay Meydanı</name><description>Ankara'nın kalbi ve ulaşım merkezi. Metro hatları burada buluşur. Güvenpark, yaya sokakları, kitapçılar ve lokantalarla çevrilidir.
+
+Semt: Kızılay
+Dönem: Cumhuriyet dönemi
+Gezi süresi: Serbest
+İpucu: Gezinin başlangıç noktası olarak uygundur.</description><styleUrl>#sehir</styleUrl><Point><coordinates>32.8541,39.9208,0</coordinates></Point></Placemark>
+<Placemark><name>Tunalı Hilmi Caddesi</name><description>Ankara'nın en canlı alışveriş ve gezinti caddesi. Mağazalar, pasajlar, kafeler ve lokantalar sıralanır.
+
+Semt: Kavaklıdere
+Dönem: —
+Gezi süresi: Serbest
+İpucu: Akşam saatleri en hareketli zamandır.</description><styleUrl>#sehir</styleUrl><Point><coordinates>32.8605,39.9075,0</coordinates></Point></Placemark>
+</Folder>
+<Folder><name>AVM</name>
+<Placemark><name>Armada AVM</name><description>Eskişehir Yolu üzerinde, şehrin en bilinen alışveriş merkezlerinden. Açık hava sokağı ve lokantaları vardır.
+
+Semt: Söğütözü
+Dönem: 2002
+İpucu: Metro ile Söğütözü durağından ulaşılır.</description><styleUrl>#avm</styleUrl><Point><coordinates>32.809,39.913,0</coordinates></Point></Placemark>
+<Placemark><name>Next Level AVM</name><description>Lüks markaların ve seçkin lokantaların bulunduğu alışveriş merkezi. Armada'nın yakınındadır.
+
+Semt: Söğütözü
+İpucu: Akşam yemeği için de tercih edilir.</description><styleUrl>#avm</styleUrl><Point><coordinates>32.8115,39.9112,0</coordinates></Point></Placemark>
+<Placemark><name>Ankamall</name><description>Ankara'nın en büyük alışveriş merkezlerinden. Çok sayıda mağaza, sinema ve yemek katı vardır.
+
+Semt: Akköprü
+Dönem: 1999
+İpucu: Metro Akköprü durağı kapısındadır.</description><styleUrl>#avm</styleUrl><Point><coordinates>32.831,39.951,0</coordinates></Point></Placemark>
+<Placemark><name>Cepa AVM</name><description>ODTÜ karşısında büyük alışveriş merkezi. Kentpark ile yan yanadır.
+
+Semt: Eskişehir Yolu
+Dönem: 2007
+İpucu: İki merkez yürüyerek birlikte gezilir.</description><styleUrl>#avm</styleUrl><Point><coordinates>32.7795,39.91,0</coordinates></Point></Placemark>
+<Placemark><name>Kentpark AVM</name><description>Geniş mağaza seçeneği, sineması ve açık alanlarıyla bilinen alışveriş merkezi.
+
+Semt: Eskişehir Yolu
+Dönem: 2010
+İpucu: Cepa'nın hemen yanındadır.</description><styleUrl>#avm</styleUrl><Point><coordinates>32.777,39.9095,0</coordinates></Point></Placemark>
+<Placemark><name>Panora AVM</name><description>Şehrin güneyinde, ferah iç avlusuyla tanınan alışveriş merkezi. Lokanta seçeneği zengindir.
+
+Semt: Oran
+Dönem: 2007
+İpucu: Çankaya tarafında kalanlar için yakındır.</description><styleUrl>#avm</styleUrl><Point><coordinates>32.853,39.854,0</coordinates></Point></Placemark>
+<Placemark><name>Gordion AVM</name><description>Batı yakasının en bilinen alışveriş merkezi. Çayyolu ve Ümitköy'e hizmet verir.
+
+Semt: Çayyolu
+Dönem: 2009
+İpucu: Metro Ümitköy durağına yakındır.</description><styleUrl>#avm</styleUrl><Point><coordinates>32.692,39.9,0</coordinates></Point></Placemark>
+<Placemark><name>Arcadium AVM</name><description>Çayyolu'nda mahalle ölçeğinde alışveriş merkezi. Sinema ve kafeleri vardır.
+
+Semt: Çayyolu
+İpucu: Konum yaklaşık işaretlenmiştir.</description><styleUrl>#avm</styleUrl><Point><coordinates>32.688,39.887,0</coordinates></Point></Placemark>
+<Placemark><name>Taurus AVM</name><description>Konya Yolu üzerinde orta büyüklükte alışveriş merkezi.
+
+Semt: Balgat, Konya Yolu
+İpucu: Konum yaklaşık işaretlenmiştir.</description><styleUrl>#avm</styleUrl><Point><coordinates>32.813,39.888,0</coordinates></Point></Placemark>
+<Placemark><name>Antares AVM</name><description>Kuzey yakasının büyük alışveriş merkezlerinden. Keçiören ve Etlik'e yakındır.
+
+Semt: Etlik
+İpucu: Konum yaklaşık işaretlenmiştir.</description><styleUrl>#avm</styleUrl><Point><coordinates>32.832,39.969,0</coordinates></Point></Placemark>
+<Placemark><name>Atlantis AVM</name><description>Batıkent'in merkezindeki alışveriş merkezi.
+
+Semt: Batıkent
+İpucu: Metro Batıkent hattı üzerindedir.</description><styleUrl>#avm</styleUrl><Point><coordinates>32.728,39.967,0</coordinates></Point></Placemark>
+<Placemark><name>Acity Outlet</name><description>İndirimli marka mağazalarının toplandığı outlet merkezi.
+
+Semt: Yenimahalle, İstanbul Yolu
+İpucu: Konum yaklaşık işaretlenmiştir.</description><styleUrl>#avm</styleUrl><Point><coordinates>32.78,39.964,0</coordinates></Point></Placemark>
+<Placemark><name>Optimum Outlet</name><description>Batıda, Eryaman tarafındaki büyük outlet merkezi.
+
+Semt: Eryaman
+İpucu: Konum yaklaşık işaretlenmiştir.</description><styleUrl>#avm</styleUrl><Point><coordinates>32.633,39.965,0</coordinates></Point></Placemark>
+<Placemark><name>Nata Vega Outlet</name><description>Doğu yakasındaki büyük outlet ve eğlence merkezi. İçinde akvaryum bulunur.
+
+Semt: Mamak
+İpucu: Konum yaklaşık işaretlenmiştir.</description><styleUrl>#avm</styleUrl><Point><coordinates>32.906,39.933,0</coordinates></Point></Placemark>
+<Placemark><name>Kızılay AVM</name><description>Kızılay Meydanı'nın köşesindeki alışveriş merkezi. Metro çıkışının hemen üstündedir.
+
+Semt: Kızılay
+İpucu: Buluşma noktası olarak kullanılır.</description><styleUrl>#avm</styleUrl><Point><coordinates>32.8548,39.9203,0</coordinates></Point></Placemark>
+</Folder>
+<Folder><name>Okul</name>
+<Placemark><name>Orta Doğu Teknik Üniversitesi (ODTÜ)</name><description>Türkiye'nin önde gelen teknik üniversitelerinden. Eğitim dili İngilizcedir. Geniş ormanlık yerleşkesi Eymir Gölü'ne kadar uzanır.
+
+Semt: Eskişehir Yolu
+Dönem: 1956
+İpucu: Yerleşkeye girişte kimlik sorulabilir.</description><styleUrl>#okul</styleUrl><Point><coordinates>32.7847,39.8914,0</coordinates></Point></Placemark>
+<Placemark><name>Bilkent Üniversitesi</name><description>Türkiye'nin ilk vakıf üniversitesi. İhsan Doğramacı kurdu. Konser salonu ve senfoni orkestrasıyla da tanınır.
+
+Semt: Bilkent
+Dönem: 1984
+İpucu: Konser programına bakın.</description><styleUrl>#okul</styleUrl><Point><coordinates>32.7494,39.8687,0</coordinates></Point></Placemark>
+<Placemark><name>Hacettepe Üniversitesi (Sıhhiye)</name><description>Tıp ve sağlık bilimleriyle öne çıkan üniversitenin merkez yerleşkesi. Hastaneleri de buradadır.
+
+Semt: Sıhhiye
+Dönem: 1967
+İpucu: Hamamönü'nün hemen yanındadır.</description><styleUrl>#okul</styleUrl><Point><coordinates>32.8625,39.9315,0</coordinates></Point></Placemark>
+<Placemark><name>Hacettepe Üniversitesi (Beytepe)</name><description>Üniversitenin mühendislik, fen, edebiyat ve iktisat fakültelerinin bulunduğu büyük yerleşke.
+
+Semt: Beytepe
+Dönem: 1967
+İpucu: Metro ile Beytepe durağından ulaşılır.</description><styleUrl>#okul</styleUrl><Point><coordinates>32.735,39.867,0</coordinates></Point></Placemark>
+<Placemark><name>Ankara Üniversitesi (Tandoğan)</name><description>Cumhuriyet'in kurduğu ilk üniversite. Rektörlük ve Fen Fakültesi bu yerleşkededir.
+
+Semt: Tandoğan
+Dönem: 1946
+İpucu: Anıtkabir'e yakındır.</description><styleUrl>#okul</styleUrl><Point><coordinates>32.83,39.9365,0</coordinates></Point></Placemark>
+<Placemark><name>Dil ve Tarih-Coğrafya Fakültesi</name><description>Atatürk'ün isteğiyle kurulan fakülte. Binası Bruno Taut'un tasarımıdır ve erken Cumhuriyet mimarisinin önemli örneğidir.
+
+Semt: Sıhhiye
+Dönem: 1935
+İpucu: Bina dışarıdan görülmeye değer.</description><styleUrl>#okul</styleUrl><Point><coordinates>32.855,39.93,0</coordinates></Point></Placemark>
+<Placemark><name>Gazi Üniversitesi</name><description>Kökeni Gazi Eğitim Enstitüsü'ne uzanan büyük devlet üniversitesi. Tarihî rektörlük binası mimar Kemaleddin'in eseridir.
+
+Semt: Beşevler
+Dönem: Kökeni 1926
+İpucu: Metro Beşevler durağındadır.</description><styleUrl>#okul</styleUrl><Point><coordinates>32.822,39.939,0</coordinates></Point></Placemark>
+<Placemark><name>TOBB Ekonomi ve Teknoloji Üniversitesi</name><description>Ortak eğitim modeliyle bilinen vakıf üniversitesi.
+
+Semt: Söğütözü
+Dönem: 2003
+İpucu: Armada'ya yakındır.</description><styleUrl>#okul</styleUrl><Point><coordinates>32.798,39.921,0</coordinates></Point></Placemark>
+<Placemark><name>Başkent Üniversitesi</name><description>Sağlık alanında güçlü vakıf üniversitesi. Yerleşkesi şehrin batısındadır.
+
+Semt: Bağlıca
+Dönem: 1993
+İpucu: Konum yaklaşık işaretlenmiştir.</description><styleUrl>#okul</styleUrl><Point><coordinates>32.655,39.888,0</coordinates></Point></Placemark>
+<Placemark><name>Atılım Üniversitesi</name><description>İncek'teki vakıf üniversitesi. Mühendislik ve havacılık bölümleriyle bilinir.
+
+Semt: İncek
+Dönem: 1997
+İpucu: Konum yaklaşık işaretlenmiştir.</description><styleUrl>#okul</styleUrl><Point><coordinates>32.723,39.814,0</coordinates></Point></Placemark>
+<Placemark><name>Ankara Fen Lisesi</name><description>Türkiye'nin ilk fen lisesi. Sınavla öğrenci alır.
+
+Semt: Balgat
+Dönem: 1964
+İpucu: Konum yaklaşık işaretlenmiştir.</description><styleUrl>#okul</styleUrl><Point><coordinates>32.815,39.903,0</coordinates></Point></Placemark>
+<Placemark><name>Ankara Atatürk Lisesi</name><description>Şehrin en eski liselerinden. Kökeni Osmanlı dönemindeki Ankara İdadisi'ne uzanır.
+
+Semt: Sıhhiye
+Dönem: Kökeni 1886
+İpucu: Konum yaklaşık işaretlenmiştir.</description><styleUrl>#okul</styleUrl><Point><coordinates>32.85,39.9285,0</coordinates></Point></Placemark>
+</Folder>
+</Document></kml>
