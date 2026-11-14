@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radyo</title>
+<style>
+  :root{--bg:#0f1115;--card:#1a1d24;--line:#2a2e38;--txt:#e9ebf0;--dim:#8b91a0;--acc:#ff5a36}
+  *{box-sizing:border-box}
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--txt);padding-bottom:110px}
+  header{position:sticky;top:0;background:var(--bg);padding:14px 14px 8px;z-index:5;border-bottom:1px solid var(--line)}
+  h1{margin:0 0 10px;font-size:22px}
+  h1 span{color:var(--acc)}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  input,select,button{font:inherit;color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  input{flex:1;min-width:140px}
+  button{cursor:pointer}
+  button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+  .tabs{margin-top:8px}
+  #list{padding:10px 14px;display:grid;gap:8px}
+  .st{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer}
+  .st.playing{border-color:var(--acc)}
+  .logo{width:48px;height:48px;border-radius:8px;background:#262a33;flex:none;object-fit:cover;display:grid;place-items:center;font-weight:700;color:var(--dim)}
+  .info{flex:1;min-width:0}
+  .name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .meta{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .fav{background:none;border:none;font-size:22px;padding:4px 6px;color:var(--dim)}
+  .fav.yes{color:#ffc83d}
+  .msg{color:var(--dim);text-align:center;padding:30px}
+  #player{position:fixed;left:0;right:0;bottom:0;background:#14171d;border-top:1px solid var(--line);padding:12px 14px;display:flex;align-items:center;gap:12px}
+  #pp{width:52px;height:52px;border-radius:50%;background:var(--acc);border:none;color:#fff;font-size:22px;flex:none}
+  #now{flex:1;min-width:0}
+  #vol{width:90px}
+</style>
+</head>
+<body>
+<header>
+  <h1>📻 <span>Radyo</span></h1>
+  <div class="row">
+    <input id="q" placeholder="İstasyon ara…">
+    <select id="country">
+      <option value="TR">Türkiye</option>
+      <option value="IQ">Irak</option>
+      <option value="AZ">Azerbaycan</option>
+      <option value="DE">Almanya</option>
+      <option value="GB">İngiltere</option>
+      <option value="US">ABD</option>
+      <option value="">Tüm dünya</option>
+    </select>
+    <button id="go">Ara</button>
+  </div>
+  <div class="row tabs">
+    <button data-tag="" class="on">Popüler</button>
+    <button data-tag="pop">Pop</button>
+    <button data-tag="news">Haber</button>
+    <button data-tag="turkish folk">Türkü</button>
+    <button data-tag="arabesk">Arabesk</button>
+    <button data-tag="classical">Klasik</button>
+    <button data-fav="1">★ Favoriler</button>
+  </div>
+</header>
+
+<div id="list"><div class="msg">Yükleniyor…</div></div>
+
+<div id="player">
+  <button id="pp">▶</button>
+  <div id="now"><div class="name">İstasyon seçin</div><div class="meta" id="status">—</div></div>
+  <input id="vol" type="range" min="0" max="1" step="0.05" value="0.8">
+</div>
+<audio id="audio" preload="none"></audio>
+
+<script>
+const API = ["https://de1.api.radio-browser.info","https://nl1.api.radio-browser.info","https://at1.api.radio-browser.info"];
+const $ = s => document.querySelector(s);
+const audio = $("#audio");
+let stations = [], current = null, tag = "", showFav = false;
+
+const store = {
+  get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
+};
+let favs = store.get("radyo_favs", []);
+$("#vol").value = store.get("radyo_vol", 0.8);
+audio.volume = $("#vol").value;
+
+async function api(path){
+  for (const host of API){
+    try{ const r = await fetch(host + path); if (r.ok) return await r.json(); }catch(e){}
+  }
+  throw new Error("Sunucuya ulaşılamadı");
+}
+
+async function load(){
+  showFav = false;
+  $("#list").innerHTML = '<div class="msg">Yükleniyor…</div>';
+  const p = new URLSearchParams({limit:80, order:"clickcount", reverse:"true", hidebroken:"true"});
+  const c = $("#country").value, q = $("#q").value.trim();
+  if (c) p.set("countrycode", c);
+  if (q) p.set("name", q);
+  if (tag) p.set("tag", tag);
+  try{ stations = await api("/json/stations/search?" + p); render(stations); }
+  catch(e){ $("#list").innerHTML = '<div class="msg">'+e.message+'</div>'; }
+}
+
+function esc(s){return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+function render(arr){
+  if (!arr.length){ $("#list").innerHTML = '<div class="msg">'+(showFav?"Henüz favori yok.":"Sonuç bulunamadı.")+'</div>'; return; }
+  $("#list").innerHTML = arr.map((s,i)=>{
+    const isFav = favs.some(f=>f.stationuuid===s.stationuuid);
+    const logo = s.favicon ? `<img class="logo" src="${esc(s.favicon)}" onerror="this.outerHTML='<div class=logo>${esc(s.name[0]||'?')}</div>'">` : `<div class="logo">${esc((s.name||"?")[0])}</div>`;
+    return `<div class="st ${current&&current.stationuuid===s.stationuuid?'playing':''}" data-i="${i}">
+      ${logo}
+      <div class="info"><div class="name">${esc(s.name.trim())}</div>
+      <div class="meta">${esc([s.country, s.tags&&s.tags.split(",").slice(0,3).join(", "), s.bitrate?s.bitrate+" kbps":""].filter(Boolean).join(" · "))}</div></div>
+      <button class="fav ${isFav?'yes':''}" data-f="${i}">${isFav?'★':'☆'}</button>
+    </div>`;
+  }).join("");
+  window._shown = arr;
+}
+
+function play(s){
+  current = s;
+  audio.src = s.url_resolved || s.url;
+  $("#now .name").textContent = s.name.trim();
+  $("#status").textContent = "Bağlanıyor…";
+  audio.play().catch(()=>{ $("#status").textContent = "Bu istasyon çalınamadı"; });
+  render(window._shown);
+  fetch(API[0] + "/json/url/" + s.stationuuid).catch(()=>{});
+}
+
+$("#list").addEventListener("click", e=>{
+  const f = e.target.closest("[data-f]");
+  if (f){
+    e.stopPropagation();
+    const s = window._shown[f.dataset.f];
+    const idx = favs.findIndex(x=>x.stationuuid===s.stationuuid);
+    idx>=0 ? favs.splice(idx,1) : favs.push(s);
+    store.set("radyo_favs", favs);
+    render(showFav ? favs : window._shown);
+    return;
+  }
+  const st = e.target.closest(".st");
+  if (st) play(window._shown[st.dataset.i]);
+});
+
+$("#pp").onclick = ()=>{
+  if (!current) return;
+  audio.paused ? audio.play().catch(()=>{}) : audio.pause();
+};
+audio.onplaying = ()=>{ $("#pp").textContent="⏸"; $("#status").textContent="Çalıyor"; };
+audio.onpause = ()=>{ $("#pp").textContent="▶"; $("#status").textContent="Durduruldu"; };
+audio.onwaiting = ()=>{ $("#status").textContent="Yükleniyor…"; };
+audio.onerror = ()=>{ if(current){ $("#pp").textContent="▶"; $("#status").textContent="Bu istasyon çalınamadı"; } };
+$("#vol").oninput = e=>{ audio.volume = e.target.value; store.set("radyo_vol", e.target.value); };
+
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");
+  if (b.dataset.fav){ showFav = true; render(favs); }
+  else { tag = b.dataset.tag; load(); }
+});
+$("#go").onclick = load;
+$("#q").onkeydown = e=>{ if(e.key==="Enter") load(); };
+$("#country").onchange = load;
+
+load();
+</script>
+</body>
+</html>
