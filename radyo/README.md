@@ -6,9 +6,11 @@ Tarayıcıda çalışan internet radyosu ve podcast uygulaması. Kurulum gerekme
 
 | Sürüm | Klasör | İçerik |
 |---|---|---|
-| v1 | [`v1/`](v1/index.html) | Radyo |
-| v2 | [`v2/`](v2/index.html) | Radyo + Podcast |
-| v3 | [`v3/`](v3/index.html) | Radyo + Podcast + Köşe Yazıları + yedek kaynaklar (en güncel) |
+| v1 | [`v1/`](v1/) | Sadece radyo (ilk sürüm) |
+| v2 | [`v2/`](v2/) | Radyo + Podcast + kapanma zamanlayıcısı |
+| v3 | [`v3/`](v3/) | Radyo + Podcast + Köşe Yazıları + yedek kaynaklar (en güncel) |
+
+Her klasörde o sürümün kısa notu (README) var.
 
 ## v1 – Radyo
 
