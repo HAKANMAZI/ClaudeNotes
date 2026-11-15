@@ -1,4 +1,4 @@
-# Radyo – v2 Android
+# Kızılelma Radyo – v2 Android
 
 **Ne:** v2 web sürümünün (Radyo + Podcast) Android uygulaması.
 

@@ -129,7 +129,9 @@
   /* ============ MOBİL UYUM ============
      Telefonda: sayfa yana taşmaz, sekmeler tek satırda yana kayar,
      çalar çubuğu sadeleşir (ses telefonun tuşlarıyla ayarlanır). */
-  html,body{overflow-x:hidden}
+  /* "clip": yana taşmayı keser ama üst bölümün sabit kalmasını bozmaz ("hidden" bozuyordu) */
+  html,body{overflow-x:clip}
+  header{position:sticky;top:0;z-index:5}
   #list{grid-template-columns:minmax(0,1fr)}   /* Uzun isimler satırı taşırmasın */
   .st{min-width:0}
   h1{display:flex;align-items:center;gap:10px;font-size:21px}

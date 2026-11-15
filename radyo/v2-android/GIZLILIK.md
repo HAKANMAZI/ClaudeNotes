@@ -1,6 +1,6 @@
-# Radyo – Gizlilik Politikası
+# Kızılelma Radyo – Gizlilik Politikası
 
-**Kısaca:** Radyo uygulaması kişisel veri toplamaz, saklamaz, paylaşmaz.
+**Kısaca:** Kızılelma Radyo uygulaması kişisel veri toplamaz, saklamaz, paylaşmaz.
 
 - **Hesap yok:** Uygulama üyelik veya giriş istemez.
 - **Reklam yok, takip yok:** Reklam, analiz veya takip aracı kullanılmaz.
