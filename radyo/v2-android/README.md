@@ -25,7 +25,11 @@ Telefonda açın, "bilinmeyen kaynaklardan yüklemeye izin ver" deyip kurun.
 | `app/src/main/java/.../Destek.kt` | Gönüllü destek (Google Play ödeme sistemi) |
 | `.github/workflows/radyo-android.yml` | GitHub'da otomatik derleme |
 
-## Google Play'e yükleme adımları
+## Google Play'e yükleme
+
+Ayrıntılı rehber ve hazır mağaza metinleri: **[PLAY.md](PLAY.md)**
+
+## Google Play'e yükleme adımları (kısa)
 
 1. **Yükleme anahtarı:** GitHub > Settings > Secrets and variables > Actions bölümüne dört gizli değer ekleyin:
    `UPLOAD_KEYSTORE_BASE64`, `UPLOAD_STORE_PASSWORD`, `UPLOAD_KEY_ALIAS`, `UPLOAD_KEY_PASSWORD`.
