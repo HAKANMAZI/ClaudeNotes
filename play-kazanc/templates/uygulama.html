@@ -1,0 +1,52 @@
+{% extends "temel.html" %}
+{% block icerik %}
+<div class="kart satir">
+  <img src="{{ a.icon }}" alt="">
+  <div style="flex:1">
+    <h2 style="margin:0">{{ a.title }}</h2>
+    <div class="kucuk">{{ a.developer }} · {{ a.genre }} · ⭐ {{ '%.1f'|format(a.score or 0) }} ({{ a.ratings|sayi }} oy)</div>
+    <a class="kucuk" href="{{ a.url }}" target="_blank">Google Play'de aç</a>
+  </div>
+  {% if takipte %}
+    <span class="kucuk">✔ Takipte</span>
+  {% else %}
+    <form method="post" action="{{ url_for('takip_ekle', app_id=a.appId) }}"><button>Takip et</button></form>
+  {% endif %}
+</div>
+
+<div class="kart">
+  <h3 style="margin-top:0">Tahmini aylık kazanç</h3>
+  <div class="izgara">
+    <div class="kutu">Düşük<b>${{ t.aylik_dusuk|sayi }}</b></div>
+    <div class="kutu">Orta<b class="para">${{ t.aylik_orta|sayi }}</b></div>
+    <div class="kutu">Yüksek<b>${{ t.aylik_yuksek|sayi }}</b></div>
+  </div>
+  <h4>Kaynak dağılımı (orta)</h4>
+  <div class="izgara">
+    <div class="kutu">Reklam<b>${{ t.reklam|sayi }}</b></div>
+    <div class="kutu">Uygulama içi satın alma<b>${{ t.iap|sayi }}</b></div>
+    <div class="kutu">Ücretli satış<b>${{ t.ucretli|sayi }}</b></div>
+  </div>
+  <h4>Kullanıcı tahmini</h4>
+  <div class="izgara">
+    <div class="kutu">Toplam indirme<b>{{ t.toplam_indirme|sayi }}</b></div>
+    <div class="kutu">Günlük indirme<b>{{ t.gunluk_indirme|sayi }}</b></div>
+    <div class="kutu">Aylık aktif kullanıcı<b>{{ t.aylik_aktif|sayi }}</b></div>
+  </div>
+  {% if gecmis|length < 2 %}
+  <p class="kucuk">Günlük indirme şu an uygulamanın ömür boyu ortalamasından hesaplanıyor. Takibe alırsanız birkaç gün sonra gerçek hızla hesaplanır.</p>
+  {% endif %}
+</div>
+
+{% if gecmis %}
+<div class="kart">
+  <h3 style="margin-top:0">Ölçüm geçmişi</h3>
+  <table>
+    <tr><th>Tarih</th><th>İndirme</th><th>Puan</th><th>Oy</th></tr>
+    {% for s in gecmis %}
+    <tr><td>{{ s.zaman|tarih }}</td><td>{{ s.indirme|sayi }}</td><td>{{ '%.2f'|format(s.puan) }}</td><td>{{ s.oy|sayi }}</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endif %}
+{% endblock %}

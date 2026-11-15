@@ -1,0 +1,31 @@
+{% extends "temel.html" %}
+{% block icerik %}
+<form class="ara" method="get">
+  <input type="text" name="q" value="{{ kelime }}" placeholder="Uygulama veya kelime ara (örn. bütçe, kelime oyunu)">
+  <select name="ulke">
+    {% for k, ad in [('tr','Türkiye'),('us','ABD'),('de','Almanya'),('gb','İngiltere')] %}
+    <option value="{{ k }}" {% if k == ulke %}selected{% endif %}>{{ ad }}</option>
+    {% endfor %}
+  </select>
+  <button>Ara</button>
+</form>
+
+{% if kelime and not sonuclar %}<p>Sonuç bulunamadı.</p>{% endif %}
+{% if sonuclar %}<p class="kucuk">Tahmini aylık kazanca göre sıralı.</p>{% endif %}
+
+{% for a in sonuclar %}
+<a href="{{ url_for('uygulama', app_id=a.appId, ulke=ulke) }}" style="text-decoration:none;color:inherit">
+<div class="kart satir">
+  <img src="{{ a.icon }}" alt="">
+  <div style="flex:1">
+    <b>{{ a.title }}</b>
+    <div class="kucuk">{{ a.developer }} · {{ a.genre }} · ⭐ {{ '%.1f'|format(a.score or 0) }}</div>
+    <div class="kucuk">{{ a.tahmin.toplam_indirme|sayi }} indirme
+      {% if a.containsAds %}· reklam{% endif %}{% if a.offersIAP %}· uygulama içi satın alma{% endif %}
+      {% if not a.free %}· ücretli{% endif %}</div>
+  </div>
+  <div class="para">~${{ a.tahmin.aylik_orta|sayi }}<div class="kucuk">aylık</div></div>
+</div>
+</a>
+{% endfor %}
+{% endblock %}

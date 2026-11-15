@@ -1,0 +1,29 @@
+{% extends "temel.html" %}
+{% block icerik %}
+<div class="satir" style="justify-content:space-between;margin-bottom:12px">
+  <h2 style="margin:0">Trend uygulamalar</h2>
+  <form method="post" action="{{ url_for('guncelle') }}"><button>Hepsini güncelle</button></form>
+</div>
+<p class="kucuk">Takip ettiğiniz uygulamalar günlük indirme hızına göre sıralanır. Her gün bir kez "Hepsini güncelle"ye basın (veya zamanlanmış görev kurun).</p>
+
+{% if not liste %}
+<div class="kart">Henüz takip edilen uygulama yok. <a href="{{ url_for('anasayfa') }}">Arayıp</a> "Takip et"e basın.</div>
+{% else %}
+<div class="kart" style="overflow-x:auto">
+<table>
+  <tr><th>Uygulama</th><th>İndirme</th><th>Günlük hız</th><th>Büyüme</th><th>Günlük yeni oy</th><th>Ölçüm</th><th></th></tr>
+  {% for r in liste %}
+  <tr>
+    <td><a href="{{ url_for('uygulama', app_id=r.app_id) }}">{{ r.baslik }}</a></td>
+    <td>{{ r.indirme|sayi }}</td>
+    <td>{% if r.hiz is not none %}<b class="artis">+{{ r.hiz|sayi }}</b>{% else %}<span class="kucuk">bekleniyor</span>{% endif %}</td>
+    <td>%{{ '%.2f'|format(r.buyume) }}</td>
+    <td>{% if r.oy_hiz is not none %}{{ r.oy_hiz|sayi }}{% else %}-{% endif %}</td>
+    <td class="kucuk">{{ r.olcum }} ölçüm / {{ '%.1f'|format(r.gun) }} gün</td>
+    <td><form method="post" action="{{ url_for('takip_sil', app_id=r.app_id) }}"><button class="ikinci">Çıkar</button></form></td>
+  </tr>
+  {% endfor %}
+</table>
+</div>
+{% endif %}
+{% endblock %}
