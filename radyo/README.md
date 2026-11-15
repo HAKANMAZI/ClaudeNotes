@@ -8,3 +8,5 @@ Tarayıcıda çalışan internet radyosu. `index.html` dosyasını açmanız yet
 - Çal / durdur, ses ayarı
 - Arama tüm radyolarda yapılır
 - Yayın akışı için istasyonun web sitesine bağlantı
+- Belgesel ve Sohbet sekmeleri
+- "Benim radyolarım": listede olmayan radyoyu ad, frekans ve yayın adresiyle elle ekleme

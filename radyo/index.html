@@ -69,6 +69,11 @@
   /* Favori yıldızı: boşsa gri, doluysa sarı */
   .fav{background:none;border:none;font-size:22px;padding:4px 6px;color:var(--dim)}
   .fav.yes{color:#ffc83d}
+  /* Elle radyo ekleme formu */
+  .addform{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px}
+  .addform b{font-size:15px}
+  .addform small{color:var(--dim);line-height:1.4}
+  .addform button{background:var(--acc);border-color:var(--acc);color:#fff}
   /* "Yükleniyor…", "Sonuç yok" gibi mesajlar */
   .msg{color:var(--dim);text-align:center;padding:30px}
 
@@ -115,7 +120,11 @@
     <button data-tag="turkish folk">Türkü</button>
     <button data-tag="arabesk">Arabesk</button>
     <button data-tag="classical">Klasik</button>
+    <button data-tag="documentary">Belgesel</button>
+    <button data-tag="talk">Sohbet</button>
     <button data-fav="1">★ Favoriler</button>
+    <!-- Kullanıcının elle eklediği radyolar -->
+    <button data-mine="1">➕ Benim radyolarım</button>
   </div>
 </header>
 
@@ -155,6 +164,7 @@ let stations = [];   // Son aramada gelen radyolar
 let current = null;  // Şu an çalan radyo
 let tag = "";        // Seçili tür ("" = tümü)
 let showFav = false; // Favoriler sekmesi açık mı?
+let showMine = false;// "Benim radyolarım" sekmesi açık mı?
 
 /* ============================================================
    2) TARAYICIYA KAYIT (favoriler ve ses seviyesi)
@@ -171,6 +181,7 @@ const store = {
 
 // Açılışta favorileri ve son ses seviyesini geri yükle
 let favs = store.get("radyo_favs", []);
+let mine = store.get("radyo_mine", []); // Elle eklenen radyolar
 $("#vol").value = store.get("radyo_vol", 0.8);
 audio.volume = $("#vol").value;
 
@@ -194,7 +205,7 @@ async function api(path){
    4) RADYOLARI ARAMA VE LİSTELEME
    ============================================================ */
 async function load(){
-  showFav = false;
+  showFav = false; showMine = false;
   $("#list").innerHTML = '<div class="msg">Yükleniyor…</div>';
 
   // Arama ayarları:
@@ -237,11 +248,19 @@ function esc(s){return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt
 /* Gelen radyo listesini ekrana çizer.
    Her radyo için: logo, ad, ülke · türler · ses kalitesi (kbps), yıldız. */
 function render(arr){
+  window._shown = arr; // Ekrandaki liste; tıklamada hangi radyo seçildi bulmak için
+  if (showMine){ renderMine(); return; }
   if (!arr.length){
     $("#list").innerHTML = '<div class="msg">'+(showFav?"Henüz favori yok.":"Sonuç bulunamadı.")+'</div>';
     return;
   }
-  $("#list").innerHTML = arr.map((s,i)=>{
+  $("#list").innerHTML = rows(arr);
+}
+
+/* Radyo satırlarının HTML'ini üretir.
+   Elle eklenen radyolarda yıldız yerine silme (🗑) düğmesi çıkar. */
+function rows(arr){
+  return arr.map((s,i)=>{
     const isFav = favs.some(f=>f.stationuuid===s.stationuuid); // Favoride mi?
     // Logo varsa resmi göster; yüklenemezse veya yoksa adın baş harfini göster
     const logo = s.favicon
@@ -251,10 +270,60 @@ function render(arr){
       ${logo}
       <div class="info"><div class="name">${esc(s.name.trim())}</div>
       <div class="meta">${esc([s.country, s.tags&&s.tags.split(",").slice(0,3).join(", "), s.bitrate?s.bitrate+" kbps":""].filter(Boolean).join(" · "))}</div></div>
-      <button class="fav ${isFav?'yes':''}" data-f="${i}">${isFav?'★':'☆'}</button>
+      ${s.custom
+        ? `<button class="fav" data-d="${i}" title="Sil">🗑</button>`
+        : `<button class="fav ${isFav?'yes':''}" data-f="${i}">${isFav?'★':'☆'}</button>`}
     </div>`;
   }).join("");
-  window._shown = arr; // Ekrandaki liste; tıklamada hangi radyo seçildi bulmak için
+}
+
+/* ============================================================
+   4b) ELLE RADYO EKLEME ("Benim radyolarım")
+   ------------------------------------------------------------
+   Listede olmayan bir radyoyu kendiniz ekleyebilirsiniz.
+   Gerekli olan: radyonun İNTERNET YAYIN ADRESİ (stream linki).
+   Frekans (ör. 98.4) sadece bilgi olarak yazılır; internet
+   radyosu frekansla değil, yayın adresiyle çalar.
+   Yayın adresi genelde radyonun sitesinde "canlı dinle"
+   bölümünde ya da "stream", ".mp3", ".aac", ".m3u" diye geçer.
+   ============================================================ */
+function renderMine(){
+  $("#list").innerHTML = `
+    <form class="addform" id="addform">
+      <b>➕ Radyo ekle</b>
+      <input id="m_name" placeholder="Radyo adı (ör. Radyo Belgesel)" required>
+      <input id="m_freq" placeholder="Frekans – isteğe bağlı (ör. 98.4)">
+      <input id="m_url" placeholder="Yayın adresi (https://… ile başlar)" required>
+      <button type="submit">Ekle</button>
+      <small>Frekans sadece bilgi içindir. Radyoyu çalan şey yayın adresidir;
+      bunu radyonun web sitesindeki "canlı dinle" bölümünden bulabilirsiniz.</small>
+    </form>
+    ${mine.length ? rows(mine) : '<div class="msg">Henüz elle eklenen radyo yok.</div>'}`;
+}
+
+// Form gönderilince yeni radyoyu kaydet
+$("#list").addEventListener("submit", e=>{
+  e.preventDefault(); // Sayfanın yenilenmesini engelle
+  const name = $("#m_name").value.trim();
+  const freq = $("#m_freq").value.trim();
+  const url  = $("#m_url").value.trim();
+  if (!/^https?:\/\//i.test(url)){ alertMsg("Yayın adresi http:// veya https:// ile başlamalı"); return; }
+  mine.push({
+    stationuuid: "elle-" + Date.now(), // Benzersiz kimlik
+    name, url_resolved: url, homepage: "",
+    country: "Elle eklendi",
+    tags: freq ? freq + " FM" : "",
+    custom: true
+  });
+  store.set("radyo_mine", mine); // Tarayıcıya kaydet
+  render(mine);
+});
+
+// Formun altında kısa uyarı gösterir
+function alertMsg(t){
+  let m = document.querySelector(".addform .err");
+  if (!m){ m = document.createElement("small"); m.className="err"; m.style.color="#ff7a7a"; $("#addform").appendChild(m); }
+  m.textContent = t;
 }
 
 /* ============================================================
@@ -279,7 +348,7 @@ function play(s){
 
   // Veritabanına "bu radyo dinlendi" bilgisi gönderilir.
   // Popülerlik sıralaması bu tıklamalarla oluşur.
-  fetch(API[0] + "/json/url/" + s.stationuuid).catch(()=>{});
+  if (!s.custom) fetch(API[0] + "/json/url/" + s.stationuuid).catch(()=>{});
 }
 
 /* ============================================================
@@ -296,6 +365,16 @@ $("#list").addEventListener("click", e=>{
     idx>=0 ? favs.splice(idx,1) : favs.push(s); // Varsa çıkar, yoksa ekle
     store.set("radyo_favs", favs);              // Tarayıcıya kaydet
     render(showFav ? favs : window._shown);
+    return;
+  }
+  // Elle eklenen radyoyu silme
+  const d = e.target.closest("[data-d]");
+  if (d){
+    e.stopPropagation();
+    const s = window._shown[d.dataset.d];
+    mine = mine.filter(x=>x.stationuuid!==s.stationuuid);
+    store.set("radyo_mine", mine);
+    render(mine);
     return;
   }
   const st = e.target.closest(".st");
@@ -321,7 +400,8 @@ $("#vol").oninput = e=>{ audio.volume = e.target.value; store.set("radyo_vol", e
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));
   b.classList.add("on");
-  if (b.dataset.fav){ showFav = true; render(favs); }
+  if (b.dataset.fav){ showFav = true; showMine = false; render(favs); }
+  else if (b.dataset.mine){ showMine = true; showFav = false; render(mine); }
   else { tag = b.dataset.tag; load(); }
 });
 
