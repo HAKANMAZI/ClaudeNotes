@@ -1,0 +1,1038 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  RADYO + PODCAST UYGULAMASI (v2 – ANDROID)
+  ------------------------------------------------------------
+  Bu dosya Android uygulamasının içinde çalışır (assets/www).
+  v2 web sürümünden farkları:
+  - Podcast ⬇ indirme telefonun "Podcasts/Radyo" klasörüne yapılır
+  - Çalarken bildirim çıkar, ekran kapalıyken yayın sürer
+  - Telefonun geri tuşu sayfa içinde geri gider
+  - ❤️ Destek: reklamsız, aboneliksiz; gönüllü destek (Google Play)
+  ------------------------------------------------------------
+  ------------------------------------------------------------
+  v2 yenilikleri: Podcast bölümü (arama, bölümler, kaldığın yerden
+  devam, abonelik, ileri/geri sarma, hız ayarı, bölüm indirme).
+  Podcastler Apple'ın ücretsiz ve herkese açık podcast
+  arşivinden (iTunes Search API) gelir; anahtar/üyelik gerekmez.
+  ------------------------------------------------------------
+  Bu dosya tek başına çalışan bir web uygulamasıdır.
+  Tarayıcıda açmanız yeterli; kurulum gerekmez.
+
+  Nasıl çalışır?
+  1) İstasyon listesini "Radio Browser" adlı ücretsiz ve açık
+     bir veritabanından alır (radio-browser.info).
+  2) Listede her radyonun canlı yayın adresi (stream linki) vardır.
+  3) Bir radyoya tıklayınca tarayıcının kendi ses çalarına
+     (<audio>) bu adres verilir, yayın doğrudan radyonun
+     kendi sunucusundan çalınır.
+
+  Dosyanın bölümleri:
+  - <style>  : Görünüm (renkler, yazı, düzen)
+  - <body>   : Ekrandaki parçalar (arama, sekmeler, liste, çalar)
+  - <script> : Çalışma mantığı (arama, çalma, favoriler)
+  ============================================================
+-->
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<!-- Telefonda ekrana düzgün sığması için -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Radyo</title>
+
+<style>
+  /* ---------- RENKLER ----------
+     Tüm renkler burada tanımlı. Rengi değiştirmek için
+     sadece bu satırı düzenlemek yeterli.
+     --bg: arka plan, --card: kutular, --line: çizgiler,
+     --txt: yazı, --dim: soluk yazı, --acc: vurgu (turuncu) */
+  :root{--bg:#0f1115;--card:#1a1d24;--line:#2a2e38;--txt:#e9ebf0;--dim:#8b91a0;--acc:#ff5a36}
+  *{box-sizing:border-box}
+
+  /* Sayfanın genel görünümü. Alttaki boşluk, sabit çalar çubuğu
+     listenin üstünü kapatmasın diye. */
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--txt);padding-bottom:150px}
+
+  /* Üst bölüm: kaydırınca da yukarıda sabit kalır */
+  header{position:sticky;top:0;background:var(--bg);padding:14px 14px 8px;z-index:5;border-bottom:1px solid var(--line)}
+  h1{margin:0 0 10px;font-size:22px}
+  h1 span{color:var(--acc)}
+
+  /* Arama kutusu, ülke seçimi ve düğmeler yan yana dizilir */
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  input,select,button{font:inherit;color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  input{flex:1;min-width:140px}
+  button{cursor:pointer}
+  /* Seçili sekme turuncu görünür */
+  button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+  .tabs{margin-top:8px}
+
+  /* ---------- İSTASYON LİSTESİ ---------- */
+  #list{padding:10px 14px;display:grid;gap:8px}
+  /* Her bir radyo satırı */
+  .st{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer}
+  /* Şu an çalan radyonun çerçevesi turuncu olur */
+  .st.playing{border-color:var(--acc)}
+  /* Radyo logosu (logo yoksa baş harfi gösterilir) */
+  .logo{width:48px;height:48px;border-radius:8px;background:#262a33;flex:none;object-fit:cover;display:grid;place-items:center;font-weight:700;color:var(--dim)}
+  .info{flex:1;min-width:0}
+  /* Uzun isimler "…" ile kısaltılır */
+  .name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .meta{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* Favori yıldızı: boşsa gri, doluysa sarı */
+  .fav{background:none;border:none;font-size:22px;padding:4px 6px;color:var(--dim)}
+  .fav.yes{color:#ffc83d}
+  /* Elle radyo ekleme formu */
+  .addform{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px}
+  .addform b{font-size:15px}
+  .addform small{color:var(--dim);line-height:1.4}
+  .addform button{background:var(--acc);border-color:var(--acc);color:#fff}
+  /* "Yükleniyor…", "Sonuç yok" gibi mesajlar */
+  .msg{color:var(--dim);text-align:center;padding:30px}
+
+  /* ---------- ALTTAKİ ÇALAR ÇUBUĞU ---------- */
+  #player{position:fixed;left:0;right:0;bottom:0;background:#14171d;border-top:1px solid var(--line);padding:12px 14px;display:flex;align-items:center;gap:12px}
+  /* Yuvarlak çal/durdur düğmesi */
+  #pp{width:52px;height:52px;border-radius:50%;background:var(--acc);border:none;color:#fff;font-size:22px;flex:none}
+  #now{flex:1;min-width:0}
+  /* Ses ayarı çubuğu */
+  #vol{width:90px}
+
+  /* ---------- v2: RADYO / PODCAST GEÇİŞİ ---------- */
+  .mode{margin-bottom:10px}
+  .mode button{flex:1;font-weight:600}
+  [hidden]{display:none!important}
+  /* Podcast kategori düğmeleri */
+  .ptabs{margin-top:8px}
+  .ptabs button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+  /* Bölüm listesi üst kısmı (geri düğmesi + podcast adı) */
+  .podhead{display:flex;align-items:center;gap:10px;padding:4px 0 6px}
+  .podhead img{width:64px;height:64px;border-radius:10px}
+  .podhead .name{white-space:normal}
+  /* Bölümün ne kadarının dinlendiğini gösteren ince çubuk */
+  .bar{height:3px;background:var(--line);border-radius:2px;margin-top:6px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--acc)}
+  .dl{color:var(--dim);text-decoration:none;font-size:20px;padding:4px 6px}
+  /* Sarma çubuğu (sadece podcastte görünür) */
+  #player{flex-wrap:wrap}
+  #seek{width:100%;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim)}
+  #seek input{flex:1;padding:0}
+  #seek button{padding:6px 8px;font-size:12px}
+
+  /* ---------- ANDROID: GÖNÜLLÜ DESTEK ---------- */
+  h1{display:flex;align-items:center;gap:8px}
+  #destekBtn{margin-left:auto;padding:6px 10px;font-size:13px;font-weight:600}
+  #destekPanel{position:fixed;left:14px;right:14px;top:70px;z-index:11;background:#14171d;border:1px solid var(--line);border-radius:12px;padding:14px;display:grid;gap:10px;box-shadow:0 8px 30px #0008;max-width:420px;margin:auto}
+  #destekPanel p{margin:0;color:var(--dim);font-size:14px;line-height:1.45}
+  #destekList{display:grid;gap:8px}
+  #destekList button{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+  #destekMsg{color:#ffd58a;font-size:13px;min-height:1em}
+
+  /* ---------- KAPANMA ZAMANLAYICISI ---------- */
+  #sleepBtn{padding:8px 10px;white-space:nowrap}
+  #sleepBtn.on{background:var(--acc);border-color:var(--acc);color:#fff}
+  /* Süre seçme paneli: çalar çubuğunun hemen üstünde açılır */
+  #sleepPanel{position:fixed;right:14px;bottom:130px;z-index:10;background:#14171d;border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;width:260px;box-shadow:0 8px 30px #0008}
+  #sleepPanel b{font-size:14px}
+  #sleepPanel .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  #sleepPanel input{min-width:0}
+  /* Yayın akışı (radyonun web sitesi) bağlantısı */
+  #web{color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;text-decoration:none;font-size:13px;white-space:nowrap}
+</style>
+</head>
+<body>
+
+<!-- ========== ÜST BÖLÜM: başlık, arama, ülke, sekmeler ========== -->
+<header>
+  <h1>📻 <span>Radyo</span> <small style="font-size:12px;color:var(--dim);font-weight:500">v2 · Android</small>
+    <!-- Gönüllü destek düğmesi (sadece Android uygulamasında görünür) -->
+    <button id="destekBtn" hidden>❤️ Destek ol</button></h1>
+
+  <!-- v2: Radyo / Podcast arasında geçiş -->
+  <div class="row mode">
+    <button id="m_radio" class="on">📻 Radyo</button>
+    <button id="m_pod">🎙️ Podcast</button>
+  </div>
+
+  <!-- RADYO BÖLÜMÜ (v1'deki gibi) -->
+  <div id="radioBar">
+  <div class="row">
+    <!-- Radyo adıyla arama kutusu -->
+    <input id="q" placeholder="İstasyon ara…">
+    <!-- Ülke seçimi. value = ülkenin iki harfli kodu.
+         Yeni ülke eklemek için bir satır kopyalayıp kodu değiştirin. -->
+    <select id="country">
+      <option value="TR">Türkiye</option>
+      <option value="IQ">Irak</option>
+      <option value="AZ">Azerbaycan</option>
+      <option value="DE">Almanya</option>
+      <option value="GB">İngiltere</option>
+      <option value="US">ABD</option>
+      <option value="">Tüm dünya</option>
+    </select>
+    <button id="go">Ara</button>
+  </div>
+
+  <!-- Tür sekmeleri. data-tag = veritabanındaki tür etiketi.
+       Yeni tür eklemek için bir satır kopyalayıp etiketi değiştirin
+       (örnek: data-tag="rock"). -->
+  <div class="row tabs">
+    <button data-tag="" class="on" id="all">Tümü</button>
+    <button data-tag="pop">Pop</button>
+    <button data-tag="news">Haber</button>
+    <button data-tag="turkish folk">Türkü</button>
+    <button data-tag="arabesk">Arabesk</button>
+    <button data-tag="classical">Klasik</button>
+    <button data-tag="documentary">Belgesel</button>
+    <button data-tag="talk">Sohbet</button>
+    <button data-fav="1">★ Favoriler</button>
+    <!-- Kullanıcının elle eklediği radyolar -->
+    <button data-mine="1">➕ Benim radyolarım</button>
+  </div>
+  </div>
+
+  <!-- v2: PODCAST BÖLÜMÜ -->
+  <div id="podBar" hidden>
+    <div class="row">
+      <input id="pq" placeholder="Podcast ara… (ör. tarih, ekonomi)">
+    </div>
+    <!-- Kategori düğmeleri. data-term = aranacak kelime.
+         Yeni kategori için bir satır kopyalayıp kelimeyi değiştirin. -->
+    <div class="row ptabs">
+      <!-- Tümü: birçok aramayı birleştirir, en yeni bölümü olan en üstte -->
+      <button data-term="__all__" class="on">Tümü</button>
+      <button data-term="türkçe podcast">Popüler</button>
+      <button data-term="belgesel">Belgesel</button>
+      <button data-term="tarih">Tarih</button>
+      <button data-term="bilim">Bilim</button>
+      <button data-term="haber gündem">Haber</button>
+      <button data-term="ekonomi">Ekonomi</button>
+      <button data-term="girişimcilik">İş dünyası</button>
+      <button data-term="spor">Spor</button>
+      <button data-term="komedi">Komedi</button>
+      <button data-term="hikaye">Hikâye</button>
+      <button data-term="çocuk masalları">Çocuk</button>
+      <button data-psubs="1">★ Aboneliklerim</button>
+      <button data-pcont="1">⏯ Devam et</button>
+    </div>
+  </div>
+</header>
+
+<!-- ========== İSTASYON LİSTESİ (kod tarafından doldurulur) ========== -->
+<div id="list"><div class="msg">Yükleniyor…</div></div>
+
+<!-- ========== ALTTAKİ ÇALAR ========== -->
+<div id="player">
+  <!-- v2: Podcastte sarma çubuğu: geçen süre, çubuk, toplam süre,
+       15 sn geri, 30 sn ileri, hız -->
+  <div id="seek" hidden>
+    <button id="back15">⟲ 15</button>
+    <span id="tcur">0:00</span>
+    <input id="pos" type="range" min="0" max="0" step="1" value="0">
+    <span id="tdur">0:00</span>
+    <button id="fwd30">30 ⟳</button>
+    <button id="speed">1x</button>
+  </div>
+  <button id="pp">▶</button>
+  <div id="now"><div class="name">İstasyon seçin</div><div class="meta" id="status">—</div></div>
+  <!-- Radyonun web sitesi varsa görünür; program akışı genelde oradadır -->
+  <a id="web" target="_blank" rel="noopener" style="display:none">📅 Yayın akışı</a>
+  <!-- Kapanma zamanlayıcısı düğmesi; çalışırken kalan süreyi gösterir -->
+  <button id="sleepBtn" title="Kapanma zamanlayıcısı">⏾</button>
+  <!-- Ses: 0 = sessiz, 1 = en yüksek -->
+  <input id="vol" type="range" min="0" max="1" step="0.05" value="0.8">
+</div>
+
+<!-- Gönüllü destek paneli -->
+<div id="destekPanel" hidden>
+  <b>❤️ Gönüllü destek</b>
+  <p>Bu uygulama ücretsizdir. Reklam ve abonelik yoktur.
+     Beğendiyseniz, isterseniz küçük bir destekle katkıda bulunabilirsiniz.
+     Destek olmak hiçbir özelliği açmaz; herkes her şeyi kullanır.</p>
+  <div id="destekList"></div>
+  <div id="destekMsg"></div>
+  <small style="color:var(--dim)">Ödeme Google Play üzerinden yapılır.</small>
+  <button id="destekKapat">Kapat</button>
+</div>
+
+<!-- Kapanma zamanlayıcısı paneli -->
+<div id="sleepPanel" hidden>
+  <b>⏾ Ne zaman kapansın?</b>
+  <div class="grid">
+    <button data-min="15">15 dakika</button>
+    <button data-min="30">30 dakika</button>
+    <button data-min="45">45 dakika</button>
+    <button data-min="60">1 saat</button>
+  </div>
+  <div class="row">
+    <input id="sleepMin" type="number" min="1" max="600" placeholder="Dakika yazın">
+    <button id="sleepSet">Kur</button>
+  </div>
+  <button id="sleepOff">Zamanlayıcıyı iptal et</button>
+</div>
+
+<!-- Tarayıcının kendi ses çaları. Ekranda görünmez;
+     radyonun yayın adresini bu çalar çalar. -->
+<audio id="audio" preload="none"></audio>
+
+<script>
+/* ============================================================
+   1) AYARLAR VE DEĞİŞKENLER
+   ============================================================ */
+
+// Radio Browser veritabanının sunucuları.
+// Biri çalışmazsa sıradaki denenir (yedekli çalışma).
+const API = ["https://de1.api.radio-browser.info","https://nl1.api.radio-browser.info","https://at1.api.radio-browser.info"];
+
+// Kısayol: $("#q") yazınca sayfadaki id="q" öğesini bulur.
+const $ = s => document.querySelector(s);
+
+// Ses çaları
+const audio = $("#audio");
+
+let stations = [];   // Son aramada gelen radyolar
+let current = null;  // Şu an çalan radyo
+let tag = "";        // Seçili tür ("" = tümü)
+let showFav = false; // Favoriler sekmesi açık mı?
+let showMine = false;// "Benim radyolarım" sekmesi açık mı?
+
+/* ============================================================
+   2) TARAYICIYA KAYIT (favoriler ve ses seviyesi)
+   ------------------------------------------------------------
+   localStorage: tarayıcının küçük bir hafızası. Sayfayı kapatıp
+   açınca favoriler kaybolmaz. Sadece bu tarayıcıda saklanır.
+   ============================================================ */
+const store = {
+  // Kayıtlı değeri oku; yoksa varsayılanı (d) döndür
+  get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},
+  // Değeri kaydet
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
+};
+
+// Açılışta favorileri ve son ses seviyesini geri yükle
+// Veritabanında olmayan, uygulamaya hazır eklenen radyolar.
+// Yeni radyo eklemek için bir satır kopyalayıp ad ve adresi değiştirin.
+const EXTRA = [
+  { stationuuid:"ek-radyo-belgesel", name:"Radyo Belgesel",
+    url_resolved:"https://yayin2.canliyayin.org:9996/stream",
+    homepage:"https://www.canliyayin.org/radyo/radyo-belgesel",
+    country:"Türkiye", countrycode:"TR", tags:"documentary,belgesel,talk", bitrate:48 }
+];
+
+let favs = store.get("radyo_favs", []);
+let mine = store.get("radyo_mine", []); // Elle eklenen radyolar
+$("#vol").value = store.get("radyo_vol", 0.8);
+audio.volume = $("#vol").value;
+
+/* ============================================================
+   3) VERİTABANINA SORU SORMA
+   ------------------------------------------------------------
+   Sunuculara sırayla istek atar. İlk cevap veren sunucunun
+   sonucunu döndürür. Hiçbiri cevap vermezse hata verir.
+   ============================================================ */
+async function api(path){
+  for (const host of API){
+    try{
+      const r = await fetch(host + path);
+      if (r.ok) return await r.json(); // Cevap geldi → listeyi döndür
+    }catch(e){ /* Bu sunucu çalışmadı, sıradakine geç */ }
+  }
+  throw new Error("Sunucuya ulaşılamadı");
+}
+
+/* ============================================================
+   4) RADYOLARI ARAMA VE LİSTELEME
+   ============================================================ */
+let reqNo = 0; // Her aramaya sıra numarası; eski aramanın geç gelen sonucu yenisini ezmesin
+
+async function load(){
+  const my = ++reqNo;
+  showFav = false; showMine = false;
+  $("#list").innerHTML = '<div class="msg">Yükleniyor…</div>';
+
+  // Arama ayarları:
+  // limit=80        → en fazla seksen radyo getir
+  // order=clickcount→ en çok dinlenene göre sırala
+  // reverse=true    → çoktan aza
+  // hidebroken=true → bozuk (çalışmayan) radyoları gizle
+  const p = new URLSearchParams({limit:80, order:"clickcount", reverse:"true", hidebroken:"true"});
+
+  const c = $("#country").value;   // Seçili ülke kodu
+  const q = $("#q").value.trim();  // Arama kutusundaki yazı
+
+  if (q){
+    // İsimle aranıyorsa tür filtresi kaldırılır: tüm radyolarda aranır.
+    // (Örnek: "kafa" yazınca Pop sekmesi seçili olsa bile bulunur.)
+    tag = "";
+    document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));
+    $("#all").classList.add("on");
+    p.set("name", q);
+  }
+  if (c) p.set("countrycode", c); // Ülke filtresi
+  if (tag) p.set("tag", tag);     // Tür filtresi
+
+  try{
+    stations = await api("/json/stations/search?" + p);
+    if (my !== reqNo || mode !== "radio") return; // Bu arada yeni arama başladıysa veya podcaste geçildiyse sonucu at
+    // Seçili ülkede bulunamazsa ülke filtresini kaldırıp tüm dünyada ara
+    if (!stations.length && q && c){
+      p.delete("countrycode");
+      stations = await api("/json/stations/search?" + p);
+      if (my !== reqNo) return;
+    }
+    // Hazır eklenen radyolar (EXTRA): ülke, tür ve aramaya uyuyorsa listenin başına eklenir
+    const extra = EXTRA.filter(s =>
+      (!c || s.countrycode === c || q) &&
+      (!tag || s.tags.includes(tag)) &&
+      (!q || s.name.toLocaleLowerCase("tr").includes(q.toLocaleLowerCase("tr"))));
+    stations = extra.concat(stations);
+    // Elle eklenen radyolar da aramada çıksın: adı aranan yazıyı içerenler listenin başına eklenir
+    if (q){
+      const k = q.toLocaleLowerCase("tr");
+      const own = mine.filter(s=>s.name.toLocaleLowerCase("tr").includes(k));
+      stations = own.concat(stations);
+    }
+    render(stations);
+  }
+  catch(e){ if (my === reqNo) $("#list").innerHTML = '<div class="msg">'+e.message+'</div>'; }
+}
+
+// Güvenlik: radyo adlarındaki özel işaretleri (<, > gibi) zararsız hale getirir,
+// böylece bir radyo adı sayfayı bozamaz.
+function esc(s){return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+/* Gelen radyo listesini ekrana çizer.
+   Her radyo için: logo, ad, ülke · türler · ses kalitesi (kbps), yıldız. */
+function render(arr){
+  window._shown = arr; // Ekrandaki liste; tıklamada hangi radyo seçildi bulmak için
+  if (showMine){ renderMine(); return; }
+  if (!arr.length){
+    $("#list").innerHTML = '<div class="msg">'+(showFav?"Henüz favori yok.":"Sonuç bulunamadı.")+'</div>';
+    return;
+  }
+  $("#list").innerHTML = rows(arr);
+}
+
+/* Radyo satırlarının HTML'ini üretir.
+   Elle eklenen radyolarda yıldız yerine silme (🗑) düğmesi çıkar. */
+function rows(arr){
+  return arr.map((s,i)=>{
+    const isFav = favs.some(f=>f.stationuuid===s.stationuuid); // Favoride mi?
+    // Logo varsa resmi göster; yüklenemezse veya yoksa adın baş harfini göster
+    const logo = s.favicon
+      ? `<img class="logo" src="${esc(s.favicon)}" onerror="this.outerHTML='<div class=logo>${esc(s.name[0]||'?')}</div>'">`
+      : `<div class="logo">${esc((s.name||"?")[0])}</div>`;
+    return `<div class="st ${current&&current.stationuuid===s.stationuuid?'playing':''}" data-i="${i}">
+      ${logo}
+      <div class="info"><div class="name">${esc(s.name.trim())}</div>
+      <div class="meta">${esc([s.country, s.tags&&s.tags.split(",").slice(0,3).join(", "), s.bitrate?s.bitrate+" kbps":""].filter(Boolean).join(" · "))}</div></div>
+      ${s.custom
+        ? `<button class="fav" data-d="${i}" title="Sil">🗑</button>`
+        : `<button class="fav ${isFav?'yes':''}" data-f="${i}">${isFav?'★':'☆'}</button>`}
+    </div>`;
+  }).join("");
+}
+
+/* ============================================================
+   4b) ELLE RADYO EKLEME ("Benim radyolarım")
+   ------------------------------------------------------------
+   Listede olmayan bir radyoyu kendiniz ekleyebilirsiniz.
+   Gerekli olan: radyonun İNTERNET YAYIN ADRESİ (stream linki).
+   Frekans (ör. 98.4) sadece bilgi olarak yazılır; internet
+   radyosu frekansla değil, yayın adresiyle çalar.
+   Yayın adresi genelde radyonun sitesinde "canlı dinle"
+   bölümünde ya da "stream", ".mp3", ".aac", ".m3u" diye geçer.
+   ============================================================ */
+function renderMine(){
+  $("#list").innerHTML = `
+    <form class="addform" id="addform">
+      <b>➕ Radyo ekle</b>
+      <input id="m_name" placeholder="Radyo adı (ör. Radyo Belgesel)" required>
+      <input id="m_freq" placeholder="Frekans – isteğe bağlı (ör. 98.4)">
+      <input id="m_url" placeholder="Yayın adresi (https://… ile başlar)" required>
+      <button type="submit">Ekle</button>
+      <small>⚠️ Web sayfası adresi (ör. canliyayin.org/radyo/…) çalışmaz.
+      Yayın adresi genelde şöyle görünür: https://sunucu.com:8000/stream veya …/;stream.mp3<br>
+      Frekans sadece bilgi içindir. Radyoyu çalan şey yayın adresidir;
+      bunu radyonun web sitesindeki "canlı dinle" bölümünden bulabilirsiniz.</small>
+    </form>
+    ${mine.length ? rows(mine) : '<div class="msg">Henüz elle eklenen radyo yok.</div>'}`;
+}
+
+// Form gönderilince yeni radyoyu kaydet
+$("#list").addEventListener("submit", e=>{
+  if (e.target.id !== "addform") return; // Sadece radyo ekleme formu
+  e.preventDefault(); // Sayfanın yenilenmesini engelle
+  const name = $("#m_name").value.trim();
+  const freq = $("#m_freq").value.trim();
+  const url  = $("#m_url").value.trim();
+  if (!/^https?:\/\//i.test(url)){ alertMsg("Yayın adresi http:// veya https:// ile başlamalı"); return; }
+  mine.push({
+    stationuuid: "elle-" + Date.now(), // Benzersiz kimlik
+    name, url_resolved: url, homepage: "",
+    country: "Elle eklendi",
+    tags: freq ? freq + " FM" : "",
+    custom: true
+  });
+  store.set("radyo_mine", mine); // Tarayıcıya kaydet
+  render(mine);
+});
+
+// Formun altında kısa uyarı gösterir
+function alertMsg(t){
+  let m = document.querySelector(".addform .err");
+  if (!m){ m = document.createElement("small"); m.className="err"; m.style.color="#ff7a7a"; $("#addform").appendChild(m); }
+  m.textContent = t;
+}
+
+/* ============================================================
+   5) RADYO ÇALMA
+   ------------------------------------------------------------
+   Radyonun canlı yayın adresi (url_resolved) ses çalara verilir.
+   Ses, Radio Browser'dan değil, doğrudan radyonun kendi
+   yayın sunucusundan gelir.
+   ============================================================ */
+function play(s){
+  current = s;
+  $("#seek").hidden = true;      // Canlı radyoda sarma olmaz
+  audio.onloadedmetadata = null; // Podcastin "kaldığın yer" ayarı radyoya karışmasın
+  audio.playbackRate = 1;        // Radyo her zaman normal hızda
+  audio.src = s.url_resolved || s.url; // Canlı yayın adresi
+  $("#now .name").textContent = s.name.trim();
+  $("#status").textContent = "Bağlanıyor…";
+
+  // Radyonun web sitesi kayıtlıysa "Yayın akışı" düğmesini göster
+  const w = $("#web");
+  if (s.homepage){ w.href = s.homepage; w.style.display = ""; } else { w.style.display = "none"; }
+
+  audio.play().catch(()=>{ $("#status").textContent = "Bu istasyon çalınamadı"; });
+  render(window._shown); // Çalan radyoyu turuncu çerçeveyle işaretlemek için
+
+  // Veritabanına "bu radyo dinlendi" bilgisi gönderilir.
+  // Popülerlik sıralaması bu tıklamalarla oluşur.
+  if (!s.custom && !s.stationuuid.startsWith("ek-")) fetch(API[0] + "/json/url/" + s.stationuuid).catch(()=>{});
+}
+
+/* ============================================================
+   6) TIKLAMALAR VE DÜĞMELER
+   ============================================================ */
+
+// Listeye tıklama: yıldıza basıldıysa favori ekle/çıkar, değilse radyoyu çal
+$("#list").addEventListener("click", e=>{
+  if (mode === "pod"){ podClick(e); return; } // v2: podcast modundaysa podcast tıklaması
+  const f = e.target.closest("[data-f]");
+  if (f){
+    e.stopPropagation();
+    const s = window._shown[f.dataset.f];
+    const idx = favs.findIndex(x=>x.stationuuid===s.stationuuid);
+    idx>=0 ? favs.splice(idx,1) : favs.push(s); // Varsa çıkar, yoksa ekle
+    store.set("radyo_favs", favs);              // Tarayıcıya kaydet
+    render(showFav ? favs : window._shown);
+    return;
+  }
+  // Elle eklenen radyoyu silme
+  const d = e.target.closest("[data-d]");
+  if (d){
+    e.stopPropagation();
+    const s = window._shown[d.dataset.d];
+    mine = mine.filter(x=>x.stationuuid!==s.stationuuid);
+    store.set("radyo_mine", mine);
+    render(mine);
+    return;
+  }
+  const st = e.target.closest(".st");
+  if (st) play(window._shown[st.dataset.i]);
+});
+
+// Çal / durdur düğmesi
+$("#pp").onclick = ()=>{
+  if (!current) return; // Henüz radyo seçilmediyse bir şey yapma
+  audio.paused ? audio.play().catch(()=>{}) : audio.pause();
+};
+
+// Ses çaların durumuna göre alttaki yazıyı ve düğmeyi güncelle
+audio.onplaying = ()=>{ $("#pp").textContent="⏸"; $("#status").textContent="Çalıyor"; };
+audio.onpause   = ()=>{ $("#pp").textContent="▶"; $("#status").textContent="Durduruldu"; };
+audio.onwaiting = ()=>{ $("#status").textContent="Yükleniyor…"; };
+audio.onerror   = ()=>{
+  if(!current) return;
+  $("#pp").textContent="▶";
+  // Elle eklenen radyoda hata: büyük ihtimalle web sayfası adresi girilmiştir
+  $("#status").textContent = current.episodeUrl ? "Bu bölüm çalınamadı"
+    : current.custom
+    ? "Çalınamadı. Girilen adres web sayfası olabilir; yayın (stream) adresi gerekir."
+    : "Bu istasyon çalınamadı";
+};
+
+// Ses ayarı değişince uygula ve kaydet
+$("#vol").oninput = e=>{ audio.volume = e.target.value; store.set("radyo_vol", e.target.value); };
+
+// Sekmeler: Favoriler ise kayıtlı listeyi göster, değilse o türü ara
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");
+  if (b.dataset.fav){ showFav = true; showMine = false; render(favs); }
+  else if (b.dataset.mine){ showMine = true; showFav = false; render(mine); }
+  else { tag = b.dataset.tag; load(); }
+});
+
+// Ara düğmesi, Enter tuşu ve ülke değişimi aramayı başlatır
+$("#go").onclick = load;
+$("#q").onkeydown = e=>{ if(e.key==="Enter"){ clearTimeout(typing); load(); } };
+
+// Yazdıkça arama: her harfte değil, yazmayı kısa süre (0,35 saniye)
+// bırakınca arar. Böylece sunucuya gereksiz istek gitmez.
+let typing;
+$("#q").oninput = ()=>{
+  clearTimeout(typing);
+  typing = setTimeout(load, 350);
+};
+$("#country").onchange = load;
+
+/* ============================================================
+   7) BAŞLANGIÇ: sayfa açılınca popüler Türk radyolarını getir
+   ============================================================ */
+/* ============================================================
+   8) v2: PODCAST BÖLÜMÜ
+   ------------------------------------------------------------
+   Podcast nereden geliyor?
+   Apple'ın herkese açık ve ücretsiz podcast arşivi (iTunes
+   Search API). Anahtar veya üyelik gerekmez. Ses dosyası
+   podcastin kendi sunucusundan çalınır.
+   - Arama:   itunes.apple.com/search?media=podcast&term=…
+   - Bölümler: itunes.apple.com/lookup?id=…&entity=podcastEpisode
+   ============================================================ */
+const IT = "https://itunes.apple.com";
+let mode = "radio";                        // "radio" veya "pod"
+let subs = store.get("pod_subs", []);      // Abone olunan podcastler
+let prog = store.get("pod_prog", {});      // Kaldığın yer: bölüm kimliği → {t: saniye, d: süre, ...}
+let podReq = 0;                            // Eski aramanın sonucu yenisini ezmesin
+let podTerm = "__all__";                   // Son aranan kelime ("__all__" = Tümü)
+
+// "Tümü" sekmesi için birlikte aranan kelimeler. Eklemek/çıkarmak serbest.
+const ALL_TERMS = ["podcast","türkçe podcast","sohbet","belgesel","tarih","bilim","haber","ekonomi","spor","hikaye"];
+let podsShown = [], epsShown = [], curPod = null;
+
+/* ---------- ENGELLEME LİSTESİ ----------
+   Podcastin adında, yapımcısında veya bölüm başlığında bu
+   kelimelerden biri geçerse o içerik hiç gösterilmez.
+   Liste ekranda görünmez; sadece buradan değiştirilir. */
+const DEFAULT_BLOCK = ["fethullah gülen", "fetullah gülen", "f. gülen", "herkul", "hocaefendi", "hoca efendi", "gulen podcast", "gulen arabic", "gülen sesli kitap", "فتح الله كولن"];
+const blocked = DEFAULT_BLOCK;
+
+// Karşılaştırma için yazıyı sadeleştirir: küçük harf, Türkçe harfler → düz (ü→u, ş→s …)
+function norm(s){
+  return String(s||"").toLocaleLowerCase("tr")
+    .replace(/ı/g,"i").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+// Bu podcast/bölüm engelli mi?
+function isBlocked(x){
+  const text = norm([x.collectionName, x.artistName, x.trackName, x.collectionCensoredName].join(" "));
+  return blocked.some(w => w.trim() && text.includes(norm(w)));
+}
+
+// Apple arşivine istek at.
+// Önce normal yolla (fetch) dener. Dosya bilgisayardan açıldığında
+// (file://) tarayıcı bazı istekleri engelliyor; o zaman yedek yöntem
+// olan JSONP kullanılır: cevap bir <script> etiketiyle alınır,
+// bu yöntem her ortamda çalışır.
+async function itunes(path){
+  try{
+    const r = await fetch(IT + path);
+    if (r.ok) return await r.json();
+  }catch(e){ /* Engellendi, yedek yönteme geç */ }
+  return jsonp(IT + path);
+}
+
+let jsonpNo = 0;
+function jsonp(url){
+  return new Promise((ok, fail)=>{
+    const name = "itunesCb" + (++jsonpNo);
+    const s = document.createElement("script");
+    const done = ()=>{ delete window[name]; s.remove(); clearTimeout(timer); };
+    const timer = setTimeout(()=>{ done(); fail(new Error("Podcast sunucusuna ulaşılamadı")); }, 15000);
+    window[name] = data=>{ done(); ok(data); };
+    s.onerror = ()=>{ done(); fail(new Error("Podcast sunucusuna ulaşılamadı")); };
+    s.src = url + "&callback=" + name;
+    document.head.appendChild(s);
+  });
+}
+
+// Saniyeyi "1:05:30" veya "5:30" biçimine çevirir
+function fmt(sec){
+  sec = Math.max(0, Math.floor(sec||0));
+  const h = Math.floor(sec/3600), m = Math.floor(sec%3600/60), s = sec%60;
+  return (h ? h+":"+String(m).padStart(2,"0") : m) + ":" + String(s).padStart(2,"0");
+}
+// Tarihi "14 Kasım 2026" biçiminde yazar
+function trDate(d){ return new Date(d).toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"}); }
+
+// Süreyi "1 sa 5 dk" biçiminde yazar (listelerde)
+function fmtLong(sec){
+  const h = Math.floor(sec/3600), m = Math.round(sec%3600/60);
+  return (h ? h+" sa " : "") + m + " dk";
+}
+
+// --- Podcast arama ---
+async function podSearch(term){
+  const my = ++podReq;
+  podTerm = term;
+  $("#list").innerHTML = '<div class="msg">Yükleniyor…</div>';
+  try{
+    let results;
+    if (term === "__all__"){
+      // Tümü: kelimeleri aynı anda ara, sonuçları birleştir, aynı podcasti bir kez al
+      const all = await Promise.allSettled(ALL_TERMS.map(t =>
+        itunes("/search?media=podcast&country=TR&limit=100&term=" + encodeURIComponent(t))));
+      const seen = new Set();
+      results = [];
+      all.forEach(x => x.status === "fulfilled" && x.value.results.forEach(p => {
+        if (!seen.has(p.collectionId)){ seen.add(p.collectionId); results.push(p); }
+      }));
+      if (!results.length) throw new Error("Podcast sunucusuna ulaşılamadı");
+    } else {
+      const j = await itunes("/search?media=podcast&country=TR&limit=100&term=" + encodeURIComponent(term));
+      results = j.results;
+    }
+    if (my !== podReq || mode !== "pod") return;
+    renderPods(results, "Sonuç bulunamadı.");
+  }catch(e){ if (my === podReq) $("#list").innerHTML = '<div class="msg">'+e.message+'</div>'; }
+}
+
+// --- Podcast listesini çiz (kapak, ad, yapımcı, tür, abone yıldızı) ---
+function renderPods(arr, emptyText){
+  // Güncel tarihten geriye: en yeni bölümü yayınlanan podcast en üstte
+  arr = arr.filter(p => !isBlocked(p)); // Engellenenleri çıkar
+  arr = arr.slice().sort((a,b) => (b.releaseDate||"").localeCompare(a.releaseDate||""));
+  podsShown = arr; curPod = null;
+  if (!arr.length){ $("#list").innerHTML = '<div class="msg">'+emptyText+'</div>'; return; }
+  $("#list").innerHTML = arr.map((p,i)=>{
+    const isSub = subs.some(s=>s.collectionId===p.collectionId);
+    return `<div class="st" data-p="${i}">
+      <img class="logo" src="${esc(p.artworkUrl100||"")}" onerror="this.style.visibility='hidden'">
+      <div class="info"><div class="name">${esc(p.collectionName)}</div>
+      <div class="meta">${esc([p.releaseDate ? "Son bölüm: " + trDate(p.releaseDate) : "", p.artistName, p.primaryGenreName, p.trackCount ? p.trackCount+" bölüm" : ""].filter(Boolean).join(" · "))}</div></div>
+      <button class="fav ${isSub?'yes':''}" data-ps="${i}" title="Abone ol">${isSub?'★':'☆'}</button>
+    </div>`;
+  }).join("");
+}
+
+// --- Bir podcastin bölümlerini aç ---
+async function openPod(p){
+  const my = ++podReq;
+  curPod = p;
+  $("#list").innerHTML = '<div class="msg">Bölümler yükleniyor…</div>';
+  try{
+    const j = await itunes("/lookup?id=" + p.collectionId + "&entity=podcastEpisode&limit=200&country=TR");
+    if (my !== podReq || mode !== "pod") return;
+    // İlk sonuç podcastin kendisi; geri kalanlar bölümler
+    renderEps(j.results.filter(r=>r.episodeUrl && !isBlocked(r))
+      .sort((a,b) => (b.releaseDate||"").localeCompare(a.releaseDate||""))); // En yeni bölüm üstte
+  }catch(e){ if (my === podReq) $("#list").innerHTML = '<div class="msg">'+e.message+'</div>'; }
+}
+
+// --- Bölüm listesini çiz ---
+// Her bölüm: başlık, tarih, süre, dinleme çubuğu, ⬇ indir bağlantısı
+function renderEps(eps){
+  epsShown = eps;
+  const p = curPod, isSub = subs.some(s=>s.collectionId===p.collectionId);
+  const head = `<div class="podhead">
+      <button id="pback">← Geri</button>
+      <img src="${esc(p.artworkUrl100||"")}" onerror="this.style.display='none'">
+      <div class="info"><div class="name">${esc(p.collectionName)}</div><div class="meta">${esc(p.artistName||"")}</div></div>
+      <button class="fav ${isSub?'yes':''}" id="psub" title="Abone ol">${isSub?'★':'☆'}</button>
+    </div>`;
+  if (!eps.length){ $("#list").innerHTML = head + '<div class="msg">Bölüm bulunamadı.</div>'; return; }
+  $("#list").innerHTML = head + eps.map((e,i)=>epRow(e,i)).join("");
+}
+
+// Tek bir bölüm satırı
+function epRow(e,i){
+  const pr = prog[e.trackId];
+  const d = (e.trackTimeMillis||0)/1000 || (pr&&pr.d) || 0;
+  const pct = pr && d ? Math.min(100, pr.t/d*100) : 0;
+  const date = e.releaseDate ? new Date(e.releaseDate).toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"}) : "";
+  const playing = current && current.trackId === e.trackId;
+  return `<div class="st ${playing?'playing':''}" data-e="${i}">
+    <div class="info"><div class="name">${esc(e.trackName)}</div>
+    <div class="meta">${esc([e.collectionName && !curPod ? e.collectionName : "", date, d ? fmtLong(d) : "", pct>=97 ? "✓ dinlendi" : ""].filter(Boolean).join(" · "))}</div>
+    ${pct>0 && pct<97 ? `<div class="bar"><i style="width:${pct}%"></i></div>` : ""}</div>
+    <a class="dl" href="${esc(e.episodeUrl)}" target="_blank" rel="noopener" title="İndir / internetsiz dinlemek için kaydet">⬇</a>
+  </div>`;
+}
+
+// --- "Devam et": yarım kalan bölümler (en son dinlenen üstte) ---
+function renderContinue(){
+  curPod = null;
+  const list = Object.values(prog).filter(x=>x.ep && x.t>30 && (!x.d || x.t < x.d-30)).sort((a,b)=>b.at-a.at);
+  epsShown = list.map(x=>x.ep).filter(e=>!isBlocked(e));
+  $("#list").innerHTML = epsShown.length ? epsShown.map((e,i)=>epRow(e,i)).join("")
+    : '<div class="msg">Yarım kalan bölüm yok.</div>';
+}
+
+// --- Bölüm çalma ---
+function playEp(e){
+  current = e;
+  audio.src = e.episodeUrl;
+  $("#now .name").textContent = e.trackName;
+  $("#status").textContent = "Yükleniyor…";
+  $("#web").style.display = "none";
+  $("#seek").hidden = false;
+  // Kaldığı yerden devam: ses dosyası hazır olunca kayıtlı saniyeye git
+  const pr = prog[e.trackId];
+  audio.onloadedmetadata = ()=>{
+    if (pr && pr.t > 5 && (!audio.duration || pr.t < audio.duration - 10)) audio.currentTime = pr.t;
+  };
+  audio.playbackRate = speeds[speedIdx];
+  audio.play().catch(()=>{ $("#status").textContent = "Bu bölüm çalınamadı"; });
+  // Telefonun kilit ekranında başlık görünsün
+  try{ navigator.mediaSession.metadata = new MediaMetadata({title:e.trackName, artist:e.collectionName||"", artwork:[{src:e.artworkUrl600||e.artworkUrl160||"",sizes:"600x600"}]}); }catch(_){}
+  if (curPod) renderEps(epsShown); else if (epsShown.length) $("#list").querySelectorAll(".st").forEach((el,i)=>el.classList.toggle("playing", epsShown[i]===e));
+}
+
+// --- Podcast modunda listeye tıklama ---
+function podClick(e){
+  if (e.target.closest("#pback")){ podSearch(podTerm); return; }               // Geri
+  if (e.target.closest("#psub")){ toggleSub(curPod); renderEps(epsShown); return; } // Abone ol/çık
+  if (e.target.closest(".dl")){                                                 // ⬇ İndir
+    if (window.Android){
+      // Android: bölümü telefonun Podcasts/Radyo klasörüne indir
+      e.preventDefault();
+      const ep = epsShown[e.target.closest("[data-e]").dataset.e];
+      try{ Android.download(ep.episodeUrl, ep.trackName); }catch(_){}
+    }
+    return;
+  }
+  const ps = e.target.closest("[data-ps]");
+  if (ps){ toggleSub(podsShown[ps.dataset.ps]); renderPods(podsShown, "Henüz abonelik yok."); return; }
+  const pp = e.target.closest("[data-p]");
+  if (pp){ openPod(podsShown[pp.dataset.p]); return; }
+  const ee = e.target.closest("[data-e]");
+  if (ee) playEp(epsShown[ee.dataset.e]);
+}
+
+// Abone ol / abonelikten çık (sadece bu tarayıcıda saklanır)
+function toggleSub(p){
+  const i = subs.findIndex(s=>s.collectionId===p.collectionId);
+  if (i>=0) subs.splice(i,1);
+  else subs.push({collectionId:p.collectionId, collectionName:p.collectionName, artistName:p.artistName, artworkUrl100:p.artworkUrl100, primaryGenreName:p.primaryGenreName, releaseDate:p.releaseDate, trackCount:p.trackCount});
+  store.set("pod_subs", subs);
+}
+
+// --- Sarma çubuğu ve kaldığın yeri kaydetme ---
+let dragging = false, lastSave = 0;
+audio.ontimeupdate = ()=>{
+  if (!current || !current.episodeUrl) return; // Sadece podcastte
+  const d = audio.duration || 0;
+  if (!dragging){ $("#pos").max = Math.floor(d); $("#pos").value = Math.floor(audio.currentTime); }
+  $("#tcur").textContent = fmt(audio.currentTime);
+  $("#tdur").textContent = fmt(d);
+  // Her beş saniyede bir kaldığın yeri kaydet
+  if (Date.now() - lastSave > 5000){
+    lastSave = Date.now();
+    const e = current;
+    prog[e.trackId] = { t: audio.currentTime, d, at: Date.now(),
+      ep: {trackId:e.trackId, trackName:e.trackName, collectionName:e.collectionName, episodeUrl:e.episodeUrl, releaseDate:e.releaseDate, trackTimeMillis:e.trackTimeMillis, artworkUrl160:e.artworkUrl160} };
+    store.set("pod_prog", prog);
+  }
+};
+$("#pos").oninput  = ()=>{ dragging = true; $("#tcur").textContent = fmt($("#pos").value); };
+$("#pos").onchange = ()=>{ audio.currentTime = $("#pos").value; dragging = false; };
+$("#back15").onclick = ()=>{ audio.currentTime = Math.max(0, audio.currentTime - 15); };
+$("#fwd30").onclick  = ()=>{ audio.currentTime = Math.min(audio.duration||1e9, audio.currentTime + 30); };
+// Hız: 1x → 1.25x → 1.5x → 2x → 0.75x → 1x …
+const speeds = [1, 1.25, 1.5, 2, 0.75];
+let speedIdx = 0;
+$("#speed").onclick = ()=>{
+  speedIdx = (speedIdx+1) % speeds.length;
+  audio.playbackRate = speeds[speedIdx];
+  $("#speed").textContent = speeds[speedIdx] + "x";
+};
+// Bölüm bitince "dinlendi" olarak işaretle
+audio.onended = ()=>{
+  if (current && current.episodeUrl && prog[current.trackId]){ prog[current.trackId].t = prog[current.trackId].d = audio.duration||1; store.set("pod_prog", prog); }
+};
+
+// --- Kategori düğmeleri ---
+document.querySelectorAll(".ptabs button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".ptabs button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");
+  $("#pq").value = "";
+  if (b.dataset.psubs) renderPods(subs, "Henüz abonelik yok. Podcastin yanındaki ☆ ile abone olun.");
+  else if (b.dataset.pcont) renderContinue();
+  else podSearch(b.dataset.term);
+});
+
+// Yazdıkça podcast arama (yazmayı 0,35 sn bırakınca)
+let ptyping;
+$("#pq").oninput = ()=>{
+  clearTimeout(ptyping);
+  ptyping = setTimeout(()=>{
+    const t = $("#pq").value.trim();
+    document.querySelectorAll(".ptabs button").forEach(x=>x.classList.remove("on"));
+    if (!t) document.querySelector('.ptabs button[data-term="__all__"]').classList.add("on");
+    podSearch(t || "__all__");
+  }, 350);
+};
+
+// --- Radyo / Podcast geçişi ---
+let podLoaded = false;
+$("#m_radio").onclick = ()=>{
+  mode = "radio";
+  $("#m_radio").classList.add("on"); $("#m_pod").classList.remove("on");
+  $("#radioBar").hidden = false; $("#podBar").hidden = true;
+  $("#list").innerHTML = ""; load();
+};
+$("#m_pod").onclick = ()=>{
+  mode = "pod";
+  $("#m_pod").classList.add("on"); $("#m_radio").classList.remove("on");
+  $("#radioBar").hidden = true; $("#podBar").hidden = false;
+  // Devam eden bölüm varsa önce onları göster, yoksa popüler podcastler
+  const hasCont = Object.values(prog).some(x=>x.ep && x.t>30 && (!x.d || x.t < x.d-30));
+  if (!podLoaded && hasCont){
+    document.querySelectorAll(".ptabs button").forEach(x=>x.classList.toggle("on", !!x.dataset.pcont));
+    renderContinue();
+  } else podSearch(podTerm);
+  podLoaded = true;
+};
+
+/* ============================================================
+   9) KAPANMA ZAMANLAYICISI
+   ------------------------------------------------------------
+   Seçilen süre dolunca radyo veya podcast kendiliğinden durur.
+   Son on saniyede ses yavaş yavaş kısılır, sonra durur.
+   Kalan süre ⏾ düğmesinin üstünde görünür.
+   ============================================================ */
+let sleepEnd = 0, sleepTimer = null;
+
+// Paneli aç / kapat
+$("#sleepBtn").onclick = ()=>{ $("#sleepPanel").hidden = !$("#sleepPanel").hidden; };
+
+// Hazır süreler (15, 30, 45, 60 dakika)
+document.querySelectorAll("#sleepPanel [data-min]").forEach(b => b.onclick = ()=> setSleep(+b.dataset.min));
+// Elle yazılan süre
+$("#sleepSet").onclick = ()=>{
+  const m = parseInt($("#sleepMin").value, 10);
+  if (m > 0) setSleep(m);
+};
+$("#sleepMin").onkeydown = e=>{ if (e.key === "Enter") $("#sleepSet").click(); };
+// İptal
+$("#sleepOff").onclick = ()=> setSleep(0);
+
+// Zamanlayıcıyı kur (0 = iptal)
+function setSleep(min){
+  clearInterval(sleepTimer);
+  $("#sleepPanel").hidden = true;
+  if (!min){
+    sleepEnd = 0;
+    $("#sleepBtn").textContent = "⏾";
+    $("#sleepBtn").classList.remove("on");
+    return;
+  }
+  sleepEnd = Date.now() + min * 60000;
+  $("#sleepBtn").classList.add("on");
+  sleepTick();
+  sleepTimer = setInterval(sleepTick, 1000); // Her saniye kalan süreyi güncelle
+}
+
+// Her saniye çalışır: süre dolduysa durdur, değilse kalan süreyi yaz
+function sleepTick(){
+  const left = sleepEnd - Date.now();
+  if (left <= 0){ clearInterval(sleepTimer); sleepFadeStop(); return; }
+  $("#sleepBtn").textContent = "⏾ " + fmt(left / 1000);
+}
+
+// Sesi on saniyede yavaşça kıs, durdur, ses seviyesini eski haline getir
+function sleepFadeStop(){
+  const v = audio.volume;
+  let step = 0;
+  const fade = setInterval(()=>{
+    step++;
+    audio.volume = Math.max(0, v * (1 - step / 20));
+    if (step >= 20){
+      clearInterval(fade);
+      audio.pause();
+      audio.volume = v;
+      setSleep(0);
+      setTimeout(()=>{ $("#status").textContent = "Zamanlayıcı ile durduruldu"; }, 100);
+    }
+  }, 500);
+}
+
+/* ============================================================
+   10) ANDROID'E ÖZEL BÖLÜM
+   ------------------------------------------------------------
+   window.Android: telefonun uygulama kodu (MainActivity.kt).
+   Web tarayıcısında açılınca bu nesne yoktur; o zaman bu
+   bölüm hiçbir şey yapmaz.
+   ============================================================ */
+
+// Çalmaya başlayınca/durunca telefona haber ver:
+// çalarken bildirim çıkar ve ekran kapansa da yayın sürer
+if (window.Android){
+  const haber = on => { try{ Android.playing(on, on ? $("#now .name").textContent : ""); }catch(_){} };
+  audio.addEventListener("playing", ()=> haber(true));
+  audio.addEventListener("pause",   ()=> haber(false));
+  audio.addEventListener("ended",   ()=> haber(false));
+  audio.addEventListener("error",   ()=> haber(false));
+}
+
+// Telefonun geri tuşu: açık panel varsa kapat, bölüm listesindeysen geri dön.
+// "false" dönerse uygulama arka plana alınır (yayın sürer).
+window.androidBack = ()=>{
+  if (!$("#destekPanel").hidden){ $("#destekPanel").hidden = true; return true; }
+  if (!$("#sleepPanel").hidden){ $("#sleepPanel").hidden = true; return true; }
+  const geri = document.getElementById("pback");
+  if (geri){ geri.click(); return true; }
+  return false;
+};
+
+/* --- GÖNÜLLÜ DESTEK ---
+   Reklam ve abonelik yok. Destek tamamen isteğe bağlı ve
+   hiçbir özelliği açmaz. Ödeme Google Play üzerinden alınır
+   (Google Play kuralı). Ürünler Play Console'da tanımlanır:
+   destek_kucuk, destek_orta, destek_buyuk */
+if (window.Android) $("#destekBtn").hidden = false;
+
+$("#destekBtn").onclick = ()=>{
+  const p = $("#destekPanel");
+  p.hidden = !p.hidden;
+  if (!p.hidden) destekListele();
+};
+$("#destekKapat").onclick = ()=>{ $("#destekPanel").hidden = true; };
+
+function destekListele(tekrar){
+  let liste = [];
+  try{ liste = JSON.parse(Android.products() || "[]"); }catch(_){}
+  $("#destekMsg").textContent = "";
+  if (liste.length){
+    $("#destekList").innerHTML = liste.map(x =>
+      `<button data-buy="${esc(x.id)}">${esc(x.name)} · ${esc(x.price)}</button>`).join("");
+  } else if (!tekrar){
+    // Ürünler henüz gelmediyse bir kez daha dene
+    $("#destekList").innerHTML = '<small style="color:var(--dim)">Yükleniyor…</small>';
+    try{ Android.refresh(); }catch(_){}
+    setTimeout(()=> destekListele(true), 2500);
+  } else {
+    $("#destekList").innerHTML = '<small style="color:var(--dim)">Destek seçenekleri şu an yüklenemedi. Bu bölüm, uygulama Google Play\'den indirildiğinde çalışır.</small>';
+  }
+}
+$("#destekList").onclick = e=>{
+  const b = e.target.closest("[data-buy]");
+  if (!b) return;
+  $("#destekMsg").textContent = "Google Play açılıyor…";
+  try{ Android.buy(b.dataset.buy); }catch(_){}
+};
+// Google Play'den dönen sonuç
+window.onDestek = durum => {
+  $("#destekMsg").textContent =
+    durum === "ok"       ? "Desteğiniz için çok teşekkürler! ❤️" :
+    durum === "iptal"    ? "İşlem iptal edildi." :
+    durum === "bekliyor" ? "Ödeme onay bekliyor. Onaylanınca tamamlanacak." :
+                           "İşlem tamamlanamadı. Daha sonra tekrar deneyebilirsiniz.";
+};
+
+load();
+</script>
+</body>
+</html>

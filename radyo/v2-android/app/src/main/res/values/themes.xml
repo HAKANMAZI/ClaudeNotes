@@ -1,0 +1,9 @@
+<resources>
+    <!-- Koyu tema, başlık çubuğu yok (uygulamanın kendi başlığı var) -->
+    <style name="Tema" parent="android:Theme.Material.NoActionBar">
+        <item name="android:windowBackground">@color/arka</item>
+        <item name="android:statusBarColor">@color/arka</item>
+        <item name="android:navigationBarColor">@color/arka</item>
+        <item name="android:colorAccent">@color/vurgu</item>
+    </style>
+</resources>

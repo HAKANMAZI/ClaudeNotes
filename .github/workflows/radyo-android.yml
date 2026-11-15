@@ -1,0 +1,63 @@
+# Radyo (v2) Android uygulamasını derler ve Releases bölümüne koyar.
+# - Radyo.apk     : Telefona doğrudan kurmak için (her zaman)
+# - Radyo-Play.aab: Google Play'e yüklemek için (GitHub Secrets'ta yükleme anahtarı varsa)
+name: Radyo Android
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['radyo/v2-android/**', '.github/workflows/radyo-android.yml']
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: radyo/v2-android
+    env:
+      UPLOAD_KEYSTORE_BASE64: ${{ secrets.UPLOAD_KEYSTORE_BASE64 }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+
+      - name: APK derle (telefona kurmak için)
+        run: |
+          gradle assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk Radyo.apk
+
+      - name: AAB derle (Google Play için, anahtar varsa)
+        if: ${{ env.UPLOAD_KEYSTORE_BASE64 != '' }}
+        env:
+          UPLOAD_STORE_PASSWORD: ${{ secrets.UPLOAD_STORE_PASSWORD }}
+          UPLOAD_KEY_ALIAS: ${{ secrets.UPLOAD_KEY_ALIAS }}
+          UPLOAD_KEY_PASSWORD: ${{ secrets.UPLOAD_KEY_PASSWORD }}
+        run: |
+          echo "$UPLOAD_KEYSTORE_BASE64" | base64 -d > "$RUNNER_TEMP/yukleme.jks"
+          export UPLOAD_KEYSTORE="$RUNNER_TEMP/yukleme.jks"
+          gradle bundleRelease --no-daemon
+          cp app/build/outputs/bundle/release/app-release.aab Radyo-Play.aab
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Radyo-android
+          path: |
+            radyo/v2-android/Radyo.apk
+            radyo/v2-android/Radyo-Play.aab
+          if-no-files-found: ignore
+
+      # Sabit indirme linki: .../releases/download/radyo-android/Radyo.apk
+      - name: Sabit linke koy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          DOSYALAR="Radyo.apk"
+          [ -f Radyo-Play.aab ] && DOSYALAR="$DOSYALAR Radyo-Play.aab"
+          gh release delete radyo-android --yes --cleanup-tag || true
+          gh release create radyo-android $DOSYALAR --title "Radyo – Android (son sürüm)" --notes "Radyo.apk: Telefondan indirip kurun. Radyo-Play.aab: Google Play'e yükleme dosyası (varsa)."
