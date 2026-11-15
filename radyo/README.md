@@ -21,7 +21,7 @@ Tarayıcıda çalışan internet radyosu ve podcast uygulaması. Kurulum gerekme
 
 ## v2 – Podcast
 
-- Podcast arama (yazdıkça) ve kategoriler: Belgesel, Tarih, Bilim, Haber, Ekonomi, İş dünyası, Spor, Komedi, Hikâye, Çocuk
+- Podcast arama (yazdıkça), "Tümü" sekmesi (en yeni bölümü olan en üstte) ve kategoriler: Belgesel, Tarih, Bilim, Haber, Ekonomi, İş dünyası, Spor, Komedi, Hikâye, Çocuk
 - Bölüm listesi: tarih, süre, ne kadarının dinlendiği
 - Kaldığın yerden devam ve "⏯ Devam et" listesi
 - Abonelik (★ Aboneliklerim)

@@ -171,7 +171,9 @@
     <!-- Kategori düğmeleri. data-term = aranacak kelime.
          Yeni kategori için bir satır kopyalayıp kelimeyi değiştirin. -->
     <div class="row ptabs">
-      <button data-term="türkçe podcast" class="on">Popüler</button>
+      <!-- Tümü: birçok aramayı birleştirir, en yeni bölümü olan en üstte -->
+      <button data-term="__all__" class="on">Tümü</button>
+      <button data-term="türkçe podcast">Popüler</button>
       <button data-term="belgesel">Belgesel</button>
       <button data-term="tarih">Tarih</button>
       <button data-term="bilim">Bilim</button>
@@ -546,7 +548,10 @@ let mode = "radio";                        // "radio" veya "pod"
 let subs = store.get("pod_subs", []);      // Abone olunan podcastler
 let prog = store.get("pod_prog", {});      // Kaldığın yer: bölüm kimliği → {t: saniye, d: süre, ...}
 let podReq = 0;                            // Eski aramanın sonucu yenisini ezmesin
-let podTerm = "türkçe podcast";            // Son aranan kelime
+let podTerm = "__all__";                   // Son aranan kelime ("__all__" = Tümü)
+
+// "Tümü" sekmesi için birlikte aranan kelimeler. Eklemek/çıkarmak serbest.
+const ALL_TERMS = ["podcast","türkçe podcast","sohbet","belgesel","tarih","bilim","haber","ekonomi","spor","hikaye"];
 let podsShown = [], epsShown = [], curPod = null;
 
 // Apple arşivine istek at.
@@ -582,6 +587,9 @@ function fmt(sec){
   const h = Math.floor(sec/3600), m = Math.floor(sec%3600/60), s = sec%60;
   return (h ? h+":"+String(m).padStart(2,"0") : m) + ":" + String(s).padStart(2,"0");
 }
+// Tarihi "14 Kasım 2026" biçiminde yazar
+function trDate(d){ return new Date(d).toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"}); }
+
 // Süreyi "1 sa 5 dk" biçiminde yazar (listelerde)
 function fmtLong(sec){
   const h = Math.floor(sec/3600), m = Math.round(sec%3600/60);
@@ -594,14 +602,30 @@ async function podSearch(term){
   podTerm = term;
   $("#list").innerHTML = '<div class="msg">Yükleniyor…</div>';
   try{
-    const j = await itunes("/search?media=podcast&country=TR&limit=50&term=" + encodeURIComponent(term));
+    let results;
+    if (term === "__all__"){
+      // Tümü: kelimeleri aynı anda ara, sonuçları birleştir, aynı podcasti bir kez al
+      const all = await Promise.allSettled(ALL_TERMS.map(t =>
+        itunes("/search?media=podcast&country=TR&limit=100&term=" + encodeURIComponent(t))));
+      const seen = new Set();
+      results = [];
+      all.forEach(x => x.status === "fulfilled" && x.value.results.forEach(p => {
+        if (!seen.has(p.collectionId)){ seen.add(p.collectionId); results.push(p); }
+      }));
+      if (!results.length) throw new Error("Podcast sunucusuna ulaşılamadı");
+    } else {
+      const j = await itunes("/search?media=podcast&country=TR&limit=100&term=" + encodeURIComponent(term));
+      results = j.results;
+    }
     if (my !== podReq || mode !== "pod") return;
-    renderPods(j.results, "Sonuç bulunamadı.");
+    renderPods(results, "Sonuç bulunamadı.");
   }catch(e){ if (my === podReq) $("#list").innerHTML = '<div class="msg">'+e.message+'</div>'; }
 }
 
 // --- Podcast listesini çiz (kapak, ad, yapımcı, tür, abone yıldızı) ---
 function renderPods(arr, emptyText){
+  // Güncel tarihten geriye: en yeni bölümü yayınlanan podcast en üstte
+  arr = arr.slice().sort((a,b) => (b.releaseDate||"").localeCompare(a.releaseDate||""));
   podsShown = arr; curPod = null;
   if (!arr.length){ $("#list").innerHTML = '<div class="msg">'+emptyText+'</div>'; return; }
   $("#list").innerHTML = arr.map((p,i)=>{
@@ -609,7 +633,7 @@ function renderPods(arr, emptyText){
     return `<div class="st" data-p="${i}">
       <img class="logo" src="${esc(p.artworkUrl100||"")}" onerror="this.style.visibility='hidden'">
       <div class="info"><div class="name">${esc(p.collectionName)}</div>
-      <div class="meta">${esc([p.artistName, p.primaryGenreName, p.trackCount ? p.trackCount+" bölüm" : ""].filter(Boolean).join(" · "))}</div></div>
+      <div class="meta">${esc([p.releaseDate ? "Son bölüm: " + trDate(p.releaseDate) : "", p.artistName, p.primaryGenreName, p.trackCount ? p.trackCount+" bölüm" : ""].filter(Boolean).join(" · "))}</div></div>
       <button class="fav ${isSub?'yes':''}" data-ps="${i}" title="Abone ol">${isSub?'★':'☆'}</button>
     </div>`;
   }).join("");
@@ -624,7 +648,8 @@ async function openPod(p){
     const j = await itunes("/lookup?id=" + p.collectionId + "&entity=podcastEpisode&limit=200&country=TR");
     if (my !== podReq || mode !== "pod") return;
     // İlk sonuç podcastin kendisi; geri kalanlar bölümler
-    renderEps(j.results.filter(r=>r.episodeUrl));
+    renderEps(j.results.filter(r=>r.episodeUrl)
+      .sort((a,b) => (b.releaseDate||"").localeCompare(a.releaseDate||""))); // En yeni bölüm üstte
   }catch(e){ if (my === podReq) $("#list").innerHTML = '<div class="msg">'+e.message+'</div>'; }
 }
 
@@ -704,7 +729,7 @@ function podClick(e){
 function toggleSub(p){
   const i = subs.findIndex(s=>s.collectionId===p.collectionId);
   if (i>=0) subs.splice(i,1);
-  else subs.push({collectionId:p.collectionId, collectionName:p.collectionName, artistName:p.artistName, artworkUrl100:p.artworkUrl100, primaryGenreName:p.primaryGenreName});
+  else subs.push({collectionId:p.collectionId, collectionName:p.collectionName, artistName:p.artistName, artworkUrl100:p.artworkUrl100, primaryGenreName:p.primaryGenreName, releaseDate:p.releaseDate, trackCount:p.trackCount});
   store.set("pod_subs", subs);
 }
 
@@ -759,7 +784,8 @@ $("#pq").oninput = ()=>{
   ptyping = setTimeout(()=>{
     const t = $("#pq").value.trim();
     document.querySelectorAll(".ptabs button").forEach(x=>x.classList.remove("on"));
-    podSearch(t || "türkçe podcast");
+    if (!t) document.querySelector('.ptabs button[data-term="__all__"]').classList.add("on");
+    podSearch(t || "__all__");
   }, 350);
 };
 
