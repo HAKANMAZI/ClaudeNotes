@@ -110,6 +110,15 @@
   #seek{width:100%;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim)}
   #seek input{flex:1;padding:0}
   #seek button{padding:6px 8px;font-size:12px}
+
+  /* ---------- KAPANMA ZAMANLAYICISI ---------- */
+  #sleepBtn{padding:8px 10px;white-space:nowrap}
+  #sleepBtn.on{background:var(--acc);border-color:var(--acc);color:#fff}
+  /* Süre seçme paneli: çalar çubuğunun hemen üstünde açılır */
+  #sleepPanel{position:fixed;right:14px;bottom:130px;z-index:10;background:#14171d;border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;width:260px;box-shadow:0 8px 30px #0008}
+  #sleepPanel b{font-size:14px}
+  #sleepPanel .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  #sleepPanel input{min-width:0}
   /* Yayın akışı (radyonun web sitesi) bağlantısı */
   #web{color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;text-decoration:none;font-size:13px;white-space:nowrap}
 </style>
@@ -211,8 +220,26 @@
   <div id="now"><div class="name">İstasyon seçin</div><div class="meta" id="status">—</div></div>
   <!-- Radyonun web sitesi varsa görünür; program akışı genelde oradadır -->
   <a id="web" target="_blank" rel="noopener" style="display:none">📅 Yayın akışı</a>
+  <!-- Kapanma zamanlayıcısı düğmesi; çalışırken kalan süreyi gösterir -->
+  <button id="sleepBtn" title="Kapanma zamanlayıcısı">⏾</button>
   <!-- Ses: 0 = sessiz, 1 = en yüksek -->
   <input id="vol" type="range" min="0" max="1" step="0.05" value="0.8">
+</div>
+
+<!-- Kapanma zamanlayıcısı paneli -->
+<div id="sleepPanel" hidden>
+  <b>⏾ Ne zaman kapansın?</b>
+  <div class="grid">
+    <button data-min="15">15 dakika</button>
+    <button data-min="30">30 dakika</button>
+    <button data-min="45">45 dakika</button>
+    <button data-min="60">1 saat</button>
+  </div>
+  <div class="row">
+    <input id="sleepMin" type="number" min="1" max="600" placeholder="Dakika yazın">
+    <button id="sleepSet">Kur</button>
+  </div>
+  <button id="sleepOff">Zamanlayıcıyı iptal et</button>
 </div>
 
 <!-- Tarayıcının kendi ses çaları. Ekranda görünmez;
@@ -856,6 +883,69 @@ $("#m_pod").onclick = ()=>{
   } else podSearch(podTerm);
   podLoaded = true;
 };
+
+/* ============================================================
+   9) KAPANMA ZAMANLAYICISI
+   ------------------------------------------------------------
+   Seçilen süre dolunca radyo veya podcast kendiliğinden durur.
+   Son on saniyede ses yavaş yavaş kısılır, sonra durur.
+   Kalan süre ⏾ düğmesinin üstünde görünür.
+   ============================================================ */
+let sleepEnd = 0, sleepTimer = null;
+
+// Paneli aç / kapat
+$("#sleepBtn").onclick = ()=>{ $("#sleepPanel").hidden = !$("#sleepPanel").hidden; };
+
+// Hazır süreler (15, 30, 45, 60 dakika)
+document.querySelectorAll("#sleepPanel [data-min]").forEach(b => b.onclick = ()=> setSleep(+b.dataset.min));
+// Elle yazılan süre
+$("#sleepSet").onclick = ()=>{
+  const m = parseInt($("#sleepMin").value, 10);
+  if (m > 0) setSleep(m);
+};
+$("#sleepMin").onkeydown = e=>{ if (e.key === "Enter") $("#sleepSet").click(); };
+// İptal
+$("#sleepOff").onclick = ()=> setSleep(0);
+
+// Zamanlayıcıyı kur (0 = iptal)
+function setSleep(min){
+  clearInterval(sleepTimer);
+  $("#sleepPanel").hidden = true;
+  if (!min){
+    sleepEnd = 0;
+    $("#sleepBtn").textContent = "⏾";
+    $("#sleepBtn").classList.remove("on");
+    return;
+  }
+  sleepEnd = Date.now() + min * 60000;
+  $("#sleepBtn").classList.add("on");
+  sleepTick();
+  sleepTimer = setInterval(sleepTick, 1000); // Her saniye kalan süreyi güncelle
+}
+
+// Her saniye çalışır: süre dolduysa durdur, değilse kalan süreyi yaz
+function sleepTick(){
+  const left = sleepEnd - Date.now();
+  if (left <= 0){ clearInterval(sleepTimer); sleepFadeStop(); return; }
+  $("#sleepBtn").textContent = "⏾ " + fmt(left / 1000);
+}
+
+// Sesi on saniyede yavaşça kıs, durdur, ses seviyesini eski haline getir
+function sleepFadeStop(){
+  const v = audio.volume;
+  let step = 0;
+  const fade = setInterval(()=>{
+    step++;
+    audio.volume = Math.max(0, v * (1 - step / 20));
+    if (step >= 20){
+      clearInterval(fade);
+      audio.pause();
+      audio.volume = v;
+      setSleep(0);
+      setTimeout(()=>{ $("#status").textContent = "Zamanlayıcı ile durduruldu"; }, 100);
+    }
+  }, 500);
+}
 
 load();
 </script>
