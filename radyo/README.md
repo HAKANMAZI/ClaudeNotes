@@ -9,6 +9,7 @@ Tarayıcıda çalışan internet radyosu ve podcast uygulaması. Kurulum gerekme
 | v1 | [`v1/`](v1/) | Sadece radyo (ilk sürüm) |
 | v2 | [`v2/`](v2/) | Radyo + Podcast + kapanma zamanlayıcısı |
 | v3 | [`v3/`](v3/) | Radyo + Podcast + Köşe Yazıları + yedek kaynaklar (en güncel) |
+| v2-android | [`v2-android/`](v2-android/) | v2'nin Android uygulaması, reklamsız, gönüllü destek · [APK indir](https://github.com/HAKANMAZI/ClaudeNotes/releases/download/radyo-android/Radyo.apk) |
 
 Her klasörde o sürümün kısa notu (README) var.
 
