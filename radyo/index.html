@@ -1,43 +1,98 @@
 <!DOCTYPE html>
+<!--
+  ============================================================
+  RADYO UYGULAMASI
+  ------------------------------------------------------------
+  Bu dosya tek başına çalışan bir web uygulamasıdır.
+  Tarayıcıda açmanız yeterli; kurulum gerekmez.
+
+  Nasıl çalışır?
+  1) İstasyon listesini "Radio Browser" adlı ücretsiz ve açık
+     bir veritabanından alır (radio-browser.info).
+  2) Listede her radyonun canlı yayın adresi (stream linki) vardır.
+  3) Bir radyoya tıklayınca tarayıcının kendi ses çalarına
+     (<audio>) bu adres verilir, yayın doğrudan radyonun
+     kendi sunucusundan çalınır.
+
+  Dosyanın bölümleri:
+  - <style>  : Görünüm (renkler, yazı, düzen)
+  - <body>   : Ekrandaki parçalar (arama, sekmeler, liste, çalar)
+  - <script> : Çalışma mantığı (arama, çalma, favoriler)
+  ============================================================
+-->
 <html lang="tr">
 <head>
 <meta charset="UTF-8">
+<!-- Telefonda ekrana düzgün sığması için -->
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Radyo</title>
+
 <style>
+  /* ---------- RENKLER ----------
+     Tüm renkler burada tanımlı. Rengi değiştirmek için
+     sadece bu satırı düzenlemek yeterli.
+     --bg: arka plan, --card: kutular, --line: çizgiler,
+     --txt: yazı, --dim: soluk yazı, --acc: vurgu (turuncu) */
   :root{--bg:#0f1115;--card:#1a1d24;--line:#2a2e38;--txt:#e9ebf0;--dim:#8b91a0;--acc:#ff5a36}
   *{box-sizing:border-box}
+
+  /* Sayfanın genel görünümü. Alttaki boşluk, sabit çalar çubuğu
+     listenin üstünü kapatmasın diye. */
   body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--txt);padding-bottom:110px}
+
+  /* Üst bölüm: kaydırınca da yukarıda sabit kalır */
   header{position:sticky;top:0;background:var(--bg);padding:14px 14px 8px;z-index:5;border-bottom:1px solid var(--line)}
   h1{margin:0 0 10px;font-size:22px}
   h1 span{color:var(--acc)}
+
+  /* Arama kutusu, ülke seçimi ve düğmeler yan yana dizilir */
   .row{display:flex;gap:8px;flex-wrap:wrap}
   input,select,button{font:inherit;color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
   input{flex:1;min-width:140px}
   button{cursor:pointer}
+  /* Seçili sekme turuncu görünür */
   button.on{background:var(--acc);border-color:var(--acc);color:#fff}
   .tabs{margin-top:8px}
+
+  /* ---------- İSTASYON LİSTESİ ---------- */
   #list{padding:10px 14px;display:grid;gap:8px}
+  /* Her bir radyo satırı */
   .st{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer}
+  /* Şu an çalan radyonun çerçevesi turuncu olur */
   .st.playing{border-color:var(--acc)}
+  /* Radyo logosu (logo yoksa baş harfi gösterilir) */
   .logo{width:48px;height:48px;border-radius:8px;background:#262a33;flex:none;object-fit:cover;display:grid;place-items:center;font-weight:700;color:var(--dim)}
   .info{flex:1;min-width:0}
+  /* Uzun isimler "…" ile kısaltılır */
   .name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
   .meta{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* Favori yıldızı: boşsa gri, doluysa sarı */
   .fav{background:none;border:none;font-size:22px;padding:4px 6px;color:var(--dim)}
   .fav.yes{color:#ffc83d}
+  /* "Yükleniyor…", "Sonuç yok" gibi mesajlar */
   .msg{color:var(--dim);text-align:center;padding:30px}
+
+  /* ---------- ALTTAKİ ÇALAR ÇUBUĞU ---------- */
   #player{position:fixed;left:0;right:0;bottom:0;background:#14171d;border-top:1px solid var(--line);padding:12px 14px;display:flex;align-items:center;gap:12px}
+  /* Yuvarlak çal/durdur düğmesi */
   #pp{width:52px;height:52px;border-radius:50%;background:var(--acc);border:none;color:#fff;font-size:22px;flex:none}
   #now{flex:1;min-width:0}
+  /* Ses ayarı çubuğu */
   #vol{width:90px}
+  /* Yayın akışı (radyonun web sitesi) bağlantısı */
+  #web{color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;text-decoration:none;font-size:13px;white-space:nowrap}
 </style>
 </head>
 <body>
+
+<!-- ========== ÜST BÖLÜM: başlık, arama, ülke, sekmeler ========== -->
 <header>
   <h1>📻 <span>Radyo</span></h1>
   <div class="row">
+    <!-- Radyo adıyla arama kutusu -->
     <input id="q" placeholder="İstasyon ara…">
+    <!-- Ülke seçimi. value = ülkenin iki harfli kodu.
+         Yeni ülke eklemek için bir satır kopyalayıp kodu değiştirin. -->
     <select id="country">
       <option value="TR">Türkiye</option>
       <option value="IQ">Irak</option>
@@ -49,6 +104,10 @@
     </select>
     <button id="go">Ara</button>
   </div>
+
+  <!-- Tür sekmeleri. data-tag = veritabanındaki tür etiketi.
+       Yeni tür eklemek için bir satır kopyalayıp etiketi değiştirin
+       (örnek: data-tag="rock"). -->
   <div class="row tabs">
     <button data-tag="" class="on" id="all">Tümü</button>
     <button data-tag="pop">Pop</button>
@@ -60,67 +119,134 @@
   </div>
 </header>
 
+<!-- ========== İSTASYON LİSTESİ (kod tarafından doldurulur) ========== -->
 <div id="list"><div class="msg">Yükleniyor…</div></div>
 
+<!-- ========== ALTTAKİ ÇALAR ========== -->
 <div id="player">
   <button id="pp">▶</button>
   <div id="now"><div class="name">İstasyon seçin</div><div class="meta" id="status">—</div></div>
-  <a id="web" target="_blank" rel="noopener" style="display:none;color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;text-decoration:none;font-size:13px;white-space:nowrap">📅 Yayın akışı</a>
+  <!-- Radyonun web sitesi varsa görünür; program akışı genelde oradadır -->
+  <a id="web" target="_blank" rel="noopener" style="display:none">📅 Yayın akışı</a>
+  <!-- Ses: 0 = sessiz, 1 = en yüksek -->
   <input id="vol" type="range" min="0" max="1" step="0.05" value="0.8">
 </div>
+
+<!-- Tarayıcının kendi ses çaları. Ekranda görünmez;
+     radyonun yayın adresini bu çalar çalar. -->
 <audio id="audio" preload="none"></audio>
 
 <script>
-const API = ["https://de1.api.radio-browser.info","https://nl1.api.radio-browser.info","https://at1.api.radio-browser.info"];
-const $ = s => document.querySelector(s);
-const audio = $("#audio");
-let stations = [], current = null, tag = "", showFav = false;
+/* ============================================================
+   1) AYARLAR VE DEĞİŞKENLER
+   ============================================================ */
 
+// Radio Browser veritabanının sunucuları.
+// Biri çalışmazsa sıradaki denenir (yedekli çalışma).
+const API = ["https://de1.api.radio-browser.info","https://nl1.api.radio-browser.info","https://at1.api.radio-browser.info"];
+
+// Kısayol: $("#q") yazınca sayfadaki id="q" öğesini bulur.
+const $ = s => document.querySelector(s);
+
+// Ses çaları
+const audio = $("#audio");
+
+let stations = [];   // Son aramada gelen radyolar
+let current = null;  // Şu an çalan radyo
+let tag = "";        // Seçili tür ("" = tümü)
+let showFav = false; // Favoriler sekmesi açık mı?
+
+/* ============================================================
+   2) TARAYICIYA KAYIT (favoriler ve ses seviyesi)
+   ------------------------------------------------------------
+   localStorage: tarayıcının küçük bir hafızası. Sayfayı kapatıp
+   açınca favoriler kaybolmaz. Sadece bu tarayıcıda saklanır.
+   ============================================================ */
 const store = {
+  // Kayıtlı değeri oku; yoksa varsayılanı (d) döndür
   get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},
+  // Değeri kaydet
   set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
 };
+
+// Açılışta favorileri ve son ses seviyesini geri yükle
 let favs = store.get("radyo_favs", []);
 $("#vol").value = store.get("radyo_vol", 0.8);
 audio.volume = $("#vol").value;
 
+/* ============================================================
+   3) VERİTABANINA SORU SORMA
+   ------------------------------------------------------------
+   Sunuculara sırayla istek atar. İlk cevap veren sunucunun
+   sonucunu döndürür. Hiçbiri cevap vermezse hata verir.
+   ============================================================ */
 async function api(path){
   for (const host of API){
-    try{ const r = await fetch(host + path); if (r.ok) return await r.json(); }catch(e){}
+    try{
+      const r = await fetch(host + path);
+      if (r.ok) return await r.json(); // Cevap geldi → listeyi döndür
+    }catch(e){ /* Bu sunucu çalışmadı, sıradakine geç */ }
   }
   throw new Error("Sunucuya ulaşılamadı");
 }
 
+/* ============================================================
+   4) RADYOLARI ARAMA VE LİSTELEME
+   ============================================================ */
 async function load(){
   showFav = false;
   $("#list").innerHTML = '<div class="msg">Yükleniyor…</div>';
+
+  // Arama ayarları:
+  // limit=80        → en fazla seksen radyo getir
+  // order=clickcount→ en çok dinlenene göre sırala
+  // reverse=true    → çoktan aza
+  // hidebroken=true → bozuk (çalışmayan) radyoları gizle
   const p = new URLSearchParams({limit:80, order:"clickcount", reverse:"true", hidebroken:"true"});
-  const c = $("#country").value, q = $("#q").value.trim();
+
+  const c = $("#country").value;   // Seçili ülke kodu
+  const q = $("#q").value.trim();  // Arama kutusundaki yazı
+
   if (q){
-    // Aramada tür filtresi kullanılmaz: tüm radyolarda aranır
+    // İsimle aranıyorsa tür filtresi kaldırılır: tüm radyolarda aranır.
+    // (Örnek: "kafa" yazınca Pop sekmesi seçili olsa bile bulunur.)
     tag = "";
     document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));
     $("#all").classList.add("on");
     p.set("name", q);
   }
-  if (c) p.set("countrycode", c);
-  if (tag) p.set("tag", tag);
+  if (c) p.set("countrycode", c); // Ülke filtresi
+  if (tag) p.set("tag", tag);     // Tür filtresi
+
   try{
     stations = await api("/json/stations/search?" + p);
-    // Seçili ülkede bulunamazsa tüm dünyada ara
-    if (!stations.length && q && c){ p.delete("countrycode"); stations = await api("/json/stations/search?" + p); }
+    // Seçili ülkede bulunamazsa ülke filtresini kaldırıp tüm dünyada ara
+    if (!stations.length && q && c){
+      p.delete("countrycode");
+      stations = await api("/json/stations/search?" + p);
+    }
     render(stations);
   }
   catch(e){ $("#list").innerHTML = '<div class="msg">'+e.message+'</div>'; }
 }
 
+// Güvenlik: radyo adlarındaki özel işaretleri (<, > gibi) zararsız hale getirir,
+// böylece bir radyo adı sayfayı bozamaz.
 function esc(s){return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
 
+/* Gelen radyo listesini ekrana çizer.
+   Her radyo için: logo, ad, ülke · türler · ses kalitesi (kbps), yıldız. */
 function render(arr){
-  if (!arr.length){ $("#list").innerHTML = '<div class="msg">'+(showFav?"Henüz favori yok.":"Sonuç bulunamadı.")+'</div>'; return; }
+  if (!arr.length){
+    $("#list").innerHTML = '<div class="msg">'+(showFav?"Henüz favori yok.":"Sonuç bulunamadı.")+'</div>';
+    return;
+  }
   $("#list").innerHTML = arr.map((s,i)=>{
-    const isFav = favs.some(f=>f.stationuuid===s.stationuuid);
-    const logo = s.favicon ? `<img class="logo" src="${esc(s.favicon)}" onerror="this.outerHTML='<div class=logo>${esc(s.name[0]||'?')}</div>'">` : `<div class="logo">${esc((s.name||"?")[0])}</div>`;
+    const isFav = favs.some(f=>f.stationuuid===s.stationuuid); // Favoride mi?
+    // Logo varsa resmi göster; yüklenemezse veya yoksa adın baş harfini göster
+    const logo = s.favicon
+      ? `<img class="logo" src="${esc(s.favicon)}" onerror="this.outerHTML='<div class=logo>${esc(s.name[0]||'?')}</div>'">`
+      : `<div class="logo">${esc((s.name||"?")[0])}</div>`;
     return `<div class="st ${current&&current.stationuuid===s.stationuuid?'playing':''}" data-i="${i}">
       ${logo}
       <div class="info"><div class="name">${esc(s.name.trim())}</div>
@@ -128,29 +254,47 @@ function render(arr){
       <button class="fav ${isFav?'yes':''}" data-f="${i}">${isFav?'★':'☆'}</button>
     </div>`;
   }).join("");
-  window._shown = arr;
+  window._shown = arr; // Ekrandaki liste; tıklamada hangi radyo seçildi bulmak için
 }
 
+/* ============================================================
+   5) RADYO ÇALMA
+   ------------------------------------------------------------
+   Radyonun canlı yayın adresi (url_resolved) ses çalara verilir.
+   Ses, Radio Browser'dan değil, doğrudan radyonun kendi
+   yayın sunucusundan gelir.
+   ============================================================ */
 function play(s){
   current = s;
-  audio.src = s.url_resolved || s.url;
+  audio.src = s.url_resolved || s.url; // Canlı yayın adresi
   $("#now .name").textContent = s.name.trim();
   $("#status").textContent = "Bağlanıyor…";
+
+  // Radyonun web sitesi kayıtlıysa "Yayın akışı" düğmesini göster
   const w = $("#web");
   if (s.homepage){ w.href = s.homepage; w.style.display = ""; } else { w.style.display = "none"; }
+
   audio.play().catch(()=>{ $("#status").textContent = "Bu istasyon çalınamadı"; });
-  render(window._shown);
+  render(window._shown); // Çalan radyoyu turuncu çerçeveyle işaretlemek için
+
+  // Veritabanına "bu radyo dinlendi" bilgisi gönderilir.
+  // Popülerlik sıralaması bu tıklamalarla oluşur.
   fetch(API[0] + "/json/url/" + s.stationuuid).catch(()=>{});
 }
 
+/* ============================================================
+   6) TIKLAMALAR VE DÜĞMELER
+   ============================================================ */
+
+// Listeye tıklama: yıldıza basıldıysa favori ekle/çıkar, değilse radyoyu çal
 $("#list").addEventListener("click", e=>{
   const f = e.target.closest("[data-f]");
   if (f){
     e.stopPropagation();
     const s = window._shown[f.dataset.f];
     const idx = favs.findIndex(x=>x.stationuuid===s.stationuuid);
-    idx>=0 ? favs.splice(idx,1) : favs.push(s);
-    store.set("radyo_favs", favs);
+    idx>=0 ? favs.splice(idx,1) : favs.push(s); // Varsa çıkar, yoksa ekle
+    store.set("radyo_favs", favs);              // Tarayıcıya kaydet
     render(showFav ? favs : window._shown);
     return;
   }
@@ -158,26 +302,37 @@ $("#list").addEventListener("click", e=>{
   if (st) play(window._shown[st.dataset.i]);
 });
 
+// Çal / durdur düğmesi
 $("#pp").onclick = ()=>{
-  if (!current) return;
+  if (!current) return; // Henüz radyo seçilmediyse bir şey yapma
   audio.paused ? audio.play().catch(()=>{}) : audio.pause();
 };
+
+// Ses çaların durumuna göre alttaki yazıyı ve düğmeyi güncelle
 audio.onplaying = ()=>{ $("#pp").textContent="⏸"; $("#status").textContent="Çalıyor"; };
-audio.onpause = ()=>{ $("#pp").textContent="▶"; $("#status").textContent="Durduruldu"; };
+audio.onpause   = ()=>{ $("#pp").textContent="▶"; $("#status").textContent="Durduruldu"; };
 audio.onwaiting = ()=>{ $("#status").textContent="Yükleniyor…"; };
-audio.onerror = ()=>{ if(current){ $("#pp").textContent="▶"; $("#status").textContent="Bu istasyon çalınamadı"; } };
+audio.onerror   = ()=>{ if(current){ $("#pp").textContent="▶"; $("#status").textContent="Bu istasyon çalınamadı"; } };
+
+// Ses ayarı değişince uygula ve kaydet
 $("#vol").oninput = e=>{ audio.volume = e.target.value; store.set("radyo_vol", e.target.value); };
 
+// Sekmeler: Favoriler ise kayıtlı listeyi göster, değilse o türü ara
 document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
   document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));
   b.classList.add("on");
   if (b.dataset.fav){ showFav = true; render(favs); }
   else { tag = b.dataset.tag; load(); }
 });
+
+// Ara düğmesi, Enter tuşu ve ülke değişimi aramayı başlatır
 $("#go").onclick = load;
 $("#q").onkeydown = e=>{ if(e.key==="Enter") load(); };
 $("#country").onchange = load;
 
+/* ============================================================
+   7) BAŞLANGIÇ: sayfa açılınca popüler Türk radyolarını getir
+   ============================================================ */
 load();
 </script>
 </body>
