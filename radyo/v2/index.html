@@ -549,11 +549,31 @@ let podReq = 0;                            // Eski aramanın sonucu yenisini ezm
 let podTerm = "türkçe podcast";            // Son aranan kelime
 let podsShown = [], epsShown = [], curPod = null;
 
-// Apple arşivine istek at
+// Apple arşivine istek at.
+// Önce normal yolla (fetch) dener. Dosya bilgisayardan açıldığında
+// (file://) tarayıcı bazı istekleri engelliyor; o zaman yedek yöntem
+// olan JSONP kullanılır: cevap bir <script> etiketiyle alınır,
+// bu yöntem her ortamda çalışır.
 async function itunes(path){
-  const r = await fetch(IT + path);
-  if (!r.ok) throw new Error("Podcast sunucusuna ulaşılamadı");
-  return r.json();
+  try{
+    const r = await fetch(IT + path);
+    if (r.ok) return await r.json();
+  }catch(e){ /* Engellendi, yedek yönteme geç */ }
+  return jsonp(IT + path);
+}
+
+let jsonpNo = 0;
+function jsonp(url){
+  return new Promise((ok, fail)=>{
+    const name = "itunesCb" + (++jsonpNo);
+    const s = document.createElement("script");
+    const done = ()=>{ delete window[name]; s.remove(); clearTimeout(timer); };
+    const timer = setTimeout(()=>{ done(); fail(new Error("Podcast sunucusuna ulaşılamadı")); }, 15000);
+    window[name] = data=>{ done(); ok(data); };
+    s.onerror = ()=>{ done(); fail(new Error("Podcast sunucusuna ulaşılamadı")); };
+    s.src = url + "&callback=" + name;
+    document.head.appendChild(s);
+  });
 }
 
 // Saniyeyi "1:05:30" veya "5:30" biçimine çevirir
