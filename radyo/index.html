@@ -204,7 +204,10 @@ async function api(path){
 /* ============================================================
    4) RADYOLARI ARAMA VE LİSTELEME
    ============================================================ */
+let reqNo = 0; // Her aramaya sıra numarası; eski aramanın geç gelen sonucu yenisini ezmesin
+
 async function load(){
+  const my = ++reqNo;
   showFav = false; showMine = false;
   $("#list").innerHTML = '<div class="msg">Yükleniyor…</div>';
 
@@ -231,14 +234,16 @@ async function load(){
 
   try{
     stations = await api("/json/stations/search?" + p);
+    if (my !== reqNo) return; // Bu arada yeni bir arama başladıysa bu sonucu at
     // Seçili ülkede bulunamazsa ülke filtresini kaldırıp tüm dünyada ara
     if (!stations.length && q && c){
       p.delete("countrycode");
       stations = await api("/json/stations/search?" + p);
+      if (my !== reqNo) return;
     }
     render(stations);
   }
-  catch(e){ $("#list").innerHTML = '<div class="msg">'+e.message+'</div>'; }
+  catch(e){ if (my === reqNo) $("#list").innerHTML = '<div class="msg">'+e.message+'</div>'; }
 }
 
 // Güvenlik: radyo adlarındaki özel işaretleri (<, > gibi) zararsız hale getirir,
@@ -407,7 +412,15 @@ document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
 
 // Ara düğmesi, Enter tuşu ve ülke değişimi aramayı başlatır
 $("#go").onclick = load;
-$("#q").onkeydown = e=>{ if(e.key==="Enter") load(); };
+$("#q").onkeydown = e=>{ if(e.key==="Enter"){ clearTimeout(typing); load(); } };
+
+// Yazdıkça arama: her harfte değil, yazmayı kısa süre (0,35 saniye)
+// bırakınca arar. Böylece sunucuya gereksiz istek gitmez.
+let typing;
+$("#q").oninput = ()=>{
+  clearTimeout(typing);
+  typing = setTimeout(load, 350);
+};
 $("#country").onchange = load;
 
 /* ============================================================
