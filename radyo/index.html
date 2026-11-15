@@ -180,6 +180,15 @@ const store = {
 };
 
 // Açılışta favorileri ve son ses seviyesini geri yükle
+// Veritabanında olmayan, uygulamaya hazır eklenen radyolar.
+// Yeni radyo eklemek için bir satır kopyalayıp ad ve adresi değiştirin.
+const EXTRA = [
+  { stationuuid:"ek-radyo-belgesel", name:"Radyo Belgesel",
+    url_resolved:"https://yayin2.canliyayin.org:9996/stream",
+    homepage:"https://www.canliyayin.org/radyo/radyo-belgesel",
+    country:"Türkiye", countrycode:"TR", tags:"documentary,belgesel,talk", bitrate:48 }
+];
+
 let favs = store.get("radyo_favs", []);
 let mine = store.get("radyo_mine", []); // Elle eklenen radyolar
 $("#vol").value = store.get("radyo_vol", 0.8);
@@ -241,6 +250,12 @@ async function load(){
       stations = await api("/json/stations/search?" + p);
       if (my !== reqNo) return;
     }
+    // Hazır eklenen radyolar (EXTRA): ülke, tür ve aramaya uyuyorsa listenin başına eklenir
+    const extra = EXTRA.filter(s =>
+      (!c || s.countrycode === c || q) &&
+      (!tag || s.tags.includes(tag)) &&
+      (!q || s.name.toLocaleLowerCase("tr").includes(q.toLocaleLowerCase("tr"))));
+    stations = extra.concat(stations);
     // Elle eklenen radyolar da aramada çıksın: adı aranan yazıyı içerenler listenin başına eklenir
     if (q){
       const k = q.toLocaleLowerCase("tr");
@@ -361,7 +376,7 @@ function play(s){
 
   // Veritabanına "bu radyo dinlendi" bilgisi gönderilir.
   // Popülerlik sıralaması bu tıklamalarla oluşur.
-  if (!s.custom) fetch(API[0] + "/json/url/" + s.stationuuid).catch(()=>{});
+  if (!s.custom && !s.stationuuid.startsWith("ek-")) fetch(API[0] + "/json/url/" + s.stationuuid).catch(()=>{});
 }
 
 /* ============================================================
