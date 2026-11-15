@@ -562,8 +562,8 @@ let podsShown = [], epsShown = [], curPod = null;
    kelimelerden biri geçerse o içerik hiç gösterilmez.
    Varsayılan liste aşağıda; "🚫 Engellenenler" sekmesinden
    kelime eklenip çıkarılabilir (tarayıcıda saklanır). */
-const DEFAULT_BLOCK = ["fethullah gülen", "fetullah gülen", "f. gülen", "herkul", "hocaefendi", "hoca efendi"];
-let blocked = store.get("pod_block", DEFAULT_BLOCK);
+const DEFAULT_BLOCK = ["fethullah gülen", "fetullah gülen", "f. gülen", "herkul", "hocaefendi", "hoca efendi", "gulen podcast", "gulen arabic", "فتح الله كولن"];
+let blocked = store.get("pod_block_v2", DEFAULT_BLOCK);
 
 // Karşılaştırma için yazıyı sadeleştirir: küçük harf, Türkçe harfler → düz (ü→u, ş→s …)
 function norm(s){
@@ -592,7 +592,7 @@ $("#list").addEventListener("submit", e=>{
   if (e.target.id !== "blockform") return;
   e.preventDefault();
   const w = $("#bw").value.trim();
-  if (w && !blocked.includes(w)){ blocked.push(w); store.set("pod_block", blocked); }
+  if (w && !blocked.includes(w)){ blocked.push(w); store.set("pod_block_v2", blocked); }
   renderBlock();
 });
 
@@ -758,7 +758,7 @@ function playEp(e){
 // --- Podcast modunda listeye tıklama ---
 function podClick(e){
   const bd = e.target.closest("[data-bd]");
-  if (bd){ blocked.splice(+bd.dataset.bd, 1); store.set("pod_block", blocked); renderBlock(); return; }
+  if (bd){ blocked.splice(+bd.dataset.bd, 1); store.set("pod_block_v2", blocked); renderBlock(); return; }
   if (e.target.closest("#blockform")) return;
   if (e.target.closest("#pback")){ podSearch(podTerm); return; }               // Geri
   if (e.target.closest("#psub")){ toggleSub(curPod); renderEps(epsShown); return; } // Abone ol/çık
