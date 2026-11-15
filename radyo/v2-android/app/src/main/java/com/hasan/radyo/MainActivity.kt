@@ -72,6 +72,8 @@ class MainActivity : ComponentActivity() {
             domStorageEnabled = true                        // Favoriler, abonelikler, kaldığın yer
             mediaPlaybackRequiresUserGesture = false
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW // http:// radyo yayınları
+            // Telefonda yazı boyutu çok büyük seçiliyse düzen bozulmasın (en fazla %115)
+            textZoom = textZoom.coerceAtMost(115)
         }
 
         web.webViewClient = object : WebViewClient() {

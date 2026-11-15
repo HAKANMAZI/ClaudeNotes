@@ -60,4 +60,4 @@ jobs:
           DOSYALAR="Radyo.apk"
           [ -f Radyo-Play.aab ] && DOSYALAR="$DOSYALAR Radyo-Play.aab"
           gh release delete radyo-android --yes --cleanup-tag || true
-          gh release create radyo-android $DOSYALAR --title "Radyo – Android (son sürüm)" --notes "Radyo.apk: Telefondan indirip kurun. Radyo-Play.aab: Google Play'e yükleme dosyası (varsa)."
+          gh release create radyo-android $DOSYALAR --title "Kızılelma Radyo – Android (son sürüm)" --notes "Radyo.apk: Telefondan indirip kurun. Radyo-Play.aab: Google Play'e yükleme dosyası (varsa)."

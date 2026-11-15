@@ -53,7 +53,7 @@ class PlaybackService : Service() {
         }
 
         kanalOlustur()
-        val baslik = intent?.getStringExtra("baslik")?.takeIf { it.isNotBlank() } ?: "Radyo"
+        val baslik = intent?.getStringExtra("baslik")?.takeIf { it.isNotBlank() } ?: "Kızılelma Radyo"
 
         // Bildirime dokununca uygulama açılır
         val ac = PendingIntent.getActivity(
