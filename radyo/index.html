@@ -241,6 +241,12 @@ async function load(){
       stations = await api("/json/stations/search?" + p);
       if (my !== reqNo) return;
     }
+    // Elle eklenen radyolar da aramada çıksın: adı aranan yazıyı içerenler listenin başına eklenir
+    if (q){
+      const k = q.toLocaleLowerCase("tr");
+      const own = mine.filter(s=>s.name.toLocaleLowerCase("tr").includes(k));
+      stations = own.concat(stations);
+    }
     render(stations);
   }
   catch(e){ if (my === reqNo) $("#list").innerHTML = '<div class="msg">'+e.message+'</div>'; }
@@ -300,7 +306,9 @@ function renderMine(){
       <input id="m_freq" placeholder="Frekans – isteğe bağlı (ör. 98.4)">
       <input id="m_url" placeholder="Yayın adresi (https://… ile başlar)" required>
       <button type="submit">Ekle</button>
-      <small>Frekans sadece bilgi içindir. Radyoyu çalan şey yayın adresidir;
+      <small>⚠️ Web sayfası adresi (ör. canliyayin.org/radyo/…) çalışmaz.
+      Yayın adresi genelde şöyle görünür: https://sunucu.com:8000/stream veya …/;stream.mp3<br>
+      Frekans sadece bilgi içindir. Radyoyu çalan şey yayın adresidir;
       bunu radyonun web sitesindeki "canlı dinle" bölümünden bulabilirsiniz.</small>
     </form>
     ${mine.length ? rows(mine) : '<div class="msg">Henüz elle eklenen radyo yok.</div>'}`;
@@ -396,7 +404,14 @@ $("#pp").onclick = ()=>{
 audio.onplaying = ()=>{ $("#pp").textContent="⏸"; $("#status").textContent="Çalıyor"; };
 audio.onpause   = ()=>{ $("#pp").textContent="▶"; $("#status").textContent="Durduruldu"; };
 audio.onwaiting = ()=>{ $("#status").textContent="Yükleniyor…"; };
-audio.onerror   = ()=>{ if(current){ $("#pp").textContent="▶"; $("#status").textContent="Bu istasyon çalınamadı"; } };
+audio.onerror   = ()=>{
+  if(!current) return;
+  $("#pp").textContent="▶";
+  // Elle eklenen radyoda hata: büyük ihtimalle web sayfası adresi girilmiştir
+  $("#status").textContent = current.custom
+    ? "Çalınamadı. Girilen adres web sayfası olabilir; yayın (stream) adresi gerekir."
+    : "Bu istasyon çalınamadı";
+};
 
 // Ses ayarı değişince uygula ve kaydet
 $("#vol").oninput = e=>{ audio.volume = e.target.value; store.set("radyo_vol", e.target.value); };
