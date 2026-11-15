@@ -186,6 +186,8 @@
       <button data-term="çocuk masalları">Çocuk</button>
       <button data-psubs="1">★ Aboneliklerim</button>
       <button data-pcont="1">⏯ Devam et</button>
+      <!-- Engellenen kelimeler: bu kelimeleri içeren podcast/bölümler gösterilmez -->
+      <button data-pblock="1">🚫 Engellenenler</button>
     </div>
   </div>
 </header>
@@ -403,6 +405,7 @@ function renderMine(){
 
 // Form gönderilince yeni radyoyu kaydet
 $("#list").addEventListener("submit", e=>{
+  if (e.target.id !== "addform") return; // Sadece radyo ekleme formu
   e.preventDefault(); // Sayfanın yenilenmesini engelle
   const name = $("#m_name").value.trim();
   const freq = $("#m_freq").value.trim();
@@ -554,6 +557,45 @@ let podTerm = "__all__";                   // Son aranan kelime ("__all__" = Tü
 const ALL_TERMS = ["podcast","türkçe podcast","sohbet","belgesel","tarih","bilim","haber","ekonomi","spor","hikaye"];
 let podsShown = [], epsShown = [], curPod = null;
 
+/* ---------- ENGELLEME LİSTESİ ----------
+   Podcastin adında, yapımcısında veya bölüm başlığında bu
+   kelimelerden biri geçerse o içerik hiç gösterilmez.
+   Varsayılan liste aşağıda; "🚫 Engellenenler" sekmesinden
+   kelime eklenip çıkarılabilir (tarayıcıda saklanır). */
+const DEFAULT_BLOCK = ["fethullah gülen", "fetullah gülen", "f. gülen", "herkul", "hocaefendi", "hoca efendi"];
+let blocked = store.get("pod_block", DEFAULT_BLOCK);
+
+// Karşılaştırma için yazıyı sadeleştirir: küçük harf, Türkçe harfler → düz (ü→u, ş→s …)
+function norm(s){
+  return String(s||"").toLocaleLowerCase("tr")
+    .replace(/ı/g,"i").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+// Bu podcast/bölüm engelli mi?
+function isBlocked(x){
+  const text = norm([x.collectionName, x.artistName, x.trackName, x.collectionCensoredName].join(" "));
+  return blocked.some(w => w.trim() && text.includes(norm(w)));
+}
+
+// Engellenenler ekranı: kelime ekle / sil
+function renderBlock(){
+  curPod = null; podsShown = []; epsShown = [];
+  $("#list").innerHTML = `
+    <form class="addform" id="blockform">
+      <b>🚫 Engellenen kelimeler</b>
+      <small>Adında, yapımcısında veya bölüm başlığında bu kelimeler geçen podcastler gösterilmez.</small>
+      <div class="row"><input id="bw" placeholder="Kelime veya isim ekle"><button type="submit">Ekle</button></div>
+    </form>
+    ${blocked.map((w,i)=>`<div class="st"><div class="info"><div class="name">${esc(w)}</div></div>
+      <button class="fav" data-bd="${i}" title="Kaldır">🗑</button></div>`).join("") || '<div class="msg">Liste boş.</div>'}`;
+}
+$("#list").addEventListener("submit", e=>{
+  if (e.target.id !== "blockform") return;
+  e.preventDefault();
+  const w = $("#bw").value.trim();
+  if (w && !blocked.includes(w)){ blocked.push(w); store.set("pod_block", blocked); }
+  renderBlock();
+});
+
 // Apple arşivine istek at.
 // Önce normal yolla (fetch) dener. Dosya bilgisayardan açıldığında
 // (file://) tarayıcı bazı istekleri engelliyor; o zaman yedek yöntem
@@ -625,6 +667,7 @@ async function podSearch(term){
 // --- Podcast listesini çiz (kapak, ad, yapımcı, tür, abone yıldızı) ---
 function renderPods(arr, emptyText){
   // Güncel tarihten geriye: en yeni bölümü yayınlanan podcast en üstte
+  arr = arr.filter(p => !isBlocked(p)); // Engellenenleri çıkar
   arr = arr.slice().sort((a,b) => (b.releaseDate||"").localeCompare(a.releaseDate||""));
   podsShown = arr; curPod = null;
   if (!arr.length){ $("#list").innerHTML = '<div class="msg">'+emptyText+'</div>'; return; }
@@ -648,7 +691,7 @@ async function openPod(p){
     const j = await itunes("/lookup?id=" + p.collectionId + "&entity=podcastEpisode&limit=200&country=TR");
     if (my !== podReq || mode !== "pod") return;
     // İlk sonuç podcastin kendisi; geri kalanlar bölümler
-    renderEps(j.results.filter(r=>r.episodeUrl)
+    renderEps(j.results.filter(r=>r.episodeUrl && !isBlocked(r))
       .sort((a,b) => (b.releaseDate||"").localeCompare(a.releaseDate||""))); // En yeni bölüm üstte
   }catch(e){ if (my === podReq) $("#list").innerHTML = '<div class="msg">'+e.message+'</div>'; }
 }
@@ -687,7 +730,7 @@ function epRow(e,i){
 function renderContinue(){
   curPod = null;
   const list = Object.values(prog).filter(x=>x.ep && x.t>30 && (!x.d || x.t < x.d-30)).sort((a,b)=>b.at-a.at);
-  epsShown = list.map(x=>x.ep);
+  epsShown = list.map(x=>x.ep).filter(e=>!isBlocked(e));
   $("#list").innerHTML = epsShown.length ? epsShown.map((e,i)=>epRow(e,i)).join("")
     : '<div class="msg">Yarım kalan bölüm yok.</div>';
 }
@@ -714,6 +757,9 @@ function playEp(e){
 
 // --- Podcast modunda listeye tıklama ---
 function podClick(e){
+  const bd = e.target.closest("[data-bd]");
+  if (bd){ blocked.splice(+bd.dataset.bd, 1); store.set("pod_block", blocked); renderBlock(); return; }
+  if (e.target.closest("#blockform")) return;
   if (e.target.closest("#pback")){ podSearch(podTerm); return; }               // Geri
   if (e.target.closest("#psub")){ toggleSub(curPod); renderEps(epsShown); return; } // Abone ol/çık
   if (e.target.closest(".dl")) return;                                          // İndir bağlantısı kendi açılır
@@ -774,6 +820,7 @@ document.querySelectorAll(".ptabs button").forEach(b=>b.onclick=()=>{
   $("#pq").value = "";
   if (b.dataset.psubs) renderPods(subs, "Henüz abonelik yok. Podcastin yanındaki ☆ ile abone olun.");
   else if (b.dataset.pcont) renderContinue();
+  else if (b.dataset.pblock) renderBlock();
   else podSearch(b.dataset.term);
 });
 

@@ -27,6 +27,7 @@ Tarayıcıda çalışan internet radyosu ve podcast uygulaması. Kurulum gerekme
 - Abonelik (★ Aboneliklerim)
 - 15 sn geri, 30 sn ileri, sarma çubuğu, hız (0,75x – 2x)
 - ⬇ Bölümü indirip internetsiz dinleme
+- 🚫 Engellenenler: belirli kelime veya isimleri içeren podcastleri gizleme
 
 ## Radyolar ve podcastler nereden geliyor?
 
