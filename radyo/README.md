@@ -29,7 +29,6 @@ Tarayıcıda çalışan internet radyosu ve podcast uygulaması. Kurulum gerekme
 - 15 sn geri, 30 sn ileri, sarma çubuğu, hız (0,75x – 2x)
 - ⬇ Bölümü indirip internetsiz dinleme
 - ⏾ Kapanma zamanlayıcısı: 15, 30, 45 dakika, 1 saat veya istenen süre (radyo ve podcast)
-- 🚫 Engellenenler: belirli kelime veya isimleri içeren podcastleri gizleme
 
 ## v3 – Köşe Yazıları ve yedek kaynaklar
 

@@ -195,8 +195,6 @@
       <button data-term="çocuk masalları">Çocuk</button>
       <button data-psubs="1">★ Aboneliklerim</button>
       <button data-pcont="1">⏯ Devam et</button>
-      <!-- Engellenen kelimeler: bu kelimeleri içeren podcast/bölümler gösterilmez -->
-      <button data-pblock="1">🚫 Engellenenler</button>
     </div>
   </div>
 </header>
@@ -587,10 +585,9 @@ let podsShown = [], epsShown = [], curPod = null;
 /* ---------- ENGELLEME LİSTESİ ----------
    Podcastin adında, yapımcısında veya bölüm başlığında bu
    kelimelerden biri geçerse o içerik hiç gösterilmez.
-   Varsayılan liste aşağıda; "🚫 Engellenenler" sekmesinden
-   kelime eklenip çıkarılabilir (tarayıcıda saklanır). */
+   Liste ekranda görünmez; sadece buradan değiştirilir. */
 const DEFAULT_BLOCK = ["fethullah gülen", "fetullah gülen", "f. gülen", "herkul", "hocaefendi", "hoca efendi", "gulen podcast", "gulen arabic", "gülen sesli kitap", "فتح الله كولن"];
-let blocked = store.get("pod_block_v2", DEFAULT_BLOCK);
+const blocked = DEFAULT_BLOCK;
 
 // Karşılaştırma için yazıyı sadeleştirir: küçük harf, Türkçe harfler → düz (ü→u, ş→s …)
 function norm(s){
@@ -602,26 +599,6 @@ function isBlocked(x){
   const text = norm([x.collectionName, x.artistName, x.trackName, x.collectionCensoredName].join(" "));
   return blocked.some(w => w.trim() && text.includes(norm(w)));
 }
-
-// Engellenenler ekranı: kelime ekle / sil
-function renderBlock(){
-  curPod = null; podsShown = []; epsShown = [];
-  $("#list").innerHTML = `
-    <form class="addform" id="blockform">
-      <b>🚫 Engellenen kelimeler</b>
-      <small>Adında, yapımcısında veya bölüm başlığında bu kelimeler geçen podcastler gösterilmez.</small>
-      <div class="row"><input id="bw" placeholder="Kelime veya isim ekle"><button type="submit">Ekle</button></div>
-    </form>
-    ${blocked.map((w,i)=>`<div class="st"><div class="info"><div class="name">${esc(w)}</div></div>
-      <button class="fav" data-bd="${i}" title="Kaldır">🗑</button></div>`).join("") || '<div class="msg">Liste boş.</div>'}`;
-}
-$("#list").addEventListener("submit", e=>{
-  if (e.target.id !== "blockform") return;
-  e.preventDefault();
-  const w = $("#bw").value.trim();
-  if (w && !blocked.includes(w)){ blocked.push(w); store.set("pod_block_v2", blocked); }
-  renderBlock();
-});
 
 // Apple arşivine istek at.
 // Önce normal yolla (fetch) dener. Dosya bilgisayardan açıldığında
@@ -784,9 +761,6 @@ function playEp(e){
 
 // --- Podcast modunda listeye tıklama ---
 function podClick(e){
-  const bd = e.target.closest("[data-bd]");
-  if (bd){ blocked.splice(+bd.dataset.bd, 1); store.set("pod_block_v2", blocked); renderBlock(); return; }
-  if (e.target.closest("#blockform")) return;
   if (e.target.closest("#pback")){ podSearch(podTerm); return; }               // Geri
   if (e.target.closest("#psub")){ toggleSub(curPod); renderEps(epsShown); return; } // Abone ol/çık
   if (e.target.closest(".dl")) return;                                          // İndir bağlantısı kendi açılır
@@ -847,7 +821,6 @@ document.querySelectorAll(".ptabs button").forEach(b=>b.onclick=()=>{
   $("#pq").value = "";
   if (b.dataset.psubs) renderPods(subs, "Henüz abonelik yok. Podcastin yanındaki ☆ ile abone olun.");
   else if (b.dataset.pcont) renderContinue();
-  else if (b.dataset.pblock) renderBlock();
   else podSearch(b.dataset.term);
 });
 
