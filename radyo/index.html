@@ -50,7 +50,7 @@
     <button id="go">Ara</button>
   </div>
   <div class="row tabs">
-    <button data-tag="" class="on">Popüler</button>
+    <button data-tag="" class="on" id="all">Tümü</button>
     <button data-tag="pop">Pop</button>
     <button data-tag="news">Haber</button>
     <button data-tag="turkish folk">Türkü</button>
@@ -65,6 +65,7 @@
 <div id="player">
   <button id="pp">▶</button>
   <div id="now"><div class="name">İstasyon seçin</div><div class="meta" id="status">—</div></div>
+  <a id="web" target="_blank" rel="noopener" style="display:none;color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;text-decoration:none;font-size:13px;white-space:nowrap">📅 Yayın akışı</a>
   <input id="vol" type="range" min="0" max="1" step="0.05" value="0.8">
 </div>
 <audio id="audio" preload="none"></audio>
@@ -95,10 +96,21 @@ async function load(){
   $("#list").innerHTML = '<div class="msg">Yükleniyor…</div>';
   const p = new URLSearchParams({limit:80, order:"clickcount", reverse:"true", hidebroken:"true"});
   const c = $("#country").value, q = $("#q").value.trim();
+  if (q){
+    // Aramada tür filtresi kullanılmaz: tüm radyolarda aranır
+    tag = "";
+    document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));
+    $("#all").classList.add("on");
+    p.set("name", q);
+  }
   if (c) p.set("countrycode", c);
-  if (q) p.set("name", q);
   if (tag) p.set("tag", tag);
-  try{ stations = await api("/json/stations/search?" + p); render(stations); }
+  try{
+    stations = await api("/json/stations/search?" + p);
+    // Seçili ülkede bulunamazsa tüm dünyada ara
+    if (!stations.length && q && c){ p.delete("countrycode"); stations = await api("/json/stations/search?" + p); }
+    render(stations);
+  }
   catch(e){ $("#list").innerHTML = '<div class="msg">'+e.message+'</div>'; }
 }
 
@@ -124,6 +136,8 @@ function play(s){
   audio.src = s.url_resolved || s.url;
   $("#now .name").textContent = s.name.trim();
   $("#status").textContent = "Bağlanıyor…";
+  const w = $("#web");
+  if (s.homepage){ w.href = s.homepage; w.style.display = ""; } else { w.style.display = "none"; }
   audio.play().catch(()=>{ $("#status").textContent = "Bu istasyon çalınamadı"; });
   render(window._shown);
   fetch(API[0] + "/json/url/" + s.stationuuid).catch(()=>{});

@@ -6,3 +6,5 @@ Tarayıcıda çalışan internet radyosu. `index.html` dosyasını açmanız yet
 - İsimle arama
 - Favoriler (tarayıcıda saklanır)
 - Çal / durdur, ses ayarı
+- Arama tüm radyolarda yapılır
+- Yayın akışı için istasyonun web sitesine bağlantı
