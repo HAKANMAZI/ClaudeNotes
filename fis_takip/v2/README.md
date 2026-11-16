@@ -1,6 +1,6 @@
 # Fiş Takip v2
 
-v2'de sadece iki sürüm güncellenir:
+v2 dondurulmuştur (16 Kasım 2026). Güncel sürüm `../v3`. İçerik:
 - `artifact/index.html` - claude.ai sürümü
 - `android/` - Türkçe Android uygulaması
 

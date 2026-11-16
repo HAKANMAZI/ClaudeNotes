@@ -1,11 +1,11 @@
-# Fiş Takip v2: Türkçe Android APK'sını derler ve Releases'a koyar.
+# Fiş Takip v3: Türkçe Android APK'sını derler ve Releases'a koyar.
 # v1 dondurulmuştur; APK'ları Releases → fis-takip etiketinde durur.
 name: Fiş Takip Android APK
 on:
   push:
     branches: [main]
     paths:
-      - "fis_takip/v2/android/**"
+      - "fis_takip/v3/android/**"
       - ".github/workflows/fis-takip.yml"
   workflow_dispatch:
 permissions:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: fis_takip/v2/android
+        working-directory: fis_takip/v3/android
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -39,12 +39,12 @@ jobs:
           cp android/app/build/outputs/apk/debug/app-debug.apk fis-takip-tr.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: FisTakip-v2-apk
-          path: fis_takip/v2/android/fis-takip-tr.apk
-      # Sabit indirme linki: .../releases/download/fis-takip-v2/fis-takip-tr.apk
+          name: FisTakip-v3-apk
+          path: fis_takip/v3/android/fis-takip-tr.apk
+      # Sabit indirme linki: .../releases/download/fis-takip-v3/fis-takip-tr.apk
       - name: Sabit linke koy
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete fis-takip-v2 --yes --cleanup-tag || true
-          gh release create fis-takip-v2 fis-takip-tr.apk --title "Fiş Takip v2 (Türkçe, son sürüm)" --notes "Telefondan indirip kurun. v1'in üzerine güncellenir."
+          gh release delete fis-takip-v3 --yes --cleanup-tag || true
+          gh release create fis-takip-v3 fis-takip-tr.apk --title "Fiş Takip v3 (Türkçe, son sürüm)" --notes "Telefondan indirip kurun. Eski sürümün üzerine güncellenir."
