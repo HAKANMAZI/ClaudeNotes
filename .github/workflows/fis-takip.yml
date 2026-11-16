@@ -1,11 +1,11 @@
-# Fiş Takip Android APK'larını (Türkçe ve İngilizce) derler ve Releases bölümüne koyar.
+# Fiş Takip v2: Türkçe Android APK'sını derler ve Releases'a koyar.
+# v1 dondurulmuştur; APK'ları Releases → fis-takip etiketinde durur.
 name: Fiş Takip Android APK
 on:
   push:
     branches: [main]
     paths:
-      - "fis_takip/android/**"
-      - "fis_takip/web/**"
+      - "fis_takip/v2/android/**"
       - ".github/workflows/fis-takip.yml"
   workflow_dispatch:
 permissions:
@@ -15,7 +15,7 @@ jobs:
     runs-on: ubuntu-latest
     defaults:
       run:
-        working-directory: fis_takip/android
+        working-directory: fis_takip/v2/android
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -27,29 +27,24 @@ jobs:
           java-version: 17
       - name: Bağımlılıkları kur
         run: npm ci
-      - name: Türkçe ve İngilizce APK derle
+      - name: Türkçe APK derle
         run: |
           set -e
-          build () {
-            # $1 dil, $2 uygulama kimliği, $3 uygulama adı, $4 web dosyası
-            rm -rf android www && mkdir -p www && cp "$4" www/index.html
-            printf '{"appId":"%s","appName":"%s","webDir":"www"}\n' "$2" "$3" > capacitor.config.json
-            npx cap add android
-            sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />#' android/app/src/main/AndroidManifest.xml
-            npx cap sync android
-            (cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon)
-            cp android/app/build/outputs/apk/debug/app-debug.apk "fis-takip-$1.apk"
-          }
-          build tr com.hakanmazi.fistakip "Fiş Takip" ../web/index.html
-          build en com.hakanmazi.receipttracker "Receipt Tracker" ../web/en/index.html
+          rm -rf android www && mkdir -p www && cp index.html www/index.html
+          printf '{"appId":"com.hakanmazi.fistakip","appName":"Fiş Takip","webDir":"www"}\n' > capacitor.config.json
+          npx cap add android
+          sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />#' android/app/src/main/AndroidManifest.xml
+          npx cap sync android
+          (cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon)
+          cp android/app/build/outputs/apk/debug/app-debug.apk fis-takip-tr.apk
       - uses: actions/upload-artifact@v4
         with:
-          name: FisTakip-apk
-          path: fis_takip/android/fis-takip-*.apk
-      # Sabit indirme linki: .../releases/download/fis-takip/fis-takip-tr.apk (ve -en.apk)
+          name: FisTakip-v2-apk
+          path: fis_takip/v2/android/fis-takip-tr.apk
+      # Sabit indirme linki: .../releases/download/fis-takip-v2/fis-takip-tr.apk
       - name: Sabit linke koy
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release delete fis-takip --yes --cleanup-tag || true
-          gh release create fis-takip fis-takip-tr.apk fis-takip-en.apk --title "Fiş Takip / Receipt Tracker (son sürüm)" --notes "fis-takip-tr.apk: Türkçe. fis-takip-en.apk: English. Telefondan indirip kurun."
+          gh release delete fis-takip-v2 --yes --cleanup-tag || true
+          gh release create fis-takip-v2 fis-takip-tr.apk --title "Fiş Takip v2 (Türkçe, son sürüm)" --notes "Telefondan indirip kurun. v1'in üzerine güncellenir."
