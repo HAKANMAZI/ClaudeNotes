@@ -594,11 +594,24 @@ function tryPlay(u){
     audio.addEventListener("error", onE);
 
     if (hls){ hls.destroy(); hls = null; }
-    if (/\.m3u8(\?|$)/i.test(u) && !audio.canPlayType("application/vnd.apple.mpegurl") && window.Hls && Hls.isSupported()){
-      hls = new Hls();
+    if (/\.m3u8(\?|$)/i.test(u) && window.Hls && Hls.isSupported()){
+      // HLS yayını (ör. Kral FM): telefonun kendi oynatıcısı her cihazda çalmıyor,
+      // bu yüzden önce hls.js kullanılır. Android uygulamasında istekler
+      // uygulamanın kendi aracısından geçer (tarayıcı engeline takılmaz).
+      hls = new Hls({ xhrSetup: (xhr, url)=>{
+        if (location.host === "appassets.androidplatform.net" && /^https?:/i.test(url)) xhr.open("GET", "/proxy?u=" + encodeURIComponent(url), true);
+      }});
+      let yerli = false;
+      hls.on(Hls.Events.ERROR, (e, d)=>{
+        if (!d.fatal) return;
+        // hls.js başaramazsa cihazın kendi oynatıcısı bir kez denenir
+        if (!yerli && audio.canPlayType("application/vnd.apple.mpegurl")){
+          yerli = true; hls.destroy(); hls = null;
+          audio.src = u; audio.load(); audio.play().catch(()=>{});
+        } else onE();
+      });
       hls.loadSource(u);
       hls.attachMedia(audio);
-      hls.on(Hls.Events.ERROR, (e, d)=>{ if (d.fatal) onE(); });
     } else {
       audio.src = u;
       audio.load();
@@ -2462,6 +2475,13 @@ load();
   #npCtl button{background:rgba(255,255,255,.07);border:none}
   #npAct button,#npAct a{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.08)}
 
+  /* Üst çubuk: düğmeler arası boşluk; Kaynaklar alt menüde olduğu için yukarıdan kalktı */
+  h1{gap:12px}
+  h1 .ad{flex:1;min-width:0}
+  h1 .ad > span:first-child{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #katBtn{display:none}
+  @media (max-width:430px){ #destekBtn .yazi{display:none} #destekBtn{padding:8px 11px;font-size:17px} }
+  #destekBtn{margin-left:8px;white-space:nowrap;border-radius:999px;padding:8px 14px;font-size:14px;flex:none;background:rgba(255,77,46,.12);border:1px solid rgba(255,77,46,.35)}
   @media (min-width:900px){
     body #player{max-width:760px;margin:auto}
     #altMenu{max-width:760px;margin:auto;border-radius:18px 18px 0 0}
@@ -2482,6 +2502,9 @@ load();
   // Başlık: "Kızılelma" beyaz, "Radyo" turuncu
   const ad = document.querySelector("h1 .ad > span");
   if (ad) ad.innerHTML = "Kızılelma <em>Radyo</em>";
+  // Destek düğmesi: dar ekranda sadece kalp
+  const dst = $("#destekBtn");
+  if (dst) dst.innerHTML = '❤️<span class="yazi"> Destek ol</span>';
 
   /* ---------- Alt menü ---------- */
   const menu = document.createElement("nav");

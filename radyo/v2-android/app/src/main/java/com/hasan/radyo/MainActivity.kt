@@ -88,7 +88,7 @@ class MainActivity : ComponentActivity() {
                 val u = request.url
                 // Sayfanın "/proxy?u=..." istekleri: tarayıcı engeli (CORS) olan
                 // servislere uygulamanın kendisi bağlanır
-                if (u.host == "appassets.androidplatform.net" && u.path == "/proxy") return vekil(u)
+                if (u.host == "appassets.androidplatform.net" && u.path == "/proxy") return vekil(u, request.requestHeaders?.get("Range"))
                 return sunucu.shouldInterceptRequest(u)
             }
 
@@ -143,7 +143,7 @@ class MainActivity : ComponentActivity() {
      * Sadece http/https, sadece GET; en fazla beş yönlendirme ve beş MB.
      * Sadece uygulamanın kendi sayfası kullanabilir (dışarıya açık değildir).
      */
-    private fun vekil(u: Uri): WebResourceResponse {
+    private fun vekil(u: Uri, aralik: String? = null): WebResourceResponse {
         val basliklar = mapOf("Access-Control-Allow-Origin" to "*", "Cache-Control" to "no-store")
         fun hata() = WebResourceResponse("text/plain", "utf-8", 502, "Bad Gateway", basliklar, ByteArrayInputStream(ByteArray(0)))
         return try {
@@ -161,6 +161,7 @@ class MainActivity : ComponentActivity() {
                 c.instanceFollowRedirects = false
                 c.setRequestProperty("User-Agent", "KizilelmaRadyo/2.4 (Android)")
                 ekler?.let { j -> j.keys().forEach { k -> c.setRequestProperty(k, j.optString(k)) } }
+                aralik?.let { c.setRequestProperty("Range", it) }
                 val kod = c.responseCode
                 val yeni = c.getHeaderField("Location")
                 if (kod in 300..399 && yeni != null && yon < 5) {
@@ -186,7 +187,25 @@ class MainActivity : ComponentActivity() {
             con.disconnect()
             val mime = tur.substringBefore(";").trim().ifEmpty { "application/octet-stream" }
             val cs = tur.substringAfter("charset=", "").trim().trim('"').ifEmpty { "utf-8" }
-            WebResourceResponse(mime, cs, kod, mesaj, basliklar, ByteArrayInputStream(cikti.toByteArray()))
+            var veri = cikti.toByteArray()
+            // HLS / M3U listesi: içindeki adresleri tam adrese çevir; sayfa bunları
+            // tekrar aracıdan isteyebilsin (göreli adresler aracı adresine göre bozulurdu)
+            if (mime.contains("mpegurl", true) || adres.path.endsWith(".m3u8", true) || adres.path.endsWith(".m3u", true)) {
+                val metin = String(veri, Charsets.UTF_8)
+                if (metin.trimStart().startsWith("#EXTM3U")) {
+                    val temel = adres
+                    val uri = Regex("URI=\"([^\"]+)\"")
+                    veri = metin.lines().joinToString("\n") { s ->
+                        val t = s.trim()
+                        when {
+                            t.isEmpty() -> s
+                            t.startsWith("#") -> uri.replace(s) { m -> "URI=\"" + URL(temel, m.groupValues[1]) + "\"" }
+                            else -> URL(temel, t).toString()
+                        }
+                    }.toByteArray(Charsets.UTF_8)
+                }
+            }
+            WebResourceResponse(mime, cs, kod, mesaj, basliklar, ByteArrayInputStream(veri))
         } catch (_: Exception) {
             hata()
         }
