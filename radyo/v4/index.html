@@ -2354,5 +2354,221 @@ load();
 })();
 </script>
 
+
+<!-- ============================================================
+     MODERN GÖRÜNÜM
+     ------------------------------------------------------------
+     Koyu gradyan zemin, alt menü, yüzen mini çalar, büyük
+     "öne çıkan" kartı, podcastlerde kapaklı ızgara, parlayan
+     halkalı büyük oynatıcı. Sadece görünüm değişir; bütün
+     özellikler aynı kalır.
+     ============================================================ -->
+<style>
+  :root{--bg:#0a0a14;--card:#16162a;--line:#26264a;--txt:#f1f1f7;--dim:#9a9ab5;--acc:#ff4d2e;--mor:#8b5cf6;--cam:rgba(22,22,42,.72)}
+  body{background:
+      radial-gradient(900px 500px at 110% -10%, rgba(139,92,246,.22), transparent 60%),
+      radial-gradient(800px 500px at -20% 110%, rgba(255,77,46,.18), transparent 60%),
+      var(--bg) fixed;
+    padding-bottom:170px;-webkit-tap-highlight-color:transparent}
+  header{background:rgba(10,10,20,.78);backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border-bottom:1px solid rgba(255,255,255,.05)}
+  h1 .ad > span:first-child{color:#fff;font-weight:800;letter-spacing:-.3px}
+  h1 .ad em{font-style:normal;color:var(--acc)}
+  h1 .amblem{box-shadow:0 0 0 2px rgba(255,77,46,.5),0 0 18px rgba(255,77,46,.35)}
+  .row.mode{display:none}
+
+  /* Arama kutuları: büyüteç simgeli, yuvarlak */
+  #q,#pq,#cq{padding-left:40px;border-radius:16px;background:var(--card) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='18' height='18' fill='none' stroke='%239a9ab5' stroke-width='2.2' stroke-linecap='round' viewBox='0 0 24 24'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='m20 20-3.5-3.5'/%3E%3C/svg%3E") no-repeat 13px 50%;border-color:rgba(255,255,255,.07)}
+  input,select{border-radius:14px;border-color:rgba(255,255,255,.07);background-color:var(--card)}
+  input:focus,select:focus{outline:none;border-color:var(--acc)}
+
+  /* Sekmeler: hap biçimi. Radyoda turuncu, podcastte mor */
+  .tabs button,.ptabs button,.ctabs button{border-radius:999px;border:1px solid rgba(255,255,255,.08);background:rgba(255,255,255,.05);padding:7px 15px;font-size:14px}
+  .tabs button.on,.ctabs button.on{background:linear-gradient(135deg,#ff6a3d,#ff3d2e);border-color:transparent;box-shadow:0 4px 14px rgba(255,77,46,.35)}
+  .ptabs button.on{background:linear-gradient(135deg,#a07bff,#7c4dff);border-color:transparent;box-shadow:0 4px 14px rgba(139,92,246,.4);color:#fff}
+
+  /* Liste kartları */
+  #list{gap:10px}
+  .st{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.06);border-radius:18px;padding:10px 12px;transition:background .2s,transform .1s}
+  .st:active{transform:scale(.985)}
+  .st .logo{width:52px;height:52px;border-radius:14px;background:linear-gradient(145deg,#2a2550,#1b1b33);color:#c9c4ff;font-size:18px}
+  .st.playing{border-color:rgba(255,77,46,.7);background:linear-gradient(90deg,rgba(255,77,46,.14),rgba(255,255,255,.03));box-shadow:0 6px 24px rgba(255,77,46,.15)}
+  /* Çalan satırda küçük ses çubukları */
+  .st.playing .name::before{content:"";display:inline-block;width:15px;height:12px;margin-right:7px;vertical-align:-1px;
+    background:linear-gradient(var(--acc),var(--acc)) 0 100%/3px 40% no-repeat,linear-gradient(var(--acc),var(--acc)) 6px 100%/3px 90% no-repeat,linear-gradient(var(--acc),var(--acc)) 12px 100%/3px 60% no-repeat;
+    animation:cubuk 1s ease-in-out infinite}
+  @keyframes cubuk{50%{background-size:3px 90%,3px 35%,3px 100%}}
+  .fav{font-size:22px}
+  .fav.yes{color:#ff5a7a}
+
+  /* Öne çıkan radyo kartı */
+  #hero{position:relative;margin:10px 14px 0;border-radius:22px;overflow:hidden;min-height:172px;padding:18px;display:flex;flex-direction:column;justify-content:flex-end;cursor:pointer;
+    background:linear-gradient(120deg,#2b1440 0%,#4a1a2a 55%,#7a2a18 100%);box-shadow:0 12px 34px rgba(0,0,0,.45)}
+  #hero .hbg{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(26px) saturate(1.4);opacity:.45;transform:scale(1.3)}
+  #hero .hlogo{position:absolute;right:16px;top:16px;width:84px;height:84px;border-radius:20px;object-fit:cover;box-shadow:0 10px 26px rgba(0,0,0,.5);display:grid;place-items:center;font-size:52px;background:rgba(255,255,255,.08)}
+  #hero .rozet{position:relative;align-self:flex-start;background:#e5262f;color:#fff;font-size:12px;font-weight:700;padding:4px 10px;border-radius:999px;margin-bottom:8px}
+  #hero .rozet.sakin{background:rgba(255,255,255,.16)}
+  #hero b{position:relative;font-size:24px;line-height:1.15;max-width:70%;overflow-wrap:anywhere}
+  #hero small{position:relative;color:#e2d9ff;opacity:.85;margin-top:3px;max-width:70%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #hero .hpp{position:absolute;right:18px;bottom:16px;width:54px;height:54px;border-radius:50%;border:none;background:rgba(255,255,255,.92);color:#111;font-size:20px;box-shadow:0 8px 22px rgba(0,0,0,.45)}
+
+  /* Podcast başlık kartı */
+  #podHero{margin:10px 14px 0;border-radius:22px;padding:18px;position:relative;overflow:hidden;
+    background:radial-gradient(260px 160px at 85% 20%,rgba(160,123,255,.6),transparent 70%),linear-gradient(135deg,#2a1260,#140c2e)}
+  #podHero b{display:block;font-size:26px;line-height:1.1}
+  #podHero small{color:#cbbdff}
+  #podHero i{position:absolute;right:14px;top:6px;font-size:66px;font-style:normal;filter:drop-shadow(0 8px 18px rgba(0,0,0,.5))}
+
+  /* Podcastler: kapaklı iki sütun */
+  #list.izgara{grid-template-columns:repeat(2,minmax(0,1fr))}
+  #list.izgara > .msg{grid-column:1/-1}
+  .izgara .st[data-p]{flex-direction:column;align-items:stretch;padding:0;gap:0;overflow:hidden;position:relative;background:linear-gradient(170deg,#2b1d5c,#16162a 62%)}
+  .izgara .st[data-p] .logo{width:100%;height:auto;aspect-ratio:1;border-radius:0}
+  .izgara .st[data-p] .info{padding:9px 11px 11px}
+  .izgara .st[data-p] .name{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;font-size:14px}
+  .izgara .st[data-p] .meta{white-space:normal;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+  .izgara .st[data-p] .fav{position:absolute;top:8px;right:8px;background:rgba(0,0,0,.55);border-radius:50%;width:36px;height:36px;padding:0;font-size:18px;backdrop-filter:blur(6px)}
+
+  /* Yüzen mini çalar (alt menünün üstünde) */
+  body #player{left:10px;right:10px;bottom:calc(66px + env(safe-area-inset-bottom));border-radius:20px;border:1px solid rgba(255,255,255,.08);
+    background:rgba(28,26,52,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);padding:8px 10px;gap:10px;box-shadow:0 12px 30px rgba(0,0,0,.5)}
+  #miniArt{order:0;width:46px;height:46px;border-radius:12px;flex:none;background:linear-gradient(145deg,var(--acc),var(--mor)) center/cover;display:grid;place-items:center;font-weight:800;color:#fff}
+  #now{order:1}
+  #npOpen,#web,#sleepBtn{order:2;border-radius:12px;background:rgba(255,255,255,.06);border-color:transparent}
+  body #pp{order:3;width:46px;height:46px;font-size:18px;background:#fff;color:#141414;box-shadow:0 6px 18px rgba(255,255,255,.15)}
+  #vol{display:none}
+  #seek{order:9}
+  #resumeCard{bottom:calc(140px + env(safe-area-inset-bottom))}
+  #sleepPanel{bottom:calc(150px + env(safe-area-inset-bottom))!important}
+
+  /* Alt menü */
+  #altMenu{position:fixed;left:0;right:0;bottom:0;z-index:8;display:flex;justify-content:space-around;padding:6px 6px calc(6px + env(safe-area-inset-bottom));
+    background:rgba(10,10,20,.92);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border-top:1px solid rgba(255,255,255,.06)}
+  #altMenu button{flex:1;background:none;border:none;color:var(--dim);display:grid;justify-items:center;gap:3px;font-size:11px;padding:6px 2px;border-radius:12px}
+  #altMenu button svg{width:23px;height:23px}
+  #altMenu button.on{color:var(--acc)}
+  body.m-pod #altMenu button.on{color:#a78bfa}
+
+  /* Büyük oynatıcı: parlayan halka */
+  #np{background:radial-gradient(500px 400px at 50% 25%,rgba(139,92,246,.25),transparent 70%),radial-gradient(500px 400px at 50% 40%,rgba(255,77,46,.18),transparent 70%),var(--bg)}
+  #npArt{position:relative;border-radius:50%;overflow:visible;width:min(64vw,260px);margin:34px 0 22px;background:#1b1530;box-shadow:none;font-size:80px}
+  #npArt img{border-radius:50%;position:relative}
+  #npArt::before,#npArt::after{content:"";position:absolute;border-radius:50%;background:conic-gradient(from 0deg,var(--acc),var(--mor),#38bdf8,var(--acc));z-index:-1}
+  #npArt::before{inset:-9px}
+  #npArt::after{inset:-26px;filter:blur(28px);opacity:.55;z-index:-2}
+  #np.playing #npArt{transform:none}
+  #np.playing #npArt::before,#np.playing #npArt::after{animation:halka 6s linear infinite}
+  @keyframes halka{to{transform:rotate(360deg)}}
+  #npCtl #npPP{background:#fff;color:#141414;border:none;box-shadow:0 10px 30px rgba(255,255,255,.18)}
+  #npCtl button{background:rgba(255,255,255,.07);border:none}
+  #npAct button,#npAct a{background:rgba(255,255,255,.06);border-color:rgba(255,255,255,.08)}
+
+  @media (min-width:900px){
+    body #player{max-width:760px;margin:auto}
+    #altMenu{max-width:760px;margin:auto;border-radius:18px 18px 0 0}
+  }
+</style>
+
+<script>
+(function(){
+  const svg = d => `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${d}</svg>`;
+  const IKON = {
+    radyo: svg('<path d="M5 9 17 4"/><rect x="3" y="9" width="18" height="12" rx="3"/><circle cx="8.5" cy="15" r="2.5"/><path d="M14 13.5h4M14 16.5h4"/>'),
+    pod:   svg('<rect x="9" y="2" width="6" height="12" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v4M8 22h8"/>'),
+    haber: svg('<rect x="3" y="4" width="18" height="16" rx="2"/><path d="M7 8h10M7 12h4M7 16h4M14 12h3v4h-3z"/>'),
+    fav:   svg('<path d="M12 20s-7-4.4-7-10a4 4 0 0 1 7-2.6A4 4 0 0 1 19 10c0 5.6-7 10-7 10z"/>'),
+    ayar:  svg('<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/>')
+  };
+
+  // Başlık: "Kızılelma" beyaz, "Radyo" turuncu
+  const ad = document.querySelector("h1 .ad > span");
+  if (ad) ad.innerHTML = "Kızılelma <em>Radyo</em>";
+
+  /* ---------- Alt menü ---------- */
+  const menu = document.createElement("nav");
+  menu.id = "altMenu";
+  const ogeler = [["radyo","Radyo","#m_radio"],["pod","Podcast","#m_pod"]];
+  if ($("#m_col")) ogeler.push(["haber","Haber","#m_col"]);
+  ogeler.push(["fav","Favoriler",null],["ayar","Kaynaklar",null]);
+  menu.innerHTML = ogeler.map(o=>`<button data-m="${o[0]}">${IKON[o[0]]}<span>${o[1]}</span></button>`).join("");
+  document.body.appendChild(menu);
+  const sec = k => menu.querySelectorAll("button").forEach(b=>b.classList.toggle("on", b.dataset.m === k));
+  function modDurumu(){
+    const m = typeof mode === "undefined" ? "radio" : mode;
+    document.body.classList.toggle("m-pod", m === "pod");
+    const favAcik = (m === "radio" && showFav) || (m === "pod" && document.querySelector(".ptabs button.on[data-psubs]"));
+    sec(favAcik ? "fav" : m === "pod" ? "pod" : m === "col" ? "haber" : "radyo");
+    heroCiz(); podHeroCiz();
+  }
+  menu.onclick = e=>{
+    const b = e.target.closest("button"); if (!b) return;
+    const o = ogeler.find(x=>x[0] === b.dataset.m);
+    if (o[2]) $(o[2]).click();
+    else if (o[0] === "ayar") $("#katBtn").click();
+    else if (o[0] === "fav"){
+      if (typeof mode !== "undefined" && mode === "pod") document.querySelector(".ptabs button[data-psubs]").click();
+      else { if (typeof mode !== "undefined" && mode !== "radio") $("#m_radio").click(); document.querySelector('.tabs button[data-fav]').click(); }
+    }
+    window.scrollTo({top:0, behavior:"smooth"});
+    setTimeout(modDurumu, 30);
+  };
+  document.querySelectorAll(".row.mode button, .tabs button, .ptabs button").forEach(b=>b.addEventListener("click", ()=>setTimeout(modDurumu, 30)));
+
+  /* ---------- Öne çıkan radyo kartı ---------- */
+  const hero = document.createElement("div");
+  hero.id = "hero"; hero.hidden = true;
+  const podHero = document.createElement("div");
+  podHero.id = "podHero"; podHero.hidden = true;
+  podHero.innerHTML = `<i>🎙️</i><b>Podcast<br>Dünyası</b><small>İlgi alanına uygun binlerce podcast</small>`;
+  $("#list").before(hero, podHero);
+
+  function heroCiz(){
+    const m = typeof mode === "undefined" ? "radio" : mode;
+    const l = (window._shown||[]).filter(s=>s && (s.url_resolved || s.url) && !s.episodeUrl);
+    const s = (current && !current.episodeUrl && current.name) ? current : l[0];
+    if (m !== "radio" || showMine || !s){ hero.hidden = true; return; }
+    hero.hidden = false;
+    const canli = current === s && !audio.paused;
+    const resim = s.favicon ? esc(s.favicon) : "";
+    const alt = [s.state || s.country, (s.tags||"").split(",").slice(0,2).join(", ")].filter(Boolean).join(" · ");
+    hero.innerHTML = `${resim ? `<div class="hbg" style="background-image:url('${resim}')"></div><img class="hlogo" src="${resim}" alt="" onerror="this.outerHTML='<div class=hlogo>📻</div>'">` : `<div class="hlogo">📻</div>`}
+      <span class="rozet ${canli ? "" : "sakin"}">${canli ? "● Canlı yayın" : current === s ? "Duraklatıldı" : "★ Öne çıkan"}</span>
+      <b>${esc((s.name||"").trim())}</b><small>${esc(alt || "Canlı radyo")}</small>
+      <button class="hpp" title="Çal / durdur">${canli ? "⏸" : "▶"}</button>`;
+    hero.querySelector(".hpp").onclick = e=>{ e.stopPropagation(); current === s ? $("#pp").click() : play(s); };
+    hero.onclick = ()=>{ current === s ? $("#npOpen").click() : play(s); };
+  }
+  function podHeroCiz(){
+    const m = typeof mode === "undefined" ? "radio" : mode;
+    podHero.hidden = !(m === "pod" && !document.querySelector("#list .podhead"));
+  }
+  const eskiRender = render;
+  render = function(a){ eskiRender(a); heroCiz(); };
+
+  /* ---------- Podcast listesi: kapaklı ızgara ---------- */
+  new MutationObserver(()=>{
+    const L = $("#list");
+    L.classList.toggle("izgara", !!L.querySelector(".st[data-p]") && !L.querySelector(".podhead"));
+    podHeroCiz();
+  }).observe($("#list"), {childList:true});
+
+  /* ---------- Mini çalar kapağı ---------- */
+  const mini = document.createElement("div");
+  mini.id = "miniArt"; mini.textContent = "♫";
+  $("#player").prepend(mini);
+  mini.onclick = ()=> $("#npOpen") && $("#npOpen").click();
+  function miniCiz(){
+    if (!current) return;
+    const pod = !!current.episodeUrl;
+    const r = pod ? (current.artworkUrl600 || current.artworkUrl160 || "") : (current.favicon || "");
+    const harf = ((pod ? current.collectionName : current.name) || "♫").trim()[0] || "♫";
+    mini.style.backgroundImage = r ? `url("${r.replace(/"/g,"")}")` : "";
+    mini.textContent = r ? "" : harf;
+  }
+  ["loadstart","playing","pause"].forEach(ev=>audio.addEventListener(ev, ()=>{ miniCiz(); heroCiz(); }));
+
+  modDurumu();
+})();
+</script>
+
 </body>
 </html>

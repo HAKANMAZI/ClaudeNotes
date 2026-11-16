@@ -12,6 +12,7 @@
   - **➕ RSS ekle:** Spotify for Creators (Anchor) dahil her RSS podcast
   - Bölümler Apple'da yoksa RSS'ten, o da yoksa fyyd'den gelir
 - 🛟 Bir kaynak çökerse diğerleri gösterilir; hepsi çökerse son kaydedilen liste
+- 🎨 Modern görünüm: alt menü, yüzen mini çalar, öne çıkan radyo kartı, podcast kapak ızgarası, parlayan halkalı büyük oynatıcı
 - 📶 Veri tasarrufu: radyo listesi on dakika, podcast listeleri otuz dakika saklanır; logolar ekrana gelince yüklenir
 
 Kaynakların ayrıntısı: [`../KAYNAKLAR.md`](../KAYNAKLAR.md)
