@@ -42,11 +42,8 @@ details summary{cursor:pointer;list-style:none}.it{display:flex;justify-content:
 .cc.aj{background:#3d6fb0}.md textarea{width:100%;box-sizing:border-box;padding:10px;margin:4px 0 10px;border:1px solid var(--bd);border-radius:8px;background:var(--bg);color:var(--tx);font:inherit;font-size:16px}
 </style></head><body><main>
 <h1>🧾 Fiş Takip</h1>
-<div class="card">
-<label class="btn" style="display:block;text-align:center"><input id="f" type="file" accept="image/*" multiple hidden>📷 Fiş fotoğrafı ekle</label>
-<button class="g" id="mb" style="width:100%;margin-top:8px">✍️ Fişsiz harcama ekle (aidat, kira…)</button>
-<div id="st" class="mu" style="margin-top:8px"></div>
-<details style="margin-top:8px"><summary class="mu">Düğme açılmıyorsa buradan dene</summary><div class="mu" style="margin-top:6px">Galeriden:</div><input id="f2" type="file" accept="image/*" multiple><div class="mu" style="margin-top:6px">Kameradan:</div><input id="f3" type="file" accept="image/*" capture="environment"></details></div>
+<input id="f" type="file" accept="image/*" multiple hidden>
+<div id="st" class="mu" style="margin:0 4px 6px;min-height:0"></div>
 <div class="tabs"><button data-t="c" class="on">Takvim</button><button data-t="a" class="g">Ajanda</button><button data-t="f" class="g">Finans</button><button data-t="o" class="g">Öneriler</button></div>
 <div id="v"></div>
 </main>
@@ -102,7 +99,7 @@ async function init(){
   if(!col){try{R=JSON.parse(localStorage.getItem("fis")||"[]")}catch(e){R=[]}try{F=JSON.parse(localStorage.getItem("fis_fin")||"[]")}catch(e){F=[]}try{AJ=JSON.parse(localStorage.getItem("fis_ajd")||"[]")}catch(e){AJ=[]}}
   try{sample=await Promise.race([claude.use("sample"),new Promise(r=>setTimeout(()=>r(null),12000))])}catch(e){}
   let lim=null;if(sample){try{lim=await sample.limits()}catch(e){}}
-  $("#st").textContent=!sample?"Claude bağlantısı yok (bu görünümde fotoğraf okunamaz).":lim&&lim.images?"Hazır ✓ (fotoğraf okuma açık)":"Claude var ama fotoğraf gönderme kapalı.";
+  $("#st").textContent=!sample?"Claude bağlantısı yok (bu görünümde fotoğraf okunamaz).":lim&&lim.images?"":"Claude var ama fotoğraf gönderme kapalı.";
   render();
 }
 /* Yeni fişi kaydeder. Veritabanı fotoğrafı kabul etmezse fotoğrafsız tekrar dener. */
@@ -144,7 +141,7 @@ $("#f").onchange=async e=>{
       const sum=j.kalemler.reduce((a,k)=>a+(+k.tutar||0),0);
       j.uyari=j.toplam&&sum&&Math.abs(sum-j.toplam)>0.5?"Kalem toplamı ("+TL(sum)+") fiş toplamıyla uyuşmuyor, kontrol et.":"";
       if(j.tahmin)j.uyari=(j.uyari?j.uyari+" ":"")+"Tarih okunamadı, fotoğraf tarihi kullanıldı. Aşağıdan değiştirebilirsin.";
-      await save(j);$("#st").textContent="Eklendi ✓";if(j.tarih){cm=new Date(j.tarih+"T00:00:00");cm.setDate(1);sel=j.tarih}render();
+      await save(j);$("#st").textContent="Eklendi ✓";setTimeout(()=>{if($("#st").textContent==="Eklendi ✓")$("#st").textContent=""},4000);if(j.tarih){cm=new Date(j.tarih+"T00:00:00");cm.setDate(1);sel=j.tarih}render();
     }catch(err){const c=err&&err.code,M={not_granted:"İzin verilmedi. Sayfayı yenile, izin penceresinde izin ver.",images_unavailable:"Bu görünümde fotoğraf gönderme kapalı. Sayfayı claude.ai üzerinden yeniden aç.",rate_limited:"Çok hızlı denendi, biraz bekle.",image_rejected:"Fotoğraf kabul edilmedi (tür veya boyut)."};$("#st").textContent="Okunamadı: "+(M[c]||(c?c+" — ":"")+(err&&err.message||"hata"))}
   }
   e.target.value="";
@@ -378,7 +375,7 @@ async function addManual(){const g=i=>$("#"+i).value,t=num(g("mt")),ad=g("mn").t
     await save({id:"e"+Date.now()+i,magaza:ad,tarih:k,toplam:t,tur:"manuel",elle:true,kalemler:[{ad,miktar:1,birim:"adet",tutar:t,kategori:g("mk")}]})}
   cm=new Date(first+"T00:00:00");cm.setDate(1);sel=first;tab="c";
   document.querySelectorAll(".tabs button").forEach(x=>x.className=x.dataset.t==="c"?"on":"g");render();return true}
-$("#mb").onclick=()=>openForm(sel);
+
 const FT={gelir:"Gelir",yatirim:"Yatırım",birikim:"Birikim",hayir:"Hayır"},YT=["Altın","Döviz","Hisse","Fon","Kripto","Diğer"];
 /* Gelir, yatırım veya birikim kaydını saklar. */
 async function saveF(r,add){if(add)F.push(r);
@@ -537,7 +534,7 @@ function setVal(id){const r=F.find(x=>x.id===id);if(!r)return;
   const d=ov(`<div class="md"><b>${esc(r.ad)} · güncel değer</b><label class="mu" style="display:block;margin-top:8px">Güncel değer (₺)</label><input id="sv" type="text" inputmode="decimal" value="${r.deger!=null?r.deger:r.tutar}"><div class="row"><button class="g" id="sx">İptal</button><button id="ss">Kaydet</button></div></div>`);
   $("#sx").onclick=()=>d.remove();$("#ss").onclick=async()=>{const n=num($("#sv").value);if(!(n>=0)){alert("Geçerli bir tutar yaz");return}r.deger=n;await saveF(r);d.remove();render()}}
 if(window.addEventListener){window.addEventListener("error",e=>{$("#st").textContent="Hata: "+(e.message||"bilinmiyor")});window.addEventListener("unhandledrejection",e=>{$("#st").textContent="Hata: "+((e.reason&&e.reason.message)||e.reason||"bilinmiyor")})}
-$("#f2").onchange=$("#f3").onchange=$("#f").onchange;
+
 /* İstatistik görünüm modu (aylık/tümü). */
 let smode="m";
 /* İstatistikte Aylık / Tümü geçişi. */
