@@ -284,6 +284,8 @@
 <!-- Tarayıcının kendi ses çaları. Ekranda görünmez;
      radyonun yayın adresini bu çalar çalar. -->
 <audio id="audio" preload="none"></audio>
+<!-- HLS (.m3u8) yayınları için yardımcı kütüphane -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
 
 <script>
 /* ============================================================
@@ -502,25 +504,79 @@ function alertMsg(t){
    Ses, Radio Browser'dan değil, doğrudan radyonun kendi
    yayın sunucusundan gelir.
    ============================================================ */
-function play(s){
+let playNo = 0;   // Her çalma isteğine sıra no; eski istek yenisini bozmasın
+let hls = null;   // HLS (.m3u8) oynatıcısı, varsa
+
+// Yayın listesi (.m3u / .pls) ise içindeki gerçek yayın adresini bulur
+async function resolveUrl(u){
+  if (/\.(m3u|pls)(\?|$)/i.test(u)){
+    try{
+      const t = await (await fetch(u)).text();
+      const line = t.split(/\r?\n/).map(x=>x.trim())
+        .find(x=>/^https?:\/\//i.test(x) || /^File\d*=https?:\/\//i.test(x));
+      if (line) return line.replace(/^File\d*=/i, "");
+    }catch(e){ /* listeye ulaşılamadı; adresin kendisi denenir */ }
+  }
+  return u;
+}
+
+// Bir adresi çalmayı dener. 15 saniye içinde başlamazsa "başarısız" döner.
+function tryPlay(u){
+  return new Promise(res=>{
+    const done = ok=>{
+      clearTimeout(t);
+      audio.removeEventListener("playing", onP);
+      audio.removeEventListener("error", onE);
+      res(ok);
+    };
+    const onP = ()=>done(true);
+    const onE = ()=>done(false);
+    const t = setTimeout(()=>done(false), 15000);
+    audio.addEventListener("playing", onP);
+    audio.addEventListener("error", onE);
+
+    if (hls){ hls.destroy(); hls = null; }
+    if (/\.m3u8(\?|$)/i.test(u) && !audio.canPlayType("application/vnd.apple.mpegurl") && window.Hls && Hls.isSupported()){
+      hls = new Hls();
+      hls.loadSource(u);
+      hls.attachMedia(audio);
+      hls.on(Hls.Events.ERROR, (e, d)=>{ if (d.fatal) onE(); });
+    } else {
+      audio.src = u;
+      audio.load();
+    }
+    audio.play().catch(()=>{}); // Hata olursa "error" olayı zaten yakalanır
+  });
+}
+
+async function play(s){
   current = s;
+  const my = ++playNo;
   $("#seek").hidden = true;      // Canlı radyoda sarma olmaz
   audio.onloadedmetadata = null; // Podcastin "kaldığın yer" ayarı radyoya karışmasın
   audio.playbackRate = 1;        // Radyo her zaman normal hızda
-  audio.src = s.url_resolved || s.url; // Canlı yayın adresi
   $("#now .name").textContent = s.name.trim();
   $("#status").textContent = "Bağlanıyor…";
 
   // Radyonun web sitesi kayıtlıysa "Yayın akışı" düğmesini göster
   const w = $("#web");
   if (s.homepage){ w.href = s.homepage; w.style.display = ""; } else { w.style.display = "none"; }
-
-  audio.play().catch(()=>{ $("#status").textContent = "Bu istasyon çalınamadı"; });
   render(window._shown); // Çalan radyoyu turuncu çerçeveyle işaretlemek için
 
-  // Veritabanına "bu radyo dinlendi" bilgisi gönderilir.
-  // Popülerlik sıralaması bu tıklamalarla oluşur.
-  if (!s.custom && !s.stationuuid.startsWith("ek-")) fetch(API[0] + "/json/url/" + s.stationuuid).catch(()=>{});
+  // Önce Radio Browser'ın çözdüğü adres, olmazsa özgün adres denenir
+  const adaylar = [...new Set([s.url_resolved, s.url].filter(Boolean))];
+  for (const aday of adaylar){
+    const u = await resolveUrl(aday);
+    if (my !== playNo) return; // Bu arada başka radyo/bölüm seçildi
+    if (await tryPlay(u)){
+      // Veritabanına "bu radyo dinlendi" bilgisi (popülerlik için)
+      if (!s.custom && !String(s.stationuuid||"").startsWith("ek-")) fetch(API[0] + "/json/url/" + s.stationuuid).catch(()=>{});
+      return;
+    }
+  }
+  if (my !== playNo) return;
+  $("#pp").textContent = "▶";
+  $("#status").textContent = "Bu istasyon şu an çalınamıyor. Başka bir radyo deneyin.";
 }
 
 /* ============================================================
@@ -782,6 +838,7 @@ function renderContinue(){
 
 // --- Bölüm çalma ---
 function playEp(e){
+  playNo++; if (hls){ hls.destroy(); hls = null; } // Radyo denemesini bırak
   current = e;
   audio.src = e.episodeUrl;
   $("#now .name").textContent = e.trackName;
