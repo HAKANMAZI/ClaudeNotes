@@ -206,6 +206,7 @@
       <option value="TR">Türkiye</option>
       <option value="IQ">Irak</option>
       <option value="AZ">Azerbaycan</option>
+      <option value="CY">Kıbrıs (KKTC dahil)</option>
       <option value="DE">Almanya</option>
       <option value="GB">İngiltere</option>
       <option value="US">ABD</option>
@@ -559,7 +560,7 @@ async function resolveUrl(u){
 }
 
 // Bir adresi çalmayı dener. 15 saniye içinde başlamazsa "başarısız" döner.
-function tryPlay(u){
+function tryPlay(u, ms){
   return new Promise(res=>{
     const done = ok=>{
       clearTimeout(t);
@@ -569,7 +570,7 @@ function tryPlay(u){
     };
     const onP = ()=>done(true);
     const onE = ()=>done(false);
-    const t = setTimeout(()=>done(false), 15000);
+    const t = setTimeout(()=>done(false), ms || 15000);
     audio.addEventListener("playing", onP);
     audio.addEventListener("error", onE);
 
@@ -619,7 +620,8 @@ async function play(s){
   for (const aday of adaylar){
     const u = await resolveUrl(aday);
     if (my !== playNo) return; // Bu arada başka radyo/bölüm seçildi
-    if (await tryPlay(u)){
+    // Sırada başka adres varsa yedi saniyeden fazla bekleme; son adrese on beş saniye
+    if (await tryPlay(u, adaylar.indexOf(aday) < adaylar.length - 1 ? 7000 : 15000)){
       // Veritabanına "bu radyo dinlendi" bilgisi (popülerlik için)
       if (!s.custom && !/^(ek|ti|sc)-/.test(String(s.stationuuid||""))) fetch(API[0] + "/json/url/" + s.stationuuid).catch(()=>{});
       return;
@@ -1449,6 +1451,7 @@ load();
 <style>
   #katBtn{margin-left:auto;padding:6px 9px;font-size:15px}
   #destekBtn:not([hidden]) + #katBtn{margin-left:6px}
+  .row.filt{margin-top:8px}
   .row.filt select{flex:1;min-width:0}
   #katNot{margin:6px 14px 0;font-size:13px;color:#ffd58a;display:grid;gap:3px}
   #katNot:empty{display:none}
@@ -1630,8 +1633,13 @@ load();
   }
 
   // load() buradan geçer: diğer kaynakları ekler, tekrarları ayıklar
+  const KKTC = ["kktc","kıbrıs","kibris","bayrak","lefkoşa","girne","magosa","cyprus"];
   window.katalogRadyo = async function(list, q){
     let hepsi = list.slice();
+    if ($("#country").value === "CY" && !q && ayar.rb){
+      const ek = await Promise.allSettled(KKTC.map(k=>api("/json/stations/search?hidebroken=true&order=clickcount&reverse=true&limit=40&name=" + encodeURIComponent(k))));
+      ek.forEach(r=>{ if (r.status === "fulfilled") hepsi = hepsi.concat(r.value.filter(s=>s.countrycode === "TR" || s.countrycode === "CY" || /kktc|k[ıi]br[ıi]s|cyprus/i.test((s.homepage||"") + " " + s.name))); });
+    }
     if (q){
       const isler = [];
       if (ayar.tunein) isler.push(["TuneIn", tuneinAra(q)]);
@@ -1649,12 +1657,12 @@ load();
   resolveUrl = async function(u, derin){
     try{
       if (/opml\.radiotime\.com\/Tune\.ashx/i.test(u)){
-        const j = await al(u + (u.includes("?") ? "&" : "?") + "render=json", {ms:8000});
+        const j = await al(u + (u.includes("?") ? "&" : "?") + "render=json", {ms:5000});
         const x = (j.body||[]).find(b=>b.url);
         if (x) return (!derin && /\.(m3u|pls)(\?|$)/i.test(x.url)) ? resolveUrl(x.url, true) : x.url;
       }
       if (/\.(m3u|pls)(\?|$)/i.test(u)){
-        const t = await al(u, {tur:"text", ms:8000});
+        const t = await al(u, {tur:"text", ms:5000});
         const line = t.split(/\r?\n/).map(x=>x.trim()).find(x=>/^https?:\/\//i.test(x) || /^File\d*=https?:\/\//i.test(x));
         if (line) return line.replace(/^File\d*=/i, "");
       }

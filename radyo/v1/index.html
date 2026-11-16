@@ -143,6 +143,7 @@
       <option value="TR">Türkiye</option>
       <option value="IQ">Irak</option>
       <option value="AZ">Azerbaycan</option>
+      <option value="CY">Kıbrıs (KKTC dahil)</option>
       <option value="DE">Almanya</option>
       <option value="GB">İngiltere</option>
       <option value="US">ABD</option>
@@ -421,7 +422,7 @@ async function resolveUrl(u){
 }
 
 // Bir adresi çalmayı dener. 15 saniye içinde başlamazsa "başarısız" döner.
-function tryPlay(u){
+function tryPlay(u, ms){
   return new Promise(res=>{
     const done = ok=>{
       clearTimeout(t);
@@ -431,7 +432,7 @@ function tryPlay(u){
     };
     const onP = ()=>done(true);
     const onE = ()=>done(false);
-    const t = setTimeout(()=>done(false), 15000);
+    const t = setTimeout(()=>done(false), ms || 15000);
     audio.addEventListener("playing", onP);
     audio.addEventListener("error", onE);
 
@@ -478,7 +479,8 @@ async function play(s){
   for (const aday of adaylar){
     const u = await resolveUrl(aday);
     if (my !== playNo) return; // Bu arada başka radyo seçildi
-    if (await tryPlay(u)){
+    // Sırada başka adres varsa yedi saniyeden fazla bekleme; son adrese on beş saniye
+    if (await tryPlay(u, adaylar.indexOf(aday) < adaylar.length - 1 ? 7000 : 15000)){
       // Veritabanına "bu radyo dinlendi" bilgisi gönderilir (popülerlik için)
       if (!s.custom && !s.stationuuid.startsWith("ek-")) fetch(API[0] + "/json/url/" + s.stationuuid).catch(()=>{});
       return;
