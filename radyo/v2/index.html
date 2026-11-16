@@ -172,7 +172,7 @@
 
   <!-- v2: Radyo / Podcast arasında geçiş -->
   <div class="row mode">
-    <button id="m_radio" class="on">📻 Radyo</button>
+    <button id="m_radio" class="on"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M5 9 17 4"/><rect x="3" y="9" width="18" height="12" rx="3"/><circle cx="8.5" cy="15" r="2.5"/><path d="M14 13.5h4M14 16.5h4"/></svg> Radyo</button>
     <button id="m_pod">🎙️ Podcast</button>
   </div>
 
@@ -1020,5 +1020,281 @@ function sleepFadeStop(){
 
 load();
 </script>
+
+<!-- ============================================================
+     GELİŞMİŞ OYNATMA EKRANI + KALDIĞIN YERDEN DEVAM
+     ------------------------------------------------------------
+     - Alttaki çubukta radyo/bölüm adına dokununca tam ekran
+       oynatıcı açılır: büyük kapak, ses dalgası, önceki/sonraki,
+       favori, uyku zamanlayıcısı, paylaş, ses ayarı.
+     - Podcast: duraklatınca, sarınca, uygulamadan çıkınca da
+       kaldığın yer kaydedilir. Açılışta "Devam et" kartı çıkar.
+     ============================================================ -->
+<style>
+  #now{cursor:pointer}
+  #npOpen{padding:8px 10px;flex:none}
+  #np{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;align-items:center;overflow:auto;padding:14px 18px 24px}
+  #np .bgart{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(40px) brightness(.35);transform:scale(1.2);z-index:-1}
+  #np .top{width:100%;max-width:480px;display:flex;align-items:center;justify-content:space-between;color:var(--dim);font-size:13px;letter-spacing:.5px}
+  #np .top button{background:transparent;border:none;font-size:26px;color:var(--txt);padding:4px 8px}
+  #npArt{width:min(72vw,300px);aspect-ratio:1;border-radius:24px;margin:22px 0 14px;background:linear-gradient(145deg,var(--acc),#6e1418);display:grid;place-items:center;font-size:90px;font-weight:800;color:#fff;box-shadow:0 20px 50px #000a;overflow:hidden;transition:transform .4s}
+  #npArt img{width:100%;height:100%;object-fit:cover}
+  #np.playing #npArt{transform:scale(1.03)}
+  /* Ses dalgası (süs): çalarken hareket eder */
+  .eq{display:flex;gap:4px;align-items:flex-end;height:28px;margin-bottom:12px}
+  .eq i{width:5px;background:var(--acc);border-radius:3px;height:20%;animation:eq 1s ease-in-out infinite;animation-play-state:paused}
+  .eq i:nth-child(2){animation-delay:-.2s}.eq i:nth-child(3){animation-delay:-.5s}.eq i:nth-child(4){animation-delay:-.7s}.eq i:nth-child(5){animation-delay:-.3s}.eq i:nth-child(6){animation-delay:-.9s}.eq i:nth-child(7){animation-delay:-.4s}
+  #np.playing .eq i{animation-play-state:running}
+  @keyframes eq{0%,100%{height:20%}50%{height:100%}}
+  #npName{font-size:22px;font-weight:800;text-align:center;max-width:480px;overflow-wrap:anywhere}
+  #npSub{color:var(--dim);text-align:center;margin-top:4px;max-width:480px}
+  #npChips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px}
+  #npChips span{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--dim)}
+  #npStatus{color:var(--acc);font-size:13px;margin-top:8px;min-height:18px}
+  #npSeek{width:100%;max-width:480px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim);margin-top:10px}
+  #npSeek input{flex:1}
+  #npCtl{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:16px}
+  #npCtl button{width:52px;height:52px;border-radius:50%;font-size:18px;padding:0}
+  #npCtl #npPP{width:76px;height:76px;font-size:30px;background:var(--acc);border-color:var(--acc);color:#fff}
+  #npAct{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:20px}
+  #npAct button,#npAct a{padding:9px 14px;font-size:14px;border-radius:999px;text-decoration:none;color:var(--txt);border:1px solid var(--line);background:var(--card)}
+  #npAct .yes{color:#ffcc66}
+  #npVolRow{display:flex;align-items:center;gap:10px;width:100%;max-width:320px;margin-top:18px;color:var(--dim)}
+  #npVolRow input{flex:1}
+  #np input[type=range]{accent-color:var(--acc)}
+  body.npOn{overflow:hidden}
+  body.npOn #sleepPanel{z-index:30}
+  /* Açılışta çıkan "kaldığın yerden devam" kartı */
+  #resumeCard{position:fixed;left:10px;right:10px;bottom:96px;z-index:9;max-width:520px;margin:auto;background:#1f232c;border:1px solid var(--acc);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px #0009;font-size:14px}
+  #resumeCard .t{flex:1;min-width:0}
+  #resumeCard .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #resumeCard small{color:var(--dim)}
+  #resumeCard button{padding:7px 10px;font-size:13px}
+  #resumeGo{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+</style>
+
+<div id="np" hidden>
+  <div class="bgart" id="npBg"></div>
+  <div class="top"><button id="npClose" title="Kapat">⌄</button><span id="npKind">ŞİMDİ ÇALIYOR</span><button id="npShare" title="Paylaş">⤴</button></div>
+  <div id="npArt">♫</div>
+  <div class="eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div id="npName">—</div>
+  <div id="npSub"></div>
+  <div id="npChips"></div>
+  <div id="npStatus"></div>
+  <div id="npSeek" hidden><span id="npCur">0:00</span><input id="npPos" type="range" min="0" max="0" step="1" value="0"><span id="npDur">0:00</span></div>
+  <div id="npCtl">
+    <button id="npPrev" title="Önceki">⏮</button>
+    <button id="npB15" title="15 sn geri" hidden>⏪</button>
+    <button id="npPP" title="Çal / durdur">▶</button>
+    <button id="npF30" title="30 sn ileri" hidden>⏩</button>
+    <button id="npNext" title="Sonraki">⏭</button>
+  </div>
+  <div id="npAct">
+    <button id="npFav">☆ Favori</button>
+    <button id="npSleep">🌙 Uyku</button>
+    <button id="npSpeed" hidden>1x</button>
+    <a id="npWeb" target="_blank" rel="noopener" hidden>📅 Yayın akışı</a>
+  </div>
+  <div id="npVolRow"><span>🔈</span><input id="npVol" type="range" min="0" max="1" step="0.05"><span>🔊</span></div>
+</div>
+
+<div id="resumeCard" hidden>
+  <div class="t"><small>⏯ Kaldığınız yerden devam edin</small><b id="resumeName"></b><small id="resumeTime"></small></div>
+  <button id="resumeGo">Devam et</button>
+  <button id="resumeX" title="Kapat">✕</button>
+</div>
+
+<script>
+(function(){
+  const np = $("#np");
+  const isPod = ()=> !!(current && current.episodeUrl);
+  const tfmt = s => (typeof fmt === "function") ? fmt(s) : Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0");
+
+  /* ---------- KALDIĞIN YERİ KAYDETME ---------- */
+  if (typeof prog !== "undefined"){
+    // Şu anki bölümün yerini hemen kaydeder
+    window.saveProg = function(){
+      const e = current;
+      if (!e || !e.episodeUrl || !audio.currentTime) return;
+      const d = audio.duration || (prog[e.trackId] && prog[e.trackId].d) || 0;
+      prog[e.trackId] = { t: audio.currentTime, d, at: Date.now(),
+        ep: {trackId:e.trackId, trackName:e.trackName, collectionName:e.collectionName, episodeUrl:e.episodeUrl,
+             releaseDate:e.releaseDate, trackTimeMillis:e.trackTimeMillis, artworkUrl160:e.artworkUrl160||e.artworkUrl600||""} };
+      store.set("pod_prog", prog);
+      store.set("pod_last", e.trackId);
+    };
+    // Duraklatınca, sarınca, uygulamadan çıkınca kaydet
+    audio.addEventListener("pause",  ()=>saveProg());
+    audio.addEventListener("seeked", ()=>saveProg());
+    document.addEventListener("visibilitychange", ()=>{ if (document.hidden) saveProg(); });
+    window.addEventListener("pagehide", ()=>saveProg());
+
+    // Bölüm çalarken: önceki bölümün yerini kaydet, kayıtlı yere güvenle git
+    const eskiPlayEp = playEp;
+    playEp = function(e){
+      saveProg();
+      eskiPlayEp(e);
+      const pr = prog[e.trackId];
+      if (pr && pr.t > 5 && (!pr.d || pr.t < pr.d - 10)){
+        $("#status").textContent = "Kaldığınız yerden: " + tfmt(pr.t);
+        // Bazı sunucularda ilk deneme tutmaz; çalmaya hazır olunca tekrar dene
+        const tekrar = ()=>{ audio.removeEventListener("canplay", tekrar);
+          if (current === e && audio.currentTime < pr.t - 3) audio.currentTime = pr.t; };
+        audio.addEventListener("canplay", tekrar);
+      }
+      store.set("pod_last", e.trackId);
+      $("#resumeCard").hidden = true;
+      npUpdate();
+    };
+
+    // Hız tercihini hatırla
+    if (typeof speeds !== "undefined"){
+      const sp = store.get("pod_speed", 0);
+      if (speeds[sp]){ speedIdx = sp; $("#speed").textContent = speeds[sp] + "x"; }
+      $("#speed").addEventListener("click", ()=>{ store.set("pod_speed", speedIdx); npUpdate(); });
+    }
+
+    // Açılışta son yarım kalan bölümü öner
+    const last = prog[store.get("pod_last", "")];
+    if (last && last.ep && last.t > 30 && (!last.d || last.t < last.d - 30)){
+      $("#resumeName").textContent = last.ep.trackName;
+      $("#resumeTime").textContent = (last.ep.collectionName ? last.ep.collectionName + " · " : "") + tfmt(last.t) + (last.d ? " / " + tfmt(last.d) : "");
+      $("#resumeCard").hidden = false;
+      $("#resumeGo").onclick = ()=>{ playEp(last.ep); };
+      $("#resumeX").onclick  = ()=>{ $("#resumeCard").hidden = true; };
+    }
+  }
+
+  /* ---------- GELİŞMİŞ OYNATMA EKRANI ---------- */
+  // Çubuğa "büyüt" düğmesi
+  const ob = document.createElement("button");
+  ob.id = "npOpen"; ob.title = "Oynatıcıyı aç"; ob.textContent = "⌃";
+  $("#now").after(ob);
+  const ac = ()=>{ if (!current) return; np.hidden = false; document.body.classList.add("npOn"); npUpdate(); };
+  ob.onclick = ac;
+  $("#now").addEventListener("click", ac);
+  $("#npClose").onclick = ()=>{ np.hidden = true; document.body.classList.remove("npOn"); };
+
+  // Dinleme süresi sayacı
+  let since = 0, item = null;
+  audio.addEventListener("playing", ()=>{ if (item !== current){ item = current; since = Date.now(); } });
+
+  // Ekrandaki bilgileri günceller
+  function npUpdate(){
+    if (!current) return;
+    const pod = isPod();
+    $("#npName").textContent = pod ? current.trackName : (current.name||"").trim();
+    $("#npKind").textContent = pod ? "PODCAST" : "CANLI RADYO";
+    const img = pod ? (current.artworkUrl600 || current.artworkUrl160 || (typeof curPod!=="undefined" && curPod && curPod.artworkUrl600) || "") : (current.favicon || "");
+    const harf = ((pod ? current.collectionName : current.name) || "♫").trim()[0] || "♫";
+    $("#npArt").innerHTML = img ? `<img src="${esc(img)}" alt="" onerror="this.outerHTML='${esc(harf)}'">` : esc(harf);
+    $("#npBg").style.backgroundImage = img ? `url("${img.replace(/"/g,"")}")` : "none";
+    if (pod){
+      $("#npSub").textContent = current.collectionName || "";
+      const d = current.releaseDate ? new Date(current.releaseDate).toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"}) : "";
+      $("#npChips").innerHTML = d ? `<span>${esc(d)}</span>` : "";
+    } else {
+      $("#npSub").textContent = [current.state, current.country].filter(Boolean).join(", ");
+      const tags = (current.tags||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,3);
+      $("#npChips").innerHTML = [...tags, current.codec, current.bitrate ? current.bitrate + " kbps" : ""].filter(Boolean).map(x=>`<span>${esc(x)}</span>`).join("");
+    }
+    // Podcastte sarma, hız; radyoda favori ve yayın akışı
+    $("#npSeek").hidden = !pod; $("#npB15").hidden = !pod; $("#npF30").hidden = !pod;
+    $("#npSpeed").hidden = !pod || typeof speeds === "undefined";
+    if (!$("#npSpeed").hidden) $("#npSpeed").textContent = "⏱ " + speeds[speedIdx] + "x";
+    $("#npFav").hidden = pod || current.custom;
+    const fav = !pod && favs.some(f=>f.stationuuid===current.stationuuid);
+    $("#npFav").textContent = fav ? "★ Favoride" : "☆ Favori";
+    $("#npFav").classList.toggle("yes", fav);
+    const w = $("#npWeb");
+    w.hidden = pod || !current.homepage; if (!w.hidden) w.href = current.homepage;
+    $("#npVol").value = audio.volume;
+    np.classList.toggle("playing", !audio.paused);
+    $("#npPP").textContent = audio.paused ? "▶" : "⏸";
+    // Kilit ekranı / bildirim bilgisi
+    try{ if (!pod) navigator.mediaSession.metadata = new MediaMetadata({title:current.name, artist:"Kızılelma Radyo", artwork: img ? [{src:img, sizes:"512x512"}] : []}); }catch(_){}
+  }
+  window.npUpdate = npUpdate;
+
+  // Alttaki durum yazısını büyük ekrana da yansıt
+  new MutationObserver(()=>{ $("#npStatus").textContent = $("#status").textContent; }).observe($("#status"), {childList:true, characterData:true, subtree:true});
+  ["playing","pause","waiting","emptied","loadstart"].forEach(ev=>audio.addEventListener(ev, npUpdate));
+
+  // Süre ve sarma çubuğu
+  let drag = false;
+  setInterval(()=>{
+    if (np.hidden || !current) return;
+    if (isPod()){
+      const d = audio.duration || 0;
+      if (!drag){ $("#npPos").max = Math.floor(d); $("#npPos").value = Math.floor(audio.currentTime); }
+      $("#npCur").textContent = tfmt(audio.currentTime); $("#npDur").textContent = tfmt(d);
+    } else if (!audio.paused && since){
+      const c = $("#npChips"); let s = c.querySelector(".sure");
+      if (!s){ s = document.createElement("span"); s.className = "sure"; c.appendChild(s); }
+      s.textContent = "⏱ " + tfmt((Date.now()-since)/1000);
+    }
+  }, 1000);
+  $("#npPos").oninput  = ()=>{ drag = true; $("#npCur").textContent = tfmt($("#npPos").value); };
+  $("#npPos").onchange = ()=>{ audio.currentTime = $("#npPos").value; drag = false; };
+
+  // Düğmeler
+  $("#npPP").onclick  = ()=> $("#pp").click();
+  $("#npB15").onclick = ()=> $("#back15").click();
+  $("#npF30").onclick = ()=> $("#fwd30").click();
+  $("#npSpeed").onclick = ()=> $("#speed").click();
+  $("#npVol").oninput = e=>{ audio.volume = e.target.value; $("#vol").value = e.target.value; store.set("radyo_vol", e.target.value); };
+  $("#npSleep").onclick = ()=> $("#sleepBtn").click();
+  $("#npFav").onclick = ()=>{
+    if (!current || isPod()) return;
+    const i = favs.findIndex(x=>x.stationuuid===current.stationuuid);
+    i>=0 ? favs.splice(i,1) : favs.push(current);
+    store.set("radyo_favs", favs);
+    if (typeof mode === "undefined" || mode === "radio") render(showFav ? favs : window._shown);
+    npUpdate();
+  };
+  // Önceki / sonraki: ekrandaki listede bir öncekine/sonrakine geç
+  function step(n){
+    if (!current) return;
+    if (isPod()){
+      const l = (typeof epsShown !== "undefined" ? epsShown : []);
+      const i = l.findIndex(x=>x.trackId===current.trackId);
+      if (i>=0 && l[i+n]) playEp(l[i+n]);
+    } else {
+      const l = (window._shown||[]).filter(x=>x && (x.url_resolved||x.url));
+      const i = l.findIndex(x=>x.stationuuid===current.stationuuid);
+      const j = i<0 ? 0 : (i+n+l.length) % l.length;
+      if (l[j]) play(l[j]);
+    }
+    setTimeout(npUpdate, 50);
+  }
+  $("#npPrev").onclick = ()=>step(-1);
+  $("#npNext").onclick = ()=>step(1);
+  try{
+    navigator.mediaSession.setActionHandler("previoustrack", ()=>step(-1));
+    navigator.mediaSession.setActionHandler("nexttrack", ()=>step(1));
+  }catch(_){}
+  // Paylaş: telefonun paylaş menüsü, yoksa panoya kopyala
+  $("#npShare").onclick = async ()=>{
+    if (!current) return;
+    const ad = isPod() ? current.trackName : current.name;
+    const url = isPod() ? current.episodeUrl : (current.homepage || current.url_resolved || current.url);
+    const text = ad + " · Kızılelma Radyo ile dinliyorum";
+    try{ if (navigator.share){ await navigator.share({title:ad, text, url}); return; } }catch(_){ return; }
+    try{ await navigator.clipboard.writeText(text + " " + url); $("#npStatus").textContent = "Bağlantı kopyalandı"; }catch(_){}
+  };
+
+  // Android geri tuşu: önce büyük oynatıcıyı kapat
+  if (window.androidBack){
+    const eskiGeri = window.androidBack;
+    window.androidBack = ()=>{
+      if (!$("#sleepPanel").hidden){ $("#sleepPanel").hidden = true; return true; }
+      if (!np.hidden){ $("#npClose").click(); return true; }
+      return eskiGeri();
+    };
+  }
+})();
+</script>
+
 </body>
 </html>
