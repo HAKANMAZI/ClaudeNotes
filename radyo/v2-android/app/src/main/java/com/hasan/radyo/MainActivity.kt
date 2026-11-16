@@ -79,6 +79,9 @@ class MainActivity : ComponentActivity() {
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW // http:// radyo yayınları
             // Telefonda yazı boyutu çok büyük seçiliyse düzen bozulmasın (en fazla %115)
             textZoom = textZoom.coerceAtMost(115)
+            // Güvenlik: sayfa telefonun dosyalarına erişemez
+            allowFileAccess = false
+            allowContentAccess = false
         }
 
         web.webViewClient = object : WebViewClient() {
@@ -149,6 +152,7 @@ class MainActivity : ComponentActivity() {
         return try {
             val hedef = u.getQueryParameter("u") ?: return hata()
             if (!hedef.startsWith("https://") && !hedef.startsWith("http://")) return hata()
+            if (yerel(URL(hedef).host)) return hata()
             val ekler = u.getQueryParameter("h")?.let { runCatching { JSONObject(it) }.getOrNull() }
             var adres = URL(hedef)
             var son: HttpURLConnection? = null
@@ -165,7 +169,9 @@ class MainActivity : ComponentActivity() {
                 val kod = c.responseCode
                 val yeni = c.getHeaderField("Location")
                 if (kod in 300..399 && yeni != null && yon < 5) {
-                    c.disconnect(); adres = URL(adres, yeni); yon++; continue
+                    c.disconnect(); adres = URL(adres, yeni); yon++
+                    if (adres.protocol !in setOf("http", "https") || yerel(adres.host)) return hata()
+                    continue
                 }
                 break
             }
@@ -211,7 +217,21 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /** Aracı yerel ağa / telefonun kendisine istek atmasın (güvenlik). */
+    private fun yerel(host: String?): Boolean {
+        val h = (host ?: return true).lowercase().trim('[', ']')
+        if (h.isEmpty() || h == "localhost" || h.endsWith(".local") || h == "::1" || h == "0.0.0.0") return true
+        val p = h.split('.').mapNotNull { it.toIntOrNull() }
+        if (p.size == 4) {
+            return p[0] == 10 || p[0] == 127 || p[0] == 0 || (p[0] == 169 && p[1] == 254) ||
+                (p[0] == 192 && p[1] == 168) || (p[0] == 172 && p[1] in 16..31) || (p[0] == 100 && p[1] in 64..127)
+        }
+        return h.startsWith("fc") || h.startsWith("fd") || h.startsWith("fe80")
+    }
+
     private fun disaridaAc(uri: Uri) {
+        // Güvenlik: sadece web bağlantıları dışarıda açılır (başka uygulamayı tetikleyen adresler engellenir)
+        if (uri.scheme?.lowercase() !in setOf("http", "https")) return
         try {
             startActivity(Intent(Intent.ACTION_VIEW, uri))
         } catch (_: Exception) {
@@ -221,6 +241,7 @@ class MainActivity : ComponentActivity() {
 
     /** Podcast bölümünü telefonun "Podcasts/Radyo" klasörüne indirir (internetsiz dinlemek için). */
     private fun indir(url: String, baslik: String) {
+        if (!url.startsWith("https://") && !url.startsWith("http://")) return
         try {
             val ad = baslik.replace(Regex("[\\\\/:*?\"<>|]"), " ").trim().take(80).ifEmpty { "bolum" }
             val uzanti = (Uri.parse(url).lastPathSegment ?: "")

@@ -470,7 +470,10 @@ async function load(){
 
 // Güvenlik: radyo adlarındaki özel işaretleri (<, > gibi) zararsız hale getirir,
 // böylece bir radyo adı sayfayı bozamaz.
-function esc(s){return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+function esc(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]))}
+// Güvenlik: sadece http/https bağlantılara izin ver. Radyo listesi topluluk tarafından
+// düzenlendiği için "javascript:" gibi tehlikeli adresler engellenir.
+function guvenli(u){ u = String(u||"").trim(); return /^https?:\/\//i.test(u) ? u : ""; }
 
 /* Gelen radyo listesini ekrana çizer.
    Her radyo için: logo, ad, ülke · türler · ses kalitesi (kbps), yıldız. */
@@ -632,7 +635,7 @@ async function play(s){
 
   // Radyonun web sitesi kayıtlıysa "Yayın akışı" düğmesini göster
   const w = $("#web");
-  if (s.homepage){ w.href = s.homepage; w.style.display = ""; } else { w.style.display = "none"; }
+  if (guvenli(s.homepage)){ w.href = guvenli(s.homepage); w.style.display = ""; } else { w.style.display = "none"; }
   render(window._shown); // Çalan radyoyu turuncu çerçeveyle işaretlemek için
 
   // Önce Radio Browser'ın çözdüğü adres, olmazsa özgün adres denenir
@@ -984,7 +987,7 @@ function epRow(e,i){
     <div class="info"><div class="name">${esc(e.trackName)}</div>
     <div class="meta">${esc([e.collectionName && !curPod ? e.collectionName : "", date, d ? fmtLong(d) : "", pct>=97 ? "✓ dinlendi" : ""].filter(Boolean).join(" · "))}</div>
     ${pct>0 && pct<97 ? `<div class="bar"><i style="width:${pct}%"></i></div>` : ""}</div>
-    <a class="dl" href="${esc(e.episodeUrl)}" target="_blank" rel="noopener" title="İndir / internetsiz dinlemek için kaydet">⬇️</a>
+    <a class="dl" href="${esc(guvenli(e.episodeUrl))}" target="_blank" rel="noopener" title="İndir / internetsiz dinlemek için kaydet">⬇️</a>
   </div>`;
 }
 
@@ -1396,7 +1399,7 @@ function colClick(e){
   const row = e.target.closest("[data-c]");
   if (row){
     const x = colItems[row.dataset.c];
-    if (x && x.link) window.open(x.link, "_blank", "noopener");
+    if (x && guvenli(x.link)) window.open(guvenli(x.link), "_blank", "noopener");
   }
 }
 
@@ -1678,7 +1681,7 @@ load();
     $("#npFav").textContent = fav ? "★ Favoride" : "☆ Favori";
     $("#npFav").classList.toggle("yes", fav);
     const w = $("#npWeb");
-    w.hidden = pod || !current.homepage; if (!w.hidden) w.href = current.homepage;
+    w.hidden = pod || !guvenli(current.homepage); if (!w.hidden) w.href = guvenli(current.homepage);
     $("#npVol").value = audio.volume;
     np.classList.toggle("playing", !audio.paused);
     $("#npPP").textContent = audio.paused ? "▶" : "⏸";

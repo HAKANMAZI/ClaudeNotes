@@ -72,6 +72,11 @@ Play Console > **Uygulama oluştur**
 | Veri güvenliği | Veri toplanmıyor, paylaşılmıyor. Satın alma bilgisi Google Play'de kalır |
 | Haber uygulaması mı? | Hayır |
 | Devlet uygulaması mı? | Hayır |
+| Ön plan hizmeti izni (Foreground service) | **Medya oynatma** seçin. Açıklama: "Kullanıcı radyo veya podcast başlattığında, ekran kapalıyken ve uygulama arka plandayken ses çalmaya devam etmek için." Play kısa bir video isteyebilir: uygulamada radyoyu başlatıp ekranı kapatın, bildirimdeki "Durdur" düğmesini gösterin, telefonla kaydedin |
+| Finans özellikleri | Yok |
+| Sağlık uygulaması mı? | Hayır |
+
+**Not:** ⚙️ Kaynaklar panelinde TuneIn varsayılan kapalıdır; Play sürümünde kapalı bırakın (resmî izin gerektirir).
 
 ## 6. Gönüllü destek ürünleri
 
