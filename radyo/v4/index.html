@@ -1,0 +1,2358 @@
+<!DOCTYPE html>
+<!--
+  ============================================================
+  RADYO + PODCAST + KÖŞE YAZILARI UYGULAMASI (v3)
+  ------------------------------------------------------------
+  v3 yenilikleri:
+  - Köşe yazıları: gazetelerin herkese açık RSS akışlarından
+    yazar, başlık ve kısa özet; yazının tamamı gazetenin
+    kendi sitesinde açılır. Kendi gazetenizi de ekleyebilirsiniz.
+  - Yedek kaynaklar: Ücretsiz bir kaynak kapanır veya
+    ulaşılamazsa uygulama yedeğe geçer (ayrıntı aşağıda,
+    "YEDEK KAYNAKLAR" bölümünde).
+  ------------------------------------------------------------
+  (v2)
+  ------------------------------------------------------------
+  v2 yenilikleri: Podcast bölümü (arama, bölümler, kaldığın yerden
+  devam, abonelik, ileri/geri sarma, hız ayarı, bölüm indirme).
+  Podcastler Apple'ın ücretsiz ve herkese açık podcast
+  arşivinden (iTunes Search API) gelir; anahtar/üyelik gerekmez.
+  ------------------------------------------------------------
+  Bu dosya tek başına çalışan bir web uygulamasıdır.
+  Tarayıcıda açmanız yeterli; kurulum gerekmez.
+
+  Nasıl çalışır?
+  1) İstasyon listesini "Radio Browser" adlı ücretsiz ve açık
+     bir veritabanından alır (radio-browser.info).
+  2) Listede her radyonun canlı yayın adresi (stream linki) vardır.
+  3) Bir radyoya tıklayınca tarayıcının kendi ses çalarına
+     (<audio>) bu adres verilir, yayın doğrudan radyonun
+     kendi sunucusundan çalınır.
+
+  Dosyanın bölümleri:
+  - <style>  : Görünüm (renkler, yazı, düzen)
+  - <body>   : Ekrandaki parçalar (arama, sekmeler, liste, çalar)
+  - <script> : Çalışma mantığı (arama, çalma, favoriler)
+  ============================================================
+-->
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<!-- Telefonda ekrana düzgün sığması için -->
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Kızılelma Radyo</title>
+<!-- Uygulama amblemi (sekme simgesi) -->
+<link rel="icon" href="data:image/webp;base64,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">
+
+<style>
+  /* ---------- RENKLER ----------
+     Tüm renkler burada tanımlı. Rengi değiştirmek için
+     sadece bu satırı düzenlemek yeterli.
+     --bg: arka plan, --card: kutular, --line: çizgiler,
+     --txt: yazı, --dim: soluk yazı, --acc: vurgu (turuncu) */
+  :root{--bg:#0f1115;--card:#1a1d24;--line:#2a2e38;--txt:#e9ebf0;--dim:#8b91a0;--acc:#ff5a36}
+  *{box-sizing:border-box}
+
+  /* Sayfanın genel görünümü. Alttaki boşluk, sabit çalar çubuğu
+     listenin üstünü kapatmasın diye. */
+  body{margin:0;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--bg);color:var(--txt);padding-bottom:150px}
+
+  /* Üst bölüm: kaydırınca da yukarıda sabit kalır */
+  header{position:sticky;top:0;background:var(--bg);padding:14px 14px 8px;z-index:5;border-bottom:1px solid var(--line)}
+  h1{margin:0 0 10px;font-size:22px}
+  h1 span{color:var(--acc)}
+  /* Amblem (başlıktaki yuvarlak logo) */
+  h1 .amblem{width:40px;height:40px;vertical-align:middle;border-radius:50%}
+
+  /* Arama kutusu, ülke seçimi ve düğmeler yan yana dizilir */
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  input,select,button{font:inherit;color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:10px 12px}
+  input{flex:1;min-width:140px}
+  button{cursor:pointer}
+  /* Seçili sekme turuncu görünür */
+  button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+  .tabs{margin-top:8px}
+
+  /* ---------- İSTASYON LİSTESİ ---------- */
+  #list{padding:10px 14px;display:grid;gap:8px}
+  /* Her bir radyo satırı */
+  .st{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px;cursor:pointer}
+  /* Şu an çalan radyonun çerçevesi turuncu olur */
+  .st.playing{border-color:var(--acc)}
+  /* Radyo logosu (logo yoksa baş harfi gösterilir) */
+  .logo{width:48px;height:48px;border-radius:8px;background:#262a33;flex:none;object-fit:cover;display:grid;place-items:center;font-weight:700;color:var(--dim)}
+  .info{flex:1;min-width:0}
+  /* Uzun isimler "…" ile kısaltılır */
+  .name{font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .meta{font-size:12px;color:var(--dim);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  /* Favori yıldızı: boşsa gri, doluysa sarı */
+  .fav{background:none;border:none;font-size:22px;padding:4px 6px;color:var(--dim)}
+  .fav.yes{color:#ffc83d}
+  /* Elle radyo ekleme formu */
+  .addform{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px}
+  .addform b{font-size:15px}
+  .addform small{color:var(--dim);line-height:1.4}
+  .addform button{background:var(--acc);border-color:var(--acc);color:#fff}
+  /* "Yükleniyor…", "Sonuç yok" gibi mesajlar */
+  .msg{color:var(--dim);text-align:center;padding:30px}
+
+  /* ---------- ALTTAKİ ÇALAR ÇUBUĞU ---------- */
+  #player{position:fixed;left:0;right:0;bottom:0;background:#14171d;border-top:1px solid var(--line);padding:12px 14px;display:flex;align-items:center;gap:12px}
+  /* Yuvarlak çal/durdur düğmesi */
+  #pp{width:52px;height:52px;border-radius:50%;background:var(--acc);border:none;color:#fff;font-size:22px;flex:none}
+  #now{flex:1;min-width:0}
+  /* Ses ayarı çubuğu */
+  #vol{width:90px}
+
+  /* ---------- v2: RADYO / PODCAST GEÇİŞİ ---------- */
+  .mode{margin-bottom:10px}
+  .mode button{flex:1;font-weight:600}
+  [hidden]{display:none!important}
+  /* Podcast kategori düğmeleri */
+  .ptabs{margin-top:8px}
+  .ptabs button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+  /* Bölüm listesi üst kısmı (geri düğmesi + podcast adı) */
+  .podhead{display:flex;align-items:center;gap:10px;padding:4px 0 6px}
+  .podhead img{width:64px;height:64px;border-radius:10px}
+  .podhead .name{white-space:normal}
+  /* Bölümün ne kadarının dinlendiğini gösteren ince çubuk */
+  .bar{height:3px;background:var(--line);border-radius:2px;margin-top:6px;overflow:hidden}
+  .bar i{display:block;height:100%;background:var(--acc)}
+  .dl{color:var(--dim);text-decoration:none;font-size:20px;padding:4px 6px}
+  /* Sarma çubuğu (sadece podcastte görünür) */
+  #player{flex-wrap:wrap}
+  #seek{width:100%;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim)}
+  #seek input{flex:1;padding:0}
+  #seek button{padding:6px 8px;font-size:12px}
+
+  /* ---------- v3: KÖŞE YAZILARI ---------- */
+  .ctabs{margin-top:8px}
+  .ctabs button.on{background:var(--acc);border-color:var(--acc);color:#fff}
+  .col .info{display:grid;gap:3px}
+  .col .who{font-size:13px;color:var(--acc);font-weight:600}
+  .col .name{white-space:normal}
+  /* Özet en fazla iki satır görünür */
+  .col .ex{font-size:13px;color:var(--dim);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+  /* Uyarı şeridi: yedek kaynak kullanılınca görünür */
+  #notice{margin:10px 14px 0;padding:8px 12px;border-radius:10px;background:#3a2a10;color:#ffd58a;font-size:13px}
+
+  /* ---------- KAPANMA ZAMANLAYICISI ---------- */
+  #sleepBtn{padding:8px 10px;white-space:nowrap}
+  #sleepBtn.on{background:var(--acc);border-color:var(--acc);color:#fff}
+  /* Süre seçme paneli: çalar çubuğunun hemen üstünde açılır */
+  #sleepPanel{position:fixed;right:14px;bottom:130px;z-index:10;background:#14171d;border:1px solid var(--line);border-radius:12px;padding:12px;display:grid;gap:8px;width:260px;box-shadow:0 8px 30px #0008}
+  #sleepPanel b{font-size:14px}
+  #sleepPanel .grid{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+  #sleepPanel input{min-width:0}
+  /* Yayın akışı (radyonun web sitesi) bağlantısı */
+  #web{color:var(--txt);background:var(--card);border:1px solid var(--line);border-radius:10px;padding:8px 10px;text-decoration:none;font-size:13px;white-space:nowrap}
+
+  /* ============ MOBİL UYUM ============
+     Telefonda: sayfa yana taşmaz, sekmeler tek satırda yana kayar,
+     çalar çubuğu sadeleşir (ses telefonun tuşlarıyla ayarlanır). */
+  /* "clip": yana taşmayı keser ama üst bölümün sabit kalmasını bozmaz ("hidden" bozuyordu) */
+  html,body{overflow-x:clip}
+  header{position:sticky;top:0;z-index:5}
+  #list{grid-template-columns:minmax(0,1fr)}   /* Uzun isimler satırı taşırmasın */
+  .st{min-width:0}
+  h1{display:flex;align-items:center;gap:10px;font-size:21px}
+  h1 .amblem{width:46px;height:46px;flex:none;border-radius:50%;box-shadow:0 0 0 2px #ffffff22}
+  h1 .ad{display:grid;line-height:1.15;color:var(--acc);min-width:0}
+  h1 .ad span{white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  h1 .ad small{font-size:11px;color:var(--dim);font-weight:500}
+  @media (max-width:640px){
+    header{padding:10px 10px 6px}
+    .tabs,.ptabs,.ctabs{flex-wrap:nowrap;overflow-x:auto;scrollbar-width:none;-webkit-overflow-scrolling:touch;padding-bottom:2px}
+    .tabs::-webkit-scrollbar,.ptabs::-webkit-scrollbar,.ctabs::-webkit-scrollbar{display:none}
+    .tabs button,.ptabs button,.ctabs button{flex:none;white-space:nowrap;padding:7px 12px;font-size:14px}
+    .row input,.row select,.row button{padding:9px 10px;font-size:15px}
+    #q,#pq,#cq{min-width:0}
+    #go{display:none}                  /* Yazdıkça arandığı için "Ara" gereksiz */
+    .mode button{padding:9px 6px;font-size:15px}
+    #list{padding:8px 10px}
+    .st{padding:8px;gap:10px}
+    .logo{width:42px;height:42px}
+    .name{font-size:15px}
+    #player{padding:8px 10px 10px;gap:8px}
+    #pp{width:46px;height:46px;font-size:20px}
+    #vol{display:none}
+    #web .yazi{display:none}           /* Sadece 🌐 simgesi */
+    #web{padding:8px 10px}
+    #sleepPanel{left:10px;right:10px;width:auto;bottom:120px}
+    #seek{font-size:11px;gap:6px}
+    #seek button{padding:5px 7px}
+    #destekBtn{padding:6px 9px;font-size:13px}
+  }
+</style>
+</head>
+<body>
+
+<!-- ========== ÜST BÖLÜM: başlık, arama, ülke, sekmeler ========== -->
+<header>
+  <h1><img class="amblem" alt="" src="data:image/webp;base64,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"> <span class="ad"><span>Kızılelma Radyo</span><small>v4</small></span></h1>
+
+  <!-- v2: Radyo / Podcast arasında geçiş -->
+  <div class="row mode">
+    <button id="m_radio" class="on"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-3px"><path d="M5 9 17 4"/><rect x="3" y="9" width="18" height="12" rx="3"/><circle cx="8.5" cy="15" r="2.5"/><path d="M14 13.5h4M14 16.5h4"/></svg> Radyo</button>
+    <button id="m_pod">🎙️ Podcast</button>
+    <button id="m_col">📰 Köşe Yazıları</button>
+  </div>
+
+  <!-- RADYO BÖLÜMÜ (v1'deki gibi) -->
+  <div id="radioBar">
+  <div class="row">
+    <!-- Radyo adıyla arama kutusu -->
+    <input id="q" placeholder="İstasyon ara…">
+    <!-- Ülke seçimi. value = ülkenin iki harfli kodu.
+         Yeni ülke eklemek için bir satır kopyalayıp kodu değiştirin. -->
+    <select id="country">
+      <option value="TR">Türkiye</option>
+      <option value="IQ">Irak</option>
+      <option value="AZ">Azerbaycan</option>
+      <option value="DE">Almanya</option>
+      <option value="GB">İngiltere</option>
+      <option value="US">ABD</option>
+      <option value="">Tüm dünya</option>
+    </select>
+    <button id="go">Ara</button>
+  </div>
+
+  <!-- Tür sekmeleri. data-tag = veritabanındaki tür etiketi.
+       Yeni tür eklemek için bir satır kopyalayıp etiketi değiştirin
+       (örnek: data-tag="rock"). -->
+  <div class="row tabs">
+    <button data-tag="" class="on" id="all">Tümü</button>
+    <button data-tag="pop">Pop</button>
+    <button data-tag="news">Haber</button>
+    <button data-tag="turkish folk">Türkü</button>
+    <button data-tag="arabesk">Arabesk</button>
+    <button data-tag="classical">Klasik</button>
+    <button data-tag="documentary">Belgesel</button>
+    <button data-tag="talk">Sohbet</button>
+    <button data-fav="1">★ Favoriler</button>
+    <!-- Kullanıcının elle eklediği radyolar -->
+    <button data-mine="1">➕ Benim radyolarım</button>
+  </div>
+  </div>
+
+  <!-- v2: PODCAST BÖLÜMÜ -->
+  <!-- v3: KÖŞE YAZILARI BÖLÜMÜ -->
+  <div id="colBar" hidden>
+    <div class="row">
+      <input id="cq" placeholder="Yazar veya başlık ara…">
+    </div>
+    <!-- Gazete düğmeleri kod tarafından doldurulur -->
+    <div class="row ctabs" id="ctabs"></div>
+  </div>
+
+  <div id="podBar" hidden>
+    <div class="row">
+      <input id="pq" placeholder="Podcast ara… (ör. tarih, ekonomi)">
+    </div>
+    <!-- Kategori düğmeleri. data-term = aranacak kelime.
+         Yeni kategori için bir satır kopyalayıp kelimeyi değiştirin. -->
+    <div class="row ptabs">
+      <!-- Tümü: birçok aramayı birleştirir, en yeni bölümü olan en üstte -->
+      <button data-term="__all__" class="on">Tümü</button>
+      <button data-term="__top__">🔥 Popüler</button>
+      <button data-term="belgesel">Belgesel</button>
+      <button data-term="tarih">Tarih</button>
+      <button data-term="bilim">Bilim</button>
+      <button data-term="haber gündem">Haber</button>
+      <button data-term="ekonomi">Ekonomi</button>
+      <button data-term="girişimcilik">İş dünyası</button>
+      <button data-term="spor">Spor</button>
+      <button data-term="komedi">Komedi</button>
+      <button data-term="hikaye">Hikâye</button>
+      <button data-term="çocuk masalları">Çocuk</button>
+      <button data-psubs="1">★ Aboneliklerim</button>
+      <button data-pcont="1">⏯ Devam et</button>
+      <button data-term="__rss__">➕ RSS ekle</button>
+    </div>
+  </div>
+</header>
+
+<!-- ========== İSTASYON LİSTESİ (kod tarafından doldurulur) ========== -->
+<!-- Uyarı şeridi (yedek kaynak kullanılınca) -->
+<div id="notice" hidden></div>
+<div id="list"><div class="msg">Yükleniyor…</div></div>
+
+<!-- ========== ALTTAKİ ÇALAR ========== -->
+<div id="player">
+  <!-- v2: Podcastte sarma çubuğu: geçen süre, çubuk, toplam süre,
+       15 sn geri, 30 sn ileri, hız -->
+  <div id="seek" hidden>
+    <button id="back15">⏪ 15</button>
+    <span id="tcur">0:00</span>
+    <input id="pos" type="range" min="0" max="0" step="1" value="0">
+    <span id="tdur">0:00</span>
+    <button id="fwd30">30 ⏩</button>
+    <button id="speed">1x</button>
+  </div>
+  <button id="pp">▶</button>
+  <div id="now"><div class="name">İstasyon seçin</div><div class="meta" id="status">—</div></div>
+  <!-- Radyonun web sitesi varsa görünür; program akışı genelde oradadır -->
+  <a id="web" target="_blank" rel="noopener" style="display:none"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg><span class="yazi"> Radyo sitesi</span></a>
+  <!-- Kapanma zamanlayıcısı düğmesi; çalışırken kalan süreyi gösterir -->
+  <button id="sleepBtn" title="Kapanma zamanlayıcısı">🌙</button>
+  <!-- Ses: 0 = sessiz, 1 = en yüksek -->
+  <input id="vol" type="range" min="0" max="1" step="0.05" value="0.8">
+</div>
+
+<!-- Kapanma zamanlayıcısı paneli -->
+<div id="sleepPanel" hidden>
+  <b>🌙 Ne zaman kapansın?</b>
+  <div class="grid">
+    <button data-min="15">15 dakika</button>
+    <button data-min="30">30 dakika</button>
+    <button data-min="45">45 dakika</button>
+    <button data-min="60">1 saat</button>
+  </div>
+  <div class="row">
+    <input id="sleepMin" type="number" min="1" max="600" placeholder="Dakika yazın">
+    <button id="sleepSet">Kur</button>
+  </div>
+  <button id="sleepOff">Zamanlayıcıyı iptal et</button>
+</div>
+
+<!-- Tarayıcının kendi ses çaları. Ekranda görünmez;
+     radyonun yayın adresini bu çalar çalar. -->
+<audio id="audio" preload="none"></audio>
+<!-- HLS (.m3u8) yayınları için yardımcı kütüphane -->
+<script src="https://cdn.jsdelivr.net/npm/hls.js@1.5.13/dist/hls.min.js"></script>
+
+<script>
+/* ============================================================
+   1) AYARLAR VE DEĞİŞKENLER
+   ============================================================ */
+
+// Radio Browser veritabanının sunucuları.
+// Biri çalışmazsa sıradaki denenir (yedekli çalışma).
+const API = ["https://de1.api.radio-browser.info","https://nl1.api.radio-browser.info","https://at1.api.radio-browser.info",
+             "https://de2.api.radio-browser.info","https://fi1.api.radio-browser.info"];
+
+// Kısayol: $("#q") yazınca sayfadaki id="q" öğesini bulur.
+const $ = s => document.querySelector(s);
+
+// Ses çaları
+const audio = $("#audio");
+
+let stations = [];   // Son aramada gelen radyolar
+let current = null;  // Şu an çalan radyo
+let tag = "";        // Seçili tür ("" = tümü)
+let showFav = false; // Favoriler sekmesi açık mı?
+let showMine = false;// "Benim radyolarım" sekmesi açık mı?
+
+/* ============================================================
+   2) TARAYICIYA KAYIT (favoriler ve ses seviyesi)
+   ------------------------------------------------------------
+   localStorage: tarayıcının küçük bir hafızası. Sayfayı kapatıp
+   açınca favoriler kaybolmaz. Sadece bu tarayıcıda saklanır.
+   ============================================================ */
+const store = {
+  // Kayıtlı değeri oku; yoksa varsayılanı (d) döndür
+  get(k,d){try{return JSON.parse(localStorage.getItem(k))??d}catch{return d}},
+  // Değeri kaydet
+  set(k,v){try{localStorage.setItem(k,JSON.stringify(v))}catch{}}
+};
+
+// Açılışta favorileri ve son ses seviyesini geri yükle
+// Veritabanında olmayan, uygulamaya hazır eklenen radyolar.
+// Yeni radyo eklemek için bir satır kopyalayıp ad ve adresi değiştirin.
+const EXTRA = [
+  { stationuuid:"ek-radyo-belgesel", name:"Radyo Belgesel",
+    url_resolved:"https://yayin2.canliyayin.org:9996/stream",
+    homepage:"https://www.canliyayin.org/radyo/radyo-belgesel",
+    country:"Türkiye", countrycode:"TR", tags:"documentary,belgesel,talk", bitrate:48 }
+];
+
+let favs = store.get("radyo_favs", []);
+let mine = store.get("radyo_mine", []); // Elle eklenen radyolar
+$("#vol").value = store.get("radyo_vol", 0.8);
+audio.volume = $("#vol").value;
+
+/* ============================================================
+   3) VERİTABANINA SORU SORMA
+   ------------------------------------------------------------
+   Sunuculara sırayla istek atar. İlk cevap veren sunucunun
+   sonucunu döndürür. Hiçbiri cevap vermezse hata verir.
+   ============================================================ */
+async function api(path){
+  for (const host of API){
+    try{
+      const r = await fetch(host + path);
+      if (r.ok) return await r.json(); // Cevap geldi → listeyi döndür
+    }catch(e){ /* Bu sunucu çalışmadı, sıradakine geç */ }
+  }
+  throw new Error("Sunucuya ulaşılamadı");
+}
+
+/* ============================================================
+   4) RADYOLARI ARAMA VE LİSTELEME
+   ============================================================ */
+let reqNo = 0; // Her aramaya sıra numarası; eski aramanın geç gelen sonucu yenisini ezmesin
+
+async function load(){
+  const my = ++reqNo;
+  if (window.katNotTemizle) katNotTemizle();
+  showFav = false; showMine = false;
+  $("#list").innerHTML = '<div class="msg">Yükleniyor…</div>';
+
+  // Arama ayarları:
+  // limit=80        → en fazla seksen radyo getir
+  // order=clickcount→ en çok dinlenene göre sırala
+  // reverse=true    → çoktan aza
+  // hidebroken=true → bozuk (çalışmayan) radyoları gizle
+  const p = new URLSearchParams({limit:80, order:"clickcount", reverse:"true", hidebroken:"true"});
+
+  const c = $("#country").value;   // Seçili ülke kodu
+  const q = $("#q").value.trim();  // Arama kutusundaki yazı
+
+  if (q){
+    // İsimle aranıyorsa tür filtresi kaldırılır: tüm radyolarda aranır.
+    // (Örnek: "kafa" yazınca Pop sekmesi seçili olsa bile bulunur.)
+    tag = "";
+    document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));
+    $("#all").classList.add("on");
+    p.set("name", q);
+  }
+  if (c) p.set("countrycode", c); // Ülke filtresi
+  if (tag) p.set("tag", tag);
+  // Şehir ve dil filtreleri (katalog bölümü ekler)
+  if ($("#city") && $("#city").value) p.set("state", $("#city").value);
+  if ($("#lang") && $("#lang").value) p.set("language", $("#lang").value);     // Tür filtresi
+
+  try{
+    stations = await api("/json/stations/search?" + p);
+    if (my !== reqNo || mode !== "radio") return; // Bu arada yeni arama başladıysa veya podcaste geçildiyse sonucu at
+    // Seçili ülkede bulunamazsa ülke filtresini kaldırıp tüm dünyada ara
+    if (!stations.length && q && c){
+      p.delete("countrycode");
+      stations = await api("/json/stations/search?" + p);
+      if (my !== reqNo) return;
+    }
+    // Hazır eklenen radyolar (EXTRA): ülke, tür ve aramaya uyuyorsa listenin başına eklenir
+    const extra = EXTRA.filter(s =>
+      (!c || s.countrycode === c || q) &&
+      (!tag || s.tags.includes(tag)) &&
+      (!q || s.name.toLocaleLowerCase("tr").includes(q.toLocaleLowerCase("tr"))));
+    stations = extra.concat(stations);
+    // Elle eklenen radyolar da aramada çıksın: adı aranan yazıyı içerenler listenin başına eklenir
+    if (q){
+      const k = q.toLocaleLowerCase("tr");
+      const own = mine.filter(s=>s.name.toLocaleLowerCase("tr").includes(k));
+      stations = own.concat(stations);
+    }
+    // Diğer kaynakları ekle, tekrarları ayıkla
+    if (window.katalogRadyo){ stations = await katalogRadyo(stations, q); if (my !== reqNo) return; }
+    render(stations);
+    cachePut("cache_radio", p.toString(), stations.filter(s=>!s.custom).slice(0,80)); // Son listeyi sakla
+    notice("");
+  }
+  catch(e){
+    if (my !== reqNo) return;
+    // YEDEK 1: Bu aramanın daha önce kaydedilmiş sonucu
+    let backup = cacheGet("cache_radio", p.toString());
+    let why = "Radyo listesi sunucusuna ulaşılamadı. Son kaydedilen liste gösteriliyor.";
+    // YEDEK 2: Uygulamanın içindeki hazır Türk radyoları listesi
+    if (!backup){
+      const k = norm(q);
+      backup = EXTRA.concat(BACKUP_STATIONS).filter(s =>
+        (!k || norm(s.name).includes(k)) && (!tag || (s.tags||"").includes(tag)));
+      why = "Radyo listesi sunucusuna ulaşılamadı. Uygulamanın içindeki yedek radyo listesi gösteriliyor.";
+    }
+    stations = backup;
+    render(stations);
+    notice("⚠️ " + why + " Radyolar yine kendi yayınlarından çalar.");
+  }
+}
+
+// Güvenlik: radyo adlarındaki özel işaretleri (<, > gibi) zararsız hale getirir,
+// böylece bir radyo adı sayfayı bozamaz.
+function esc(s){return String(s||"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]))}
+
+/* Gelen radyo listesini ekrana çizer.
+   Her radyo için: logo, ad, ülke · türler · ses kalitesi (kbps), yıldız. */
+function render(arr){
+  window._shown = arr; // Ekrandaki liste; tıklamada hangi radyo seçildi bulmak için
+  if (showMine){ renderMine(); return; }
+  if (!arr.length){
+    $("#list").innerHTML = '<div class="msg">'+(showFav?"Henüz favori yok.":"Sonuç bulunamadı.")+'</div>';
+    return;
+  }
+  $("#list").innerHTML = rows(arr);
+}
+
+/* Radyo satırlarının HTML'ini üretir.
+   Elle eklenen radyolarda yıldız yerine silme (🗑) düğmesi çıkar. */
+function rows(arr){
+  return arr.map((s,i)=>{
+    const isFav = favs.some(f=>f.stationuuid===s.stationuuid); // Favoride mi?
+    // Logo varsa resmi göster; yüklenemezse veya yoksa adın baş harfini göster
+    const logo = s.favicon
+      ? `<img class="logo" loading="lazy" src="${esc(s.favicon)}" onerror="this.outerHTML='<div class=logo>${esc(s.name[0]||'?')}</div>'">`
+      : `<div class="logo">${esc((s.name||"?")[0])}</div>`;
+    return `<div class="st ${current&&current.stationuuid===s.stationuuid?'playing':''}" data-i="${i}">
+      ${logo}
+      <div class="info"><div class="name">${esc(s.name.trim())}</div>
+      <div class="meta">${esc([s.country, s.tags&&s.tags.split(",").slice(0,3).join(", "), s.bitrate?s.bitrate+" kbps":""].filter(Boolean).join(" · "))}</div></div>
+      ${s.custom
+        ? `<button class="fav" data-d="${i}" title="Sil">🗑</button>`
+        : `<button class="fav ${isFav?'yes':''}" data-f="${i}">${isFav?'★':'☆'}</button>`}
+    </div>`;
+  }).join("");
+}
+
+/* ============================================================
+   4b) ELLE RADYO EKLEME ("Benim radyolarım")
+   ------------------------------------------------------------
+   Listede olmayan bir radyoyu kendiniz ekleyebilirsiniz.
+   Gerekli olan: radyonun İNTERNET YAYIN ADRESİ (stream linki).
+   Frekans (ör. 98.4) sadece bilgi olarak yazılır; internet
+   radyosu frekansla değil, yayın adresiyle çalar.
+   Yayın adresi genelde radyonun sitesinde "canlı dinle"
+   bölümünde ya da "stream", ".mp3", ".aac", ".m3u" diye geçer.
+   ============================================================ */
+function renderMine(){
+  $("#list").innerHTML = `
+    <form class="addform" id="addform">
+      <b>➕ Radyo ekle</b>
+      <input id="m_name" placeholder="Radyo adı (ör. Radyo Belgesel)" required>
+      <input id="m_freq" placeholder="Frekans – isteğe bağlı (ör. 98.4)">
+      <input id="m_url" placeholder="Yayın adresi (https://… ile başlar)" required>
+      <button type="submit">Ekle</button>
+      <small>⚠️ Web sayfası adresi (ör. canliyayin.org/radyo/…) çalışmaz.
+      Yayın adresi genelde şöyle görünür: https://sunucu.com:8000/stream veya …/;stream.mp3<br>
+      Frekans sadece bilgi içindir. Radyoyu çalan şey yayın adresidir;
+      bunu radyonun web sitesindeki "canlı dinle" bölümünden bulabilirsiniz.</small>
+    </form>
+    ${mine.length ? rows(mine) : '<div class="msg">Henüz elle eklenen radyo yok.</div>'}`;
+}
+
+// Form gönderilince yeni radyoyu kaydet
+$("#list").addEventListener("submit", e=>{
+  if (e.target.id !== "addform") return; // Sadece radyo ekleme formu
+  e.preventDefault(); // Sayfanın yenilenmesini engelle
+  const name = $("#m_name").value.trim();
+  const freq = $("#m_freq").value.trim();
+  const url  = $("#m_url").value.trim();
+  if (!/^https?:\/\//i.test(url)){ alertMsg("Yayın adresi http:// veya https:// ile başlamalı"); return; }
+  mine.push({
+    stationuuid: "elle-" + Date.now(), // Benzersiz kimlik
+    name, url_resolved: url, homepage: "",
+    country: "Elle eklendi",
+    tags: freq ? freq + " FM" : "",
+    custom: true
+  });
+  store.set("radyo_mine", mine); // Tarayıcıya kaydet
+  render(mine);
+});
+
+// Formun altında kısa uyarı gösterir
+function alertMsg(t){
+  let m = document.querySelector(".addform .err");
+  if (!m){ m = document.createElement("small"); m.className="err"; m.style.color="#ff7a7a"; $("#addform").appendChild(m); }
+  m.textContent = t;
+}
+
+/* ============================================================
+   5) RADYO ÇALMA
+   ------------------------------------------------------------
+   Radyonun canlı yayın adresi (url_resolved) ses çalara verilir.
+   Ses, Radio Browser'dan değil, doğrudan radyonun kendi
+   yayın sunucusundan gelir.
+   ============================================================ */
+let playNo = 0;   // Her çalma isteğine sıra no; eski istek yenisini bozmasın
+let hls = null;   // HLS (.m3u8) oynatıcısı, varsa
+
+// Yayın listesi (.m3u / .pls) ise içindeki gerçek yayın adresini bulur
+async function resolveUrl(u){
+  if (/\.(m3u|pls)(\?|$)/i.test(u)){
+    try{
+      const t = await (await fetch(u)).text();
+      const line = t.split(/\r?\n/).map(x=>x.trim())
+        .find(x=>/^https?:\/\//i.test(x) || /^File\d*=https?:\/\//i.test(x));
+      if (line) return line.replace(/^File\d*=/i, "");
+    }catch(e){ /* listeye ulaşılamadı; adresin kendisi denenir */ }
+  }
+  return u;
+}
+
+// Bir adresi çalmayı dener. 15 saniye içinde başlamazsa "başarısız" döner.
+function tryPlay(u){
+  return new Promise(res=>{
+    const done = ok=>{
+      clearTimeout(t);
+      audio.removeEventListener("playing", onP);
+      audio.removeEventListener("error", onE);
+      res(ok);
+    };
+    const onP = ()=>done(true);
+    const onE = ()=>done(false);
+    const t = setTimeout(()=>done(false), 15000);
+    audio.addEventListener("playing", onP);
+    audio.addEventListener("error", onE);
+
+    if (hls){ hls.destroy(); hls = null; }
+    if (/\.m3u8(\?|$)/i.test(u) && !audio.canPlayType("application/vnd.apple.mpegurl") && window.Hls && Hls.isSupported()){
+      hls = new Hls();
+      hls.loadSource(u);
+      hls.attachMedia(audio);
+      hls.on(Hls.Events.ERROR, (e, d)=>{ if (d.fatal) onE(); });
+    } else {
+      audio.src = u;
+      audio.load();
+    }
+    audio.play().catch(()=>{}); // Hata olursa "error" olayı zaten yakalanır
+  });
+}
+
+async function play(s){
+  current = s;
+  const my = ++playNo;
+  $("#seek").hidden = true;      // Canlı radyoda sarma olmaz
+  audio.onloadedmetadata = null; // Podcastin "kaldığın yer" ayarı radyoya karışmasın
+  audio.playbackRate = 1;        // Radyo her zaman normal hızda
+  $("#now .name").textContent = s.name.trim();
+  $("#status").textContent = "Bağlanıyor…";
+
+  // Radyonun web sitesi kayıtlıysa "Yayın akışı" düğmesini göster
+  const w = $("#web");
+  if (s.homepage){ w.href = s.homepage; w.style.display = ""; } else { w.style.display = "none"; }
+  render(window._shown); // Çalan radyoyu turuncu çerçeveyle işaretlemek için
+
+  // Önce Radio Browser'ın çözdüğü adres, olmazsa özgün adres denenir
+  const adaylar = [...new Set([s.url_resolved, s.url].filter(Boolean))];
+  for (const aday of adaylar){
+    const u = await resolveUrl(aday);
+    if (my !== playNo) return; // Bu arada başka radyo/bölüm seçildi
+    if (await tryPlay(u)){
+      // Veritabanına "bu radyo dinlendi" bilgisi (popülerlik için)
+      if (!s.custom && !/^(ek|ti|sc)-/.test(String(s.stationuuid||""))) fetch(API[0] + "/json/url/" + s.stationuuid).catch(()=>{});
+      return;
+    }
+  }
+  if (my !== playNo) return;
+  $("#pp").textContent = "▶";
+  $("#status").textContent = "Bu istasyon şu an çalınamıyor. Başka bir radyo deneyin.";
+}
+
+/* ============================================================
+   6) TIKLAMALAR VE DÜĞMELER
+   ============================================================ */
+
+// Listeye tıklama: yıldıza basıldıysa favori ekle/çıkar, değilse radyoyu çal
+$("#list").addEventListener("click", e=>{
+  if (mode === "pod"){ podClick(e); return; } // v2: podcast modundaysa podcast tıklaması
+  if (mode === "col"){ colClick(e); return; } // v3: köşe yazıları
+  const f = e.target.closest("[data-f]");
+  if (f){
+    e.stopPropagation();
+    const s = window._shown[f.dataset.f];
+    const idx = favs.findIndex(x=>x.stationuuid===s.stationuuid);
+    idx>=0 ? favs.splice(idx,1) : favs.push(s); // Varsa çıkar, yoksa ekle
+    store.set("radyo_favs", favs);              // Tarayıcıya kaydet
+    render(showFav ? favs : window._shown);
+    return;
+  }
+  // Elle eklenen radyoyu silme
+  const d = e.target.closest("[data-d]");
+  if (d){
+    e.stopPropagation();
+    const s = window._shown[d.dataset.d];
+    mine = mine.filter(x=>x.stationuuid!==s.stationuuid);
+    store.set("radyo_mine", mine);
+    render(mine);
+    return;
+  }
+  const st = e.target.closest(".st");
+  if (st) play(window._shown[st.dataset.i]);
+});
+
+// Çal / durdur düğmesi
+$("#pp").onclick = ()=>{
+  if (!current) return; // Henüz radyo seçilmediyse bir şey yapma
+  audio.paused ? audio.play().catch(()=>{}) : audio.pause();
+};
+
+// Ses çaların durumuna göre alttaki yazıyı ve düğmeyi güncelle
+audio.onplaying = ()=>{ $("#pp").textContent="⏸"; $("#status").textContent="Çalıyor"; };
+audio.onpause   = ()=>{ $("#pp").textContent="▶"; $("#status").textContent="Durduruldu"; };
+audio.onwaiting = ()=>{ $("#status").textContent="Yükleniyor…"; };
+audio.onerror   = ()=>{
+  if(!current) return;
+  $("#pp").textContent="▶";
+  // Elle eklenen radyoda hata: büyük ihtimalle web sayfası adresi girilmiştir
+  $("#status").textContent = current.episodeUrl ? "Bu bölüm çalınamadı"
+    : current.custom
+    ? "Çalınamadı. Girilen adres web sayfası olabilir; yayın (stream) adresi gerekir."
+    : "Bu istasyon çalınamadı";
+};
+
+// Ses ayarı değişince uygula ve kaydet
+$("#vol").oninput = e=>{ audio.volume = e.target.value; store.set("radyo_vol", e.target.value); };
+
+// Sekmeler: Favoriler ise kayıtlı listeyi göster, değilse o türü ara
+document.querySelectorAll(".tabs button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");
+  if (b.dataset.fav){ showFav = true; showMine = false; render(favs); }
+  else if (b.dataset.mine){ showMine = true; showFav = false; render(mine); }
+  else { tag = b.dataset.tag; load(); }
+});
+
+// Ara düğmesi, Enter tuşu ve ülke değişimi aramayı başlatır
+$("#go").onclick = load;
+$("#q").onkeydown = e=>{ if(e.key==="Enter"){ clearTimeout(typing); load(); } };
+
+// Yazdıkça arama: her harfte değil, yazmayı kısa süre (0,35 saniye)
+// bırakınca arar. Böylece sunucuya gereksiz istek gitmez.
+let typing;
+$("#q").oninput = ()=>{
+  clearTimeout(typing);
+  typing = setTimeout(load, 350);
+};
+$("#country").onchange = load;
+
+/* ============================================================
+   7) BAŞLANGIÇ: sayfa açılınca popüler Türk radyolarını getir
+   ============================================================ */
+/* ============================================================
+   8) v2: PODCAST BÖLÜMÜ
+   ------------------------------------------------------------
+   Podcast nereden geliyor?
+   Apple'ın herkese açık ve ücretsiz podcast arşivi (iTunes
+   Search API). Anahtar veya üyelik gerekmez. Ses dosyası
+   podcastin kendi sunucusundan çalınır.
+   - Arama:   itunes.apple.com/search?media=podcast&term=…
+   - Bölümler: itunes.apple.com/lookup?id=…&entity=podcastEpisode
+   ============================================================ */
+const IT = "https://itunes.apple.com";
+let mode = "radio";                        // "radio" veya "pod"
+let subs = store.get("pod_subs", []);      // Abone olunan podcastler
+let prog = store.get("pod_prog", {});      // Kaldığın yer: bölüm kimliği → {t: saniye, d: süre, ...}
+let podReq = 0;                            // Eski aramanın sonucu yenisini ezmesin
+let podTerm = "__all__";                   // Son aranan kelime ("__all__" = Tümü)
+
+// "Tümü" sekmesi için birlikte aranan kelimeler. Eklemek/çıkarmak serbest.
+const ALL_TERMS = ["podcast","türkçe podcast","sohbet","belgesel","tarih","bilim","haber","ekonomi","spor","hikaye"];
+let podsShown = [], epsShown = [], curPod = null;
+
+/* ---------- ENGELLEME LİSTESİ ----------
+   Podcastin adında, yapımcısında veya bölüm başlığında bu
+   kelimelerden biri geçerse o içerik hiç gösterilmez.
+   Liste ekranda görünmez; sadece buradan değiştirilir. */
+const DEFAULT_BLOCK = ["fethullah gülen", "fetullah gülen", "f. gülen", "herkul", "hocaefendi", "hoca efendi", "gulen podcast", "gulen arabic", "gülen sesli kitap", "فتح الله كولن"];
+const blocked = DEFAULT_BLOCK;
+
+// Karşılaştırma için yazıyı sadeleştirir: küçük harf, Türkçe harfler → düz (ü→u, ş→s …)
+function norm(s){
+  return String(s||"").toLocaleLowerCase("tr")
+    .replace(/ı/g,"i").normalize("NFD").replace(/[\u0300-\u036f]/g,"");
+}
+// Bu podcast/bölüm engelli mi?
+function isBlocked(x){
+  const text = norm([x.collectionName, x.artistName, x.trackName, x.collectionCensoredName].join(" "));
+  return blocked.some(w => w.trim() && text.includes(norm(w)));
+}
+
+// Apple arşivine istek at.
+// Önce normal yolla (fetch) dener. Dosya bilgisayardan açıldığında
+// (file://) tarayıcı bazı istekleri engelliyor; o zaman yedek yöntem
+// olan JSONP kullanılır: cevap bir <script> etiketiyle alınır,
+// bu yöntem her ortamda çalışır.
+async function itunes(path){
+  try{
+    const r = await fetch(IT + path);
+    if (r.ok) return await r.json();
+  }catch(e){ /* Engellendi, yedek yönteme geç */ }
+  return jsonp(IT + path);
+}
+
+let jsonpNo = 0;
+function jsonp(url){
+  return new Promise((ok, fail)=>{
+    const name = "itunesCb" + (++jsonpNo);
+    const s = document.createElement("script");
+    const done = ()=>{ delete window[name]; s.remove(); clearTimeout(timer); };
+    const timer = setTimeout(()=>{ done(); fail(new Error("Podcast sunucusuna ulaşılamadı")); }, 15000);
+    window[name] = data=>{ done(); ok(data); };
+    s.onerror = ()=>{ done(); fail(new Error("Podcast sunucusuna ulaşılamadı")); };
+    s.src = url + "&callback=" + name;
+    document.head.appendChild(s);
+  });
+}
+
+// Saniyeyi "1:05:30" veya "5:30" biçimine çevirir
+function fmt(sec){
+  sec = Math.max(0, Math.floor(sec||0));
+  const h = Math.floor(sec/3600), m = Math.floor(sec%3600/60), s = sec%60;
+  return (h ? h+":"+String(m).padStart(2,"0") : m) + ":" + String(s).padStart(2,"0");
+}
+// Tarihi "14 Kasım 2026" biçiminde yazar
+function trDate(d){ return new Date(d).toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"}); }
+
+// Süreyi "1 sa 5 dk" biçiminde yazar (listelerde)
+function fmtLong(sec){
+  const h = Math.floor(sec/3600), m = Math.round(sec%3600/60);
+  return (h ? h+" sa " : "") + m + " dk";
+}
+
+// --- Podcast arama ---
+async function podSearch(term){
+  const my = ++podReq;
+  podTerm = term;
+  $("#list").innerHTML = '<div class="msg">Yükleniyor…</div>';
+  try{
+    let results;
+    if (term === "__all__"){
+      // Tümü: kelimeleri aynı anda ara, sonuçları birleştir, aynı podcasti bir kez al
+      const all = await Promise.allSettled(ALL_TERMS.map(t =>
+        itunes("/search?media=podcast&country=TR&limit=100&term=" + encodeURIComponent(t))));
+      const seen = new Set();
+      results = [];
+      all.forEach(x => x.status === "fulfilled" && x.value.results.forEach(p => {
+        if (!seen.has(p.collectionId)){ seen.add(p.collectionId); results.push(p); }
+      }));
+      if (!results.length) throw new Error("Podcast sunucusuna ulaşılamadı");
+    } else {
+      const j = await itunes("/search?media=podcast&country=TR&limit=100&term=" + encodeURIComponent(term));
+      results = j.results;
+    }
+    if (my !== podReq || mode !== "pod") return;
+    renderPods(results, "Sonuç bulunamadı.");
+    cachePut("cache_pods", term, results.slice(0,150).map(slimPod)); // Son sonucu sakla
+    notice("");
+  }catch(e){
+    if (my !== podReq || mode !== "pod") return;
+    // YEDEK 1: Apple'a ulaşılamazsa ikinci ücretsiz podcast arşivi (fyyd.de)
+    try{
+      const results = await fyydSearch(term === "__all__" ? "türkçe" : term);
+      if (my !== podReq || mode !== "pod") return;
+      if (results.length){
+        renderPods(results, "Sonuç bulunamadı.");
+        notice("⚠️ Apple podcast arşivine ulaşılamadı. Yedek podcast arşivi (fyyd) kullanılıyor.");
+        return;
+      }
+    }catch(_){}
+    // YEDEK 2: Daha önce kaydedilen sonuç
+    const cached = cacheGet("cache_pods", term);
+    if (cached){
+      renderPods(cached, "Sonuç bulunamadı.");
+      notice("⚠️ Podcast arşivlerine ulaşılamadı. Son kaydedilen liste gösteriliyor.");
+    } else {
+      $("#list").innerHTML = '<div class="msg">'+e.message+'. Aboneliklerim ve Devam et bölümleri yine çalışır.</div>';
+    }
+  }
+}
+
+// Podcast bilgisini saklamak için küçültür (sadece gerekli alanlar)
+function slimPod(p){
+  return {collectionId:p.collectionId, collectionName:p.collectionName, artistName:p.artistName,
+    artworkUrl100:p.artworkUrl100, primaryGenreName:p.primaryGenreName, releaseDate:p.releaseDate,
+    trackCount:p.trackCount, fyydId:p.fyydId};
+}
+// Bölüm bilgisini saklamak için küçültür
+function slimEp(e){
+  return {trackId:e.trackId, trackName:e.trackName, collectionName:e.collectionName, episodeUrl:e.episodeUrl,
+    releaseDate:e.releaseDate, trackTimeMillis:e.trackTimeMillis, artworkUrl160:e.artworkUrl160};
+}
+
+// --- Podcast listesini çiz (kapak, ad, yapımcı, tür, abone yıldızı) ---
+function renderPods(arr, emptyText){
+  // Güncel tarihten geriye: en yeni bölümü yayınlanan podcast en üstte
+  arr = arr.filter(p => !isBlocked(p)); // Engellenenleri çıkar
+  arr = arr.slice().sort((a,b) => (a._rank!=null && b._rank!=null) ? a._rank-b._rank  // Popüler listede sıra korunur
+    : (b.releaseDate||"").localeCompare(a.releaseDate||""));
+  podsShown = arr; curPod = null;
+  if (!arr.length){ $("#list").innerHTML = '<div class="msg">'+emptyText+'</div>'; return; }
+  $("#list").innerHTML = arr.map((p,i)=>{
+    const isSub = subs.some(s=>s.collectionId===p.collectionId);
+    return `<div class="st" data-p="${i}">
+      <img class="logo" loading="lazy" src="${esc(p.artworkUrl100||"")}" onerror="this.style.visibility='hidden'">
+      <div class="info"><div class="name">${esc(p.collectionName)}</div>
+      <div class="meta">${esc([p.releaseDate ? "Son bölüm: " + trDate(p.releaseDate) : "", p.artistName, p.primaryGenreName, p.trackCount ? p.trackCount+" bölüm" : ""].filter(Boolean).join(" · "))}</div></div>
+      <button class="fav ${isSub?'yes':''}" data-ps="${i}" title="Abone ol">${isSub?'★':'☆'}</button>
+    </div>`;
+  }).join("");
+}
+
+// --- Bir podcastin bölümlerini aç ---
+async function openPod(p){
+  const my = ++podReq;
+  curPod = p;
+  $("#list").innerHTML = '<div class="msg">Bölümler yükleniyor…</div>';
+  const sortNew = arr => arr.filter(r=>r.episodeUrl && !isBlocked(r))
+    .sort((a,b) => (b.releaseDate||"").localeCompare(a.releaseDate||"")); // En yeni bölüm üstte
+  const key = String(p.collectionId);
+  try{
+    let eps;
+    if (p.fyydId) eps = await fyydEpisodes(p);  // Yedek arşivden gelen podcast
+    else {
+      const j = await itunes("/lookup?id=" + p.collectionId + "&entity=podcastEpisode&limit=200&country=TR");
+      eps = j.results; // İlk sonuç podcastin kendisi; geri kalanlar bölümler
+    }
+    if (my !== podReq || mode !== "pod") return;
+    eps = sortNew(eps);
+    renderEps(eps);
+    cachePut("cache_eps", key, eps.slice(0,100).map(slimEp)); // Bölüm listesini sakla
+    notice("");
+  }catch(e){
+    if (my !== podReq || mode !== "pod") return;
+    // YEDEK: Apple'a ulaşılamazsa aynı podcasti fyyd arşivinde ada göre ara
+    try{
+      const alt = (await fyydSearch(p.collectionName)).find(x => norm(x.collectionName) === norm(p.collectionName));
+      if (alt){
+        const eps = sortNew(await fyydEpisodes(alt));
+        if (my !== podReq || mode !== "pod") return;
+        if (eps.length){ renderEps(eps); notice("⚠️ Apple podcast arşivine ulaşılamadı. Bölümler yedek arşivden (fyyd) geliyor."); return; }
+      }
+    }catch(_){}
+    // YEDEK 2: Daha önce kaydedilen bölüm listesi
+    const cached = cacheGet("cache_eps", key);
+    if (cached){ renderEps(cached); notice("⚠️ Podcast arşivlerine ulaşılamadı. Son kaydedilen bölüm listesi gösteriliyor."); }
+    else $("#list").innerHTML = '<div class="msg">'+e.message+'</div>';
+  }
+}
+
+/* --- YEDEK PODCAST ARŞİVİ: fyyd.de ---
+   Ücretsiz, anahtar istemeyen ikinci bir podcast arşivi.
+   Apple'a ulaşılamazsa arama ve bölümler buradan gelir.
+   Gelen bilgiler Apple biçimine çevrilir ki uygulamanın geri
+   kalanı fark etmeden çalışsın. */
+const FYYD = "https://api.fyyd.de/0.2";
+async function fyydSearch(term){
+  const r = await fetch(FYYD + "/search/podcast?count=50&title=" + encodeURIComponent(term));
+  if (!r.ok) throw new Error("fyyd");
+  const j = await r.json();
+  return (j.data||[]).map(p => ({
+    collectionId: "fyyd-" + p.id, fyydId: p.id,
+    collectionName: p.title, artistName: p.author,
+    artworkUrl100: p.smallImageURL || p.imgURL, releaseDate: p.lastpub,
+    trackCount: p.episode_count, primaryGenreName: ""
+  }));
+}
+async function fyydEpisodes(p){
+  const r = await fetch(FYYD + "/podcast/episodes?count=150&podcast_id=" + p.fyydId);
+  if (!r.ok) throw new Error("fyyd");
+  const j = await r.json();
+  return ((j.data && j.data.episodes) || []).map(e => ({
+    trackId: "fyyd-" + e.id, trackName: e.title, collectionName: p.collectionName,
+    episodeUrl: e.enclosure, releaseDate: e.pubdate,
+    trackTimeMillis: (e.duration||0) * 1000, artworkUrl160: e.imgURL
+  }));
+}
+
+// --- Bölüm listesini çiz ---
+// Her bölüm: başlık, tarih, süre, dinleme çubuğu, ⬇ indir bağlantısı
+function renderEps(eps){
+  epsShown = eps;
+  const p = curPod, isSub = subs.some(s=>s.collectionId===p.collectionId);
+  const head = `<div class="podhead">
+      <button id="pback">← Geri</button>
+      <img src="${esc(p.artworkUrl100||"")}" onerror="this.style.display='none'">
+      <div class="info"><div class="name">${esc(p.collectionName)}</div><div class="meta">${esc(p.artistName||"")}</div></div>
+      <button class="fav ${isSub?'yes':''}" id="psub" title="Abone ol">${isSub?'★':'☆'}</button>
+    </div>`;
+  if (!eps.length){ $("#list").innerHTML = head + '<div class="msg">Bölüm bulunamadı.</div>'; return; }
+  $("#list").innerHTML = head + eps.map((e,i)=>epRow(e,i)).join("");
+}
+
+// Tek bir bölüm satırı
+function epRow(e,i){
+  const pr = prog[e.trackId];
+  const d = (e.trackTimeMillis||0)/1000 || (pr&&pr.d) || 0;
+  const pct = pr && d ? Math.min(100, pr.t/d*100) : 0;
+  const date = e.releaseDate ? new Date(e.releaseDate).toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"}) : "";
+  const playing = current && current.trackId === e.trackId;
+  return `<div class="st ${playing?'playing':''}" data-e="${i}">
+    <div class="info"><div class="name">${esc(e.trackName)}</div>
+    <div class="meta">${esc([e.collectionName && !curPod ? e.collectionName : "", date, d ? fmtLong(d) : "", pct>=97 ? "✓ dinlendi" : ""].filter(Boolean).join(" · "))}</div>
+    ${pct>0 && pct<97 ? `<div class="bar"><i style="width:${pct}%"></i></div>` : ""}</div>
+    <a class="dl" href="${esc(e.episodeUrl)}" target="_blank" rel="noopener" title="İndir / internetsiz dinlemek için kaydet">⬇️</a>
+  </div>`;
+}
+
+// --- "Devam et": yarım kalan bölümler (en son dinlenen üstte) ---
+function renderContinue(){
+  curPod = null;
+  const list = Object.values(prog).filter(x=>x.ep && x.t>30 && (!x.d || x.t < x.d-30)).sort((a,b)=>b.at-a.at);
+  epsShown = list.map(x=>x.ep).filter(e=>!isBlocked(e));
+  $("#list").innerHTML = epsShown.length ? epsShown.map((e,i)=>epRow(e,i)).join("")
+    : '<div class="msg">Yarım kalan bölüm yok.</div>';
+}
+
+// --- Bölüm çalma ---
+function playEp(e){
+  playNo++; if (hls){ hls.destroy(); hls = null; } // Radyo denemesini bırak
+  current = e;
+  audio.src = e.episodeUrl;
+  $("#now .name").textContent = e.trackName;
+  $("#status").textContent = "Yükleniyor…";
+  $("#web").style.display = "none";
+  $("#seek").hidden = false;
+  // Kaldığı yerden devam: ses dosyası hazır olunca kayıtlı saniyeye git
+  const pr = prog[e.trackId];
+  audio.onloadedmetadata = ()=>{
+    if (pr && pr.t > 5 && (!audio.duration || pr.t < audio.duration - 10)) audio.currentTime = pr.t;
+  };
+  audio.playbackRate = speeds[speedIdx];
+  audio.play().catch(()=>{ $("#status").textContent = "Bu bölüm çalınamadı"; });
+  // Telefonun kilit ekranında başlık görünsün
+  try{ navigator.mediaSession.metadata = new MediaMetadata({title:e.trackName, artist:e.collectionName||"", artwork:[{src:e.artworkUrl600||e.artworkUrl160||"",sizes:"600x600"}]}); }catch(_){}
+  if (curPod) renderEps(epsShown); else if (epsShown.length) $("#list").querySelectorAll(".st").forEach((el,i)=>el.classList.toggle("playing", epsShown[i]===e));
+}
+
+// --- Podcast modunda listeye tıklama ---
+function podClick(e){
+  if (e.target.closest("#pback")){ podSearch(podTerm); return; }               // Geri
+  if (e.target.closest("#psub")){ toggleSub(curPod); renderEps(epsShown); return; } // Abone ol/çık
+  if (e.target.closest(".dl")) return;                                          // İndir bağlantısı kendi açılır
+  const ps = e.target.closest("[data-ps]");
+  if (ps){ toggleSub(podsShown[ps.dataset.ps]); renderPods(podsShown, "Henüz abonelik yok."); return; }
+  const pp = e.target.closest("[data-p]");
+  if (pp){ openPod(podsShown[pp.dataset.p]); return; }
+  const ee = e.target.closest("[data-e]");
+  if (ee) playEp(epsShown[ee.dataset.e]);
+}
+
+// Abone ol / abonelikten çık (sadece bu tarayıcıda saklanır)
+function toggleSub(p){
+  const i = subs.findIndex(s=>s.collectionId===p.collectionId);
+  if (i>=0) subs.splice(i,1);
+  else subs.push({collectionId:p.collectionId, collectionName:p.collectionName, artistName:p.artistName, artworkUrl100:p.artworkUrl100, primaryGenreName:p.primaryGenreName, releaseDate:p.releaseDate, trackCount:p.trackCount, feedUrl:p.feedUrl, src:p.src, fyydId:p.fyydId, artworkUrl600:p.artworkUrl600});
+  store.set("pod_subs", subs);
+}
+
+// --- Sarma çubuğu ve kaldığın yeri kaydetme ---
+let dragging = false, lastSave = 0;
+audio.ontimeupdate = ()=>{
+  if (!current || !current.episodeUrl) return; // Sadece podcastte
+  const d = audio.duration || 0;
+  if (!dragging){ $("#pos").max = Math.floor(d); $("#pos").value = Math.floor(audio.currentTime); }
+  $("#tcur").textContent = fmt(audio.currentTime);
+  $("#tdur").textContent = fmt(d);
+  // Her beş saniyede bir kaldığın yeri kaydet
+  if (Date.now() - lastSave > 5000){
+    lastSave = Date.now();
+    const e = current;
+    prog[e.trackId] = { t: audio.currentTime, d, at: Date.now(),
+      ep: {trackId:e.trackId, trackName:e.trackName, collectionName:e.collectionName, episodeUrl:e.episodeUrl, releaseDate:e.releaseDate, trackTimeMillis:e.trackTimeMillis, artworkUrl160:e.artworkUrl160} };
+    store.set("pod_prog", prog);
+  }
+};
+$("#pos").oninput  = ()=>{ dragging = true; $("#tcur").textContent = fmt($("#pos").value); };
+$("#pos").onchange = ()=>{ audio.currentTime = $("#pos").value; dragging = false; };
+$("#back15").onclick = ()=>{ audio.currentTime = Math.max(0, audio.currentTime - 15); };
+$("#fwd30").onclick  = ()=>{ audio.currentTime = Math.min(audio.duration||1e9, audio.currentTime + 30); };
+// Hız: 1x → 1.25x → 1.5x → 2x → 0.75x → 1x …
+const speeds = [1, 1.25, 1.5, 2, 0.75];
+let speedIdx = 0;
+$("#speed").onclick = ()=>{
+  speedIdx = (speedIdx+1) % speeds.length;
+  audio.playbackRate = speeds[speedIdx];
+  $("#speed").textContent = speeds[speedIdx] + "x";
+};
+// Bölüm bitince "dinlendi" olarak işaretle
+audio.onended = ()=>{
+  if (current && current.episodeUrl && prog[current.trackId]){ prog[current.trackId].t = prog[current.trackId].d = audio.duration||1; store.set("pod_prog", prog); }
+};
+
+// --- Kategori düğmeleri ---
+document.querySelectorAll(".ptabs button").forEach(b=>b.onclick=()=>{
+  document.querySelectorAll(".ptabs button").forEach(x=>x.classList.remove("on"));
+  b.classList.add("on");
+  $("#pq").value = "";
+  if (b.dataset.psubs) renderPods(subs, "Henüz abonelik yok. Podcastin yanındaki ☆ ile abone olun.");
+  else if (b.dataset.pcont) renderContinue();
+  else podSearch(b.dataset.term);
+});
+
+// Yazdıkça podcast arama (yazmayı 0,35 sn bırakınca)
+let ptyping;
+$("#pq").oninput = ()=>{
+  clearTimeout(ptyping);
+  ptyping = setTimeout(()=>{
+    const t = $("#pq").value.trim();
+    document.querySelectorAll(".ptabs button").forEach(x=>x.classList.remove("on"));
+    if (!t) document.querySelector('.ptabs button[data-term="__all__"]').classList.add("on");
+    podSearch(t || "__all__");
+  }, 350);
+};
+
+// --- Radyo / Podcast geçişi ---
+let podLoaded = false;
+// Bölüm değiştir: radio / pod / col
+function setMode(m){
+  mode = m;
+  $("#m_radio").classList.toggle("on", m==="radio");
+  $("#m_pod").classList.toggle("on", m==="pod");
+  $("#m_col").classList.toggle("on", m==="col");
+  $("#radioBar").hidden = m!=="radio";
+  $("#podBar").hidden = m!=="pod";
+  $("#colBar").hidden = m!=="col";
+  notice("");
+  $("#list").innerHTML = "";
+}
+$("#m_radio").onclick = ()=>{ setMode("radio"); load(); };
+$("#m_col").onclick = ()=>{ setMode("col"); colShow(colSel); };
+$("#m_pod").onclick = ()=>{
+  setMode("pod");
+  // Devam eden bölüm varsa önce onları göster, yoksa popüler podcastler
+  const hasCont = Object.values(prog).some(x=>x.ep && x.t>30 && (!x.d || x.t < x.d-30));
+  if (!podLoaded && hasCont){
+    document.querySelectorAll(".ptabs button").forEach(x=>x.classList.toggle("on", !!x.dataset.pcont));
+    renderContinue();
+  } else podSearch(podTerm);
+  podLoaded = true;
+};
+
+/* ============================================================
+   10) YEDEK KAYNAKLAR – ORTAK YARDIMCILAR
+   ------------------------------------------------------------
+   Ücretsiz kaynaklar kapanırsa veya geçici olarak ulaşılamazsa:
+   - RADYO: Beş ayrı liste sunucusu sırayla denenir. Hiçbiri
+     cevap vermezse son kaydedilen liste, o da yoksa aşağıdaki
+     hazır Türk radyoları listesi (BACKUP_STATIONS) gösterilir.
+     Radyoların sesi zaten kendi sunucularından geldiği için
+     liste sunucusu kapansa da radyolar çalmaya devam eder.
+   - PODCAST: Apple'a ulaşılamazsa ikinci ücretsiz arşiv (fyyd)
+     kullanılır; o da yoksa son kaydedilen liste gösterilir.
+     Abonelikler ve "Devam et" bu tarayıcıda saklandığı için
+     her durumda çalışır.
+   - KÖŞE YAZILARI: Gazetenin RSS'i doğrudan okunur; olmazsa iki
+     ayrı ücretsiz çevirici denenir; o da olmazsa son kaydedilen
+     yazılar gösterilir. Kendi RSS adresinizi de ekleyebilirsiniz.
+   - UYGULAMANIN KENDİSİ: Tek bir dosya ve GitHub'da sizde. Hiçbir
+     sunucuya bağlı değil; dosya bilgisayarınızda durdukça çalışır.
+   ============================================================ */
+
+// Uyarı şeridini göster/gizle (boş yazı = gizle)
+function notice(t){ $("#notice").hidden = !t; $("#notice").textContent = t || ""; }
+
+// Önbellek: her tür için en fazla 30 kayıt saklanır, eskiler silinir
+function cachePut(bucket, key, val){
+  const c = store.get(bucket, {});
+  c[key] = {at: Date.now(), val};
+  const keys = Object.keys(c).sort((a,b)=>c[b].at-c[a].at);
+  keys.slice(30).forEach(k => delete c[k]);
+  store.set(bucket, c);
+}
+function cacheGet(bucket, key){
+  const c = store.get(bucket, {});
+  return c[key] ? c[key].val : null;
+}
+
+// Uygulamanın içindeki yedek Türk radyoları listesi (Radio Browser'dan alındı).
+// Liste sunucusu kapansa bile bu radyolar kendi yayın adreslerinden çalar.
+// Biçim: ad | yayın adresi | türler | kalite (kbps)
+const BACKUP_STATIONS = `Virgin Radio Türkiye|http://25503.live.streamtheworld.com:3690/VIRGIN_RADIO_SC|pop rock|64
+Radyo 7|http://46.20.3.250/;stream||128
+Power POP|https://listen.powerapp.com.tr/powerpop/128/chunks.m3u8|pop|128
+90lar Turkey|http://37.247.98.8/stream/166/|hits 90's,turkish pop|128
+Süper FM|http://22343.live.streamtheworld.com:3690/SUPER_FMAAC_SC|pop|64
+Türkülerle Türkiye|http://37.247.98.8/stream/22/;|türkü,turkish folk|128
+Ankara Havaları|http://37.247.98.8/stream/30/;|folk,turkish folk|128
+Metro FM|http://29341.live.streamtheworld.com:3690/METRO_FMAAC_SC|pop|64
+Kral FM|https://dygedge2.radyotvonline.net/kralfm/playlist.m3u8|arabesk|128
+Alem FM|https://turkmedya.radyotvonline.net/alemfmaac|pop|128
+Havin FM|http://yayin6.radyohizmeti.com:7050/;stream.mp3|folk music,kurdish|64
+Best FM|https://ssldyg.radyotvonline.com/best/bestfm.stream/playlist.m3u8|pop|128
+Baba Radyo|http://officialbabaradyo.radyotvonline.net/babaofficial|classic hits|128
+Radyo Fenomen|https://live.radyofenomen.com/fenomen/128/icecast.audio|pop|56
+Altın Şarkılar|http://37.247.98.8/stream/25/;|golden oldies,retro|128
+Radyo Şiran|https://live.radyositesihazir.com/8078/stream|folk,turkish folk|128
+Kral Pop|https://ssldyg.radyotvonline.com/smil/smil:kralpop.smil/playlist.m3u8|pop|128
+TRT Türkü|https://rd-trtturku.medya.trt.com.tr/master_128.m3u8|turkish folk|128
+Pop 90 Turkey|http://28573.live.streamtheworld.com/POP90AAC_SC|pop|64
+Türkü Radyo|http://radyo.turkuradyo.net:4591/turkuradyo|folk,turkish folk|64
+Joy Türk FM|https://playerservices.streamtheworld.com/api/livestream-redirect/JOY_TURK_ITUNES.mp3|pop|128
+Damar Türk FM|https://live.radyositesihazir.com:10997/;|arabesk|128
+Kral Türk FM|https://live.radyositesihazir.com/8032/stream|arabesk|128
+Power Türk Dans|https://listen.powerapp.com.tr/powerturkdans/abr/powerturkdans/128/playlist.m3u8|pop|149
+Radyo Karadeniz|https://radyomar.80.yayin.com.tr/;|folk|128
+Damarın Merkezi FM|http://canli.arabeskinmerkezi.com:9180/stream|arabesk|128
+Slow Türk|https://radyo.duhnet.tv/ak_dtvh_slowturk|pop|128
+Radio Ava Türkiye|http://play.markaradyo.com:8002/stream|pop|192
+Gözyaşı FM|http://yayin1.canliyayin.org:8700/;*.mp3|islamic|64
+Kalp FM|https://yayin.kalpfm.com:8080/|slow,turkish music|128
+Power Türk|https://live.powerapp.com.tr/powerturk/abr/playlist.m3u8|pop|278
+Radyo Spor|http://46.20.4.5:8170/|sport|128
+Radyo Turkuvaz|https://trkvz-radyolar.ercdn.net/radyoturkuvaz/playlist.m3u8|pop|64
+Genç Kral FM|https://anadolu.liderhost.com.tr:10853/;|arabesk|128
+Radyo Sputnik|https://icecast-rian.cdnvideo.ru/voicestm|news,pop|128
+Kafa Radyo|https://moondigitalmaster.radyotvonline.net/kafaradyo/playlist.m3u8|talk,news|63`
+  .split("\n").map((line,i) => {
+    const [name, url, tags, bitrate] = line.split("|");
+    return { stationuuid:"yedek-"+i, name, url_resolved:url, tags, bitrate:+bitrate||0,
+             country:"Türkiye", countrycode:"TR", homepage:"", backup:true };
+  });
+
+/* ============================================================
+   11) v3: KÖŞE YAZILARI
+   ------------------------------------------------------------
+   Kaynak: Gazetelerin herkese açık "yazarlar" RSS akışları.
+   Uygulama yazar adını, başlığı, tarihi ve gazetenin akışta
+   verdiği kısa özeti gösterir. Yazının tamamı için yazıya
+   dokunun: gazetenin kendi sitesinde açılır.
+
+   Yeni gazete eklemek için COL_SOURCES listesine bir satır
+   ekleyin ya da uygulamada "➕ Gazete ekle" bölümünü kullanın.
+   author: yazar adının nereden okunacağı
+     "title" → başlık "YAZAR / Başlık" biçiminde (Sabah)
+     "titleIsAuthor" → başlık sadece yazar adı (Sözcü)
+     "url"   → yazar adı bağlantının içinde (/yazarlar/ad-soyad/…)
+   ============================================================ */
+const COL_SOURCES = [
+  { id:"sabah",      name:"Sabah",      url:"https://www.sabah.com.tr/rss/yazarlar.xml",            author:"title" },
+  { id:"sozcu",      name:"Sözcü",      url:"https://www.sozcu.com.tr/feeds-rss-category-yazar",    author:"titleIsAuthor" },
+  { id:"cumhuriyet", name:"Cumhuriyet", url:"https://www.cumhuriyet.com.tr/rss/yazarlar",           author:"url" },
+  { id:"hurriyet",   name:"Hürriyet",   url:"https://www.hurriyet.com.tr/rss/yazarlar",             author:"url" },
+  { id:"milliyet",   name:"Milliyet",   url:"https://www.milliyet.com.tr/rss/rssnew/yazarlarrss.xml", author:"url" },
+  { id:"haberturk",  name:"Habertürk",  url:"https://www.haberturk.com/rss/kategori/yazarlar.xml",  author:"url" }
+];
+let colCustom = store.get("col_custom", []); // Kullanıcının eklediği gazeteler
+let colSel = "__all__";                      // Seçili gazete
+let colItems = [];                           // Ekrandaki yazılar
+let colReq = 0;
+const allColSources = () => COL_SOURCES.concat(colCustom);
+
+// Gazete düğmelerini çiz
+function colTabs(){
+  $("#ctabs").innerHTML =
+    `<button data-src="__all__" class="${colSel==="__all__"?"on":""}">Tümü</button>` +
+    allColSources().map(s => `<button data-src="${esc(s.id)}" class="${colSel===s.id?"on":""}">${esc(s.name)}</button>`).join("") +
+    `<button data-src="__add__" class="${colSel==="__add__"?"on":""}">➕ Gazete ekle</button>`;
+}
+$("#ctabs").addEventListener("click", e=>{
+  const b = e.target.closest("[data-src]");
+  if (!b) return;
+  $("#cq").value = "";
+  colShow(b.dataset.src);
+});
+
+// RSS akışını oku. Sıra: doğrudan → çevirici 1 (rss2json) → çevirici 2 (allorigins)
+async function fetchFeed(url){
+  // 1) Doğrudan
+  try{
+    const r = await fetch(url);
+    if (r.ok) return parseRss(await r.text());
+  }catch(_){}
+  // 2) rss2json (ücretsiz RSS → JSON çevirici)
+  try{
+    const j = await (await fetch("https://api.rss2json.com/v1/api.json?rss_url=" + encodeURIComponent(url))).json();
+    if (j.status === "ok") return j.items.map(i => ({ title:i.title, link:i.link, date:i.pubDate, desc:i.description||i.content||"", author:i.author||"" }));
+  }catch(_){}
+  // 3) allorigins (ücretsiz aracı sunucu)
+  const r = await fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(url));
+  if (!r.ok) throw new Error("ulaşılamadı");
+  return parseRss(await r.text());
+}
+
+// RSS (XML) metnini yazı listesine çevirir
+function parseRss(text){
+  const x = new DOMParser().parseFromString(text, "text/xml");
+  return [...x.querySelectorAll("item")].map(i => {
+    const get = t => { const n = i.getElementsByTagName(t)[0]; return n ? n.textContent : ""; };
+    return { title:get("title"), link:get("link"), date:get("pubDate"), desc:get("description"),
+             author:get("dc:creator") || get("author") };
+  });
+}
+
+// "ad-soyad" → "Ad Soyad"
+function slugName(s){
+  return s.split("-").filter(Boolean).map(w => w.charAt(0).toLocaleUpperCase("tr") + w.slice(1)).join(" ");
+}
+
+// Yazar adını, başlığı ve özeti gazeteye göre düzenler
+function tidy(it, src){
+  let author = (it.author||"").trim(), title = (it.title||"").trim();
+  const desc = (it.desc||"").replace(/<[^>]+>/g," ").replace(/&nbsp;/g," ").replace(/\s+/g," ").trim();
+  let path = [];
+  try{ path = new URL(it.link).pathname.split("/").filter(Boolean); }catch(_){}
+  if (src.author === "title" && title.includes(" / ")){
+    const k = title.indexOf(" / ");
+    author = title.slice(0,k); title = title.slice(k+3);
+    author = author.toLocaleLowerCase("tr").replace(/(^|\s)\S/g, c => c.toLocaleUpperCase("tr"));
+  } else if (src.author === "titleIsAuthor"){
+    author = title;
+    // Başlık bağlantıdan çıkarılır: /ozur-dileyerek-p380438 → "Özür dileyerek" (Türkçe harfler olmadan)
+    const slug = (path[path.length-1]||"").replace(/-p\d+$/,"");
+    title = slug ? slugName(slug).replace(/ (\S)/g, (m,c)=>" "+c.toLocaleLowerCase("tr")) : "";
+  } else if (src.author === "url" && !author){
+    const i = path.indexOf("yazarlar");
+    const seg = i >= 0 ? path[i+1] : (path.length >= 3 ? path[1] : "");
+    if (seg && !/^\d/.test(seg)) author = slugName(seg);
+  }
+  return { author, title: title || desc.slice(0,80), link:it.link, date:it.date,
+           t: Date.parse(it.date) || 0, ex: desc.slice(0,300), src: src.name };
+}
+
+// Bir gazetenin yazılarını getir (olmazsa önbellek)
+async function loadSource(src){
+  try{
+    const items = (await fetchFeed(src.url)).map(it => tidy(it, src));
+    if (!items.length) throw new Error("boş");
+    cachePut("cache_cols", src.id, items.slice(0,60));
+    return { items, cached:false };
+  }catch(e){
+    const c = cacheGet("cache_cols", src.id);
+    if (c) return { items:c, cached:true };
+    throw e;
+  }
+}
+
+// Seçilen gazeteyi (veya Tümü'nü) göster
+async function colShow(sel){
+  colSel = sel; colTabs();
+  const my = ++colReq;
+  if (sel === "__add__"){ colAddView(); return; }
+  $("#list").innerHTML = '<div class="msg">Yazılar yükleniyor…</div>';
+  const sources = sel === "__all__" ? allColSources() : allColSources().filter(s => s.id === sel);
+  let items = [], failed = [], cached = [];
+  // Gazeteler sırayla değil hep birlikte istenir; her biri gelince liste güncellenir
+  await Promise.all(sources.map(async src => {
+    try{
+      const r = await loadSource(src);
+      if (r.cached) cached.push(src.name);
+      items = items.concat(r.items);
+      if (my === colReq && mode === "col") colRender(items);
+    }catch(_){ failed.push(src.name); }
+  }));
+  if (my !== colReq || mode !== "col") return;
+  colRender(items);
+  let msg = "";
+  if (cached.length) msg += "⚠️ Son kaydedilen yazılar gösteriliyor: " + cached.join(", ") + ". ";
+  if (failed.length) msg += "⚠️ Ulaşılamadı: " + failed.join(", ") + ".";
+  notice(msg);
+  if (!items.length) $("#list").innerHTML = '<div class="msg">Yazı bulunamadı.</div>';
+}
+
+// Yazı listesini çiz: en yeni üstte, arama ve engelleme filtresi uygulanır
+function colRender(items){
+  const k = norm($("#cq").value.trim());
+  colItems = items
+    .filter(x => !isBlocked({collectionName:x.title, artistName:x.author}))
+    .filter(x => !k || norm(x.author + " " + x.title + " " + x.src).includes(k))
+    .sort((a,b) => b.t - a.t);
+  if (!colItems.length){ $("#list").innerHTML = '<div class="msg">'+(k?"Sonuç bulunamadı.":"Yükleniyor…")+'</div>'; return; }
+  $("#list").innerHTML = colItems.map((x,i) => `<div class="st col" data-c="${i}">
+      <div class="info">
+        <div class="who">${esc(x.author || x.src)}</div>
+        <div class="name">${esc(x.title)}</div>
+        <div class="meta">${esc([x.src, x.t ? new Date(x.t).toLocaleString("tr-TR",{day:"numeric",month:"long",hour:"2-digit",minute:"2-digit"}) : ""].filter(Boolean).join(" · "))}</div>
+        ${x.ex ? `<div class="ex">${esc(x.ex)}</div>` : ""}
+      </div>
+      <button class="fav" data-say="${i}" title="Özeti sesli dinle">🔊</button>
+    </div>`).join("");
+}
+
+// Yazar/başlık araması (yazdıkça)
+let ctyping;
+$("#cq").oninput = ()=>{
+  clearTimeout(ctyping);
+  ctyping = setTimeout(()=>{
+    if (colSel === "__add__") colShow("__all__");
+    else colRender(colItemsAll());
+  }, 250);
+};
+// Filtrelenmemiş tam liste (arama için) önbellekten toplanır
+function colItemsAll(){
+  const ids = colSel === "__all__" ? allColSources().map(s=>s.id) : [colSel];
+  return ids.flatMap(id => cacheGet("cache_cols", id) || []);
+}
+
+// Köşe yazısına tıklama: 🔊 özeti sesli okur, satıra dokunmak yazıyı gazetede açar
+function colClick(e){
+  const del = e.target.closest("[data-cdel]");
+  if (del){ colCustom.splice(+del.dataset.cdel,1); store.set("col_custom", colCustom); colShow("__add__"); return; }
+  if (e.target.closest("#colform")) return;
+  const say = e.target.closest("[data-say]");
+  if (say){
+    const x = colItems[say.dataset.say];
+    try{
+      speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance((x.author ? x.author + ". " : "") + x.title + ". " + x.ex);
+      u.lang = "tr-TR";
+      speechSynthesis.speak(u);
+    }catch(_){}
+    return;
+  }
+  const row = e.target.closest("[data-c]");
+  if (row){
+    const x = colItems[row.dataset.c];
+    if (x && x.link) window.open(x.link, "_blank", "noopener");
+  }
+}
+
+// "➕ Gazete ekle": listede olmayan bir gazetenin RSS adresini ekleme
+function colAddView(){
+  $("#list").innerHTML = `
+    <form class="addform" id="colform">
+      <b>➕ Gazete veya yazar ekle</b>
+      <input id="cf_name" placeholder="Ad (ör. Yeni Gazete)" required>
+      <input id="cf_url" placeholder="RSS adresi (https://…/rss/yazarlar)" required>
+      <button type="submit">Ekle</button>
+      <small>Çoğu gazetenin sitesinin altında "RSS" bağlantısı vardır. Bir yazarın kendi RSS'i de eklenebilir.</small>
+    </form>
+    ${colCustom.map((s,i)=>`<div class="st"><div class="info"><div class="name">${esc(s.name)}</div><div class="meta">${esc(s.url)}</div></div>
+      <button class="fav" data-cdel="${i}" title="Sil">🗑</button></div>`).join("")}`;
+}
+$("#list").addEventListener("submit", e=>{
+  if (e.target.id !== "colform") return;
+  e.preventDefault();
+  const name = $("#cf_name").value.trim(), url = $("#cf_url").value.trim();
+  if (!/^https?:\/\//i.test(url)) return;
+  const id = "ozel-" + Date.now();
+  colCustom.push({ id, name, url, author:"url" });
+  store.set("col_custom", colCustom);
+  colShow(id);
+});
+
+/* ============================================================
+   9) KAPANMA ZAMANLAYICISI
+   ------------------------------------------------------------
+   Seçilen süre dolunca radyo veya podcast kendiliğinden durur.
+   Son on saniyede ses yavaş yavaş kısılır, sonra durur.
+   Kalan süre 🌙 düğmesinin üstünde görünür.
+   ============================================================ */
+let sleepEnd = 0, sleepTimer = null;
+
+// Paneli aç / kapat
+$("#sleepBtn").onclick = ()=>{ $("#sleepPanel").hidden = !$("#sleepPanel").hidden; };
+
+// Hazır süreler (15, 30, 45, 60 dakika)
+document.querySelectorAll("#sleepPanel [data-min]").forEach(b => b.onclick = ()=> setSleep(+b.dataset.min));
+// Elle yazılan süre
+$("#sleepSet").onclick = ()=>{
+  const m = parseInt($("#sleepMin").value, 10);
+  if (m > 0) setSleep(m);
+};
+$("#sleepMin").onkeydown = e=>{ if (e.key === "Enter") $("#sleepSet").click(); };
+// İptal
+$("#sleepOff").onclick = ()=> setSleep(0);
+
+// Zamanlayıcıyı kur (0 = iptal)
+function setSleep(min){
+  clearInterval(sleepTimer);
+  $("#sleepPanel").hidden = true;
+  if (!min){
+    sleepEnd = 0;
+    $("#sleepBtn").textContent = "🌙";
+    $("#sleepBtn").classList.remove("on");
+    return;
+  }
+  sleepEnd = Date.now() + min * 60000;
+  $("#sleepBtn").classList.add("on");
+  sleepTick();
+  sleepTimer = setInterval(sleepTick, 1000); // Her saniye kalan süreyi güncelle
+}
+
+// Her saniye çalışır: süre dolduysa durdur, değilse kalan süreyi yaz
+function sleepTick(){
+  const left = sleepEnd - Date.now();
+  if (left <= 0){ clearInterval(sleepTimer); sleepFadeStop(); return; }
+  $("#sleepBtn").textContent = "🌙 " + fmt(left / 1000);
+}
+
+// Sesi on saniyede yavaşça kıs, durdur, ses seviyesini eski haline getir
+function sleepFadeStop(){
+  const v = audio.volume;
+  let step = 0;
+  const fade = setInterval(()=>{
+    step++;
+    audio.volume = Math.max(0, v * (1 - step / 20));
+    if (step >= 20){
+      clearInterval(fade);
+      audio.pause();
+      audio.volume = v;
+      setSleep(0);
+      setTimeout(()=>{ $("#status").textContent = "Zamanlayıcı ile durduruldu"; }, 100);
+    }
+  }, 500);
+}
+
+load();
+</script>
+
+<!-- ============================================================
+     GELİŞMİŞ OYNATMA EKRANI + KALDIĞIN YERDEN DEVAM
+     ------------------------------------------------------------
+     - Alttaki çubukta radyo/bölüm adına dokununca tam ekran
+       oynatıcı açılır: büyük kapak, ses dalgası, önceki/sonraki,
+       favori, uyku zamanlayıcısı, paylaş, ses ayarı.
+     - Podcast: duraklatınca, sarınca, uygulamadan çıkınca da
+       kaldığın yer kaydedilir. Açılışta "Devam et" kartı çıkar.
+     ============================================================ -->
+<style>
+  #now{cursor:pointer}
+  #npOpen{padding:8px 10px;flex:none;line-height:0}
+  #web{display:inline-flex;align-items:center;gap:4px}
+  #np{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;align-items:center;overflow:auto;padding:14px 18px 24px}
+  #np .bgart{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(40px) brightness(.35);transform:scale(1.2);z-index:-1}
+  #np .top{width:100%;max-width:480px;display:flex;align-items:center;justify-content:space-between;color:var(--dim);font-size:13px;letter-spacing:.5px}
+  #np .top button{background:transparent;border:none;font-size:26px;color:var(--txt);padding:4px 8px}
+  #npArt{width:min(72vw,300px);aspect-ratio:1;border-radius:24px;margin:22px 0 14px;background:linear-gradient(145deg,var(--acc),#6e1418);display:grid;place-items:center;font-size:90px;font-weight:800;color:#fff;box-shadow:0 20px 50px #000a;overflow:hidden;transition:transform .4s}
+  #npArt img{width:100%;height:100%;object-fit:cover}
+  #np.playing #npArt{transform:scale(1.03)}
+  /* Ses dalgası (süs): çalarken hareket eder */
+  .eq{display:flex;gap:4px;align-items:flex-end;height:28px;margin-bottom:12px}
+  .eq i{width:5px;background:var(--acc);border-radius:3px;height:20%;animation:eq 1s ease-in-out infinite;animation-play-state:paused}
+  .eq i:nth-child(2){animation-delay:-.2s}.eq i:nth-child(3){animation-delay:-.5s}.eq i:nth-child(4){animation-delay:-.7s}.eq i:nth-child(5){animation-delay:-.3s}.eq i:nth-child(6){animation-delay:-.9s}.eq i:nth-child(7){animation-delay:-.4s}
+  #np.playing .eq i{animation-play-state:running}
+  @keyframes eq{0%,100%{height:20%}50%{height:100%}}
+  #npName{font-size:22px;font-weight:800;text-align:center;max-width:480px;overflow-wrap:anywhere}
+  #npSub{color:var(--dim);text-align:center;margin-top:4px;max-width:480px}
+  #npChips{display:flex;flex-wrap:wrap;gap:6px;justify-content:center;margin-top:10px}
+  #npChips span{border:1px solid var(--line);border-radius:999px;padding:3px 10px;font-size:12px;color:var(--dim)}
+  #npStatus{color:var(--acc);font-size:13px;margin-top:8px;min-height:18px}
+  #npSeek{width:100%;max-width:480px;display:flex;align-items:center;gap:8px;font-size:12px;color:var(--dim);margin-top:10px}
+  #npSeek input{flex:1}
+  #npCtl{display:flex;align-items:center;justify-content:center;gap:14px;margin-top:16px}
+  #npCtl button{width:52px;height:52px;border-radius:50%;font-size:18px;padding:0}
+  #npCtl #npPP{width:76px;height:76px;font-size:30px;background:var(--acc);border-color:var(--acc);color:#fff}
+  #npAct{display:flex;flex-wrap:wrap;gap:8px;justify-content:center;margin-top:20px}
+  #npAct button,#npAct a{padding:9px 14px;font-size:14px;border-radius:999px;text-decoration:none;color:var(--txt);border:1px solid var(--line);background:var(--card)}
+  #npAct .yes{color:#ffcc66}
+  #npVolRow{display:flex;align-items:center;gap:10px;width:100%;max-width:320px;margin-top:18px;color:var(--dim)}
+  #npVolRow input{flex:1}
+  #np input[type=range]{accent-color:var(--acc)}
+  body.npOn{overflow:hidden}
+  body.npOn #sleepPanel{z-index:30}
+  /* Açılışta çıkan "kaldığın yerden devam" kartı */
+  #resumeCard{position:fixed;left:10px;right:10px;bottom:96px;z-index:9;max-width:520px;margin:auto;background:#1f232c;border:1px solid var(--acc);border-radius:12px;padding:10px 12px;display:flex;align-items:center;gap:10px;box-shadow:0 8px 24px #0009;font-size:14px}
+  #resumeCard .t{flex:1;min-width:0}
+  #resumeCard .t b{display:block;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  #resumeCard small{color:var(--dim)}
+  #resumeCard button{padding:7px 10px;font-size:13px}
+  #resumeGo{background:var(--acc);border-color:var(--acc);color:#fff;font-weight:600}
+</style>
+
+<div id="np" hidden>
+  <div class="bgart" id="npBg"></div>
+  <div class="top"><button id="npClose" title="Kapat">⌄</button><span id="npKind">ŞİMDİ ÇALIYOR</span><button id="npShare" title="Paylaş">⤴</button></div>
+  <div id="npArt">♫</div>
+  <div class="eq"><i></i><i></i><i></i><i></i><i></i><i></i><i></i></div>
+  <div id="npName">—</div>
+  <div id="npSub"></div>
+  <div id="npChips"></div>
+  <div id="npStatus"></div>
+  <div id="npSeek" hidden><span id="npCur">0:00</span><input id="npPos" type="range" min="0" max="0" step="1" value="0"><span id="npDur">0:00</span></div>
+  <div id="npCtl">
+    <button id="npPrev" title="Önceki">⏮</button>
+    <button id="npB15" title="15 sn geri" hidden>⏪</button>
+    <button id="npPP" title="Çal / durdur">▶</button>
+    <button id="npF30" title="30 sn ileri" hidden>⏩</button>
+    <button id="npNext" title="Sonraki">⏭</button>
+  </div>
+  <div id="npAct">
+    <button id="npFav">☆ Favori</button>
+    <button id="npSleep">🌙 Uyku</button>
+    <button id="npSpeed" hidden>1x</button>
+    <a id="npWeb" target="_blank" rel="noopener" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg> Radyo sitesi</a>
+  </div>
+  <div id="npVolRow"><span>🔈</span><input id="npVol" type="range" min="0" max="1" step="0.05"><span>🔊</span></div>
+</div>
+
+<div id="resumeCard" hidden>
+  <div class="t"><small>⏯ Kaldığınız yerden devam edin</small><b id="resumeName"></b><small id="resumeTime"></small></div>
+  <button id="resumeGo">Devam et</button>
+  <button id="resumeX" title="Kapat">✕</button>
+</div>
+
+<script>
+(function(){
+  const np = $("#np");
+  const isPod = ()=> !!(current && current.episodeUrl);
+  const tfmt = s => (typeof fmt === "function") ? fmt(s) : Math.floor(s/60)+":"+String(Math.floor(s%60)).padStart(2,"0");
+
+  /* ---------- KALDIĞIN YERİ KAYDETME ---------- */
+  if (typeof prog !== "undefined"){
+    // Şu anki bölümün yerini hemen kaydeder
+    window.saveProg = function(){
+      const e = current;
+      if (!e || !e.episodeUrl || !audio.currentTime) return;
+      const d = audio.duration || (prog[e.trackId] && prog[e.trackId].d) || 0;
+      prog[e.trackId] = { t: audio.currentTime, d, at: Date.now(),
+        ep: {trackId:e.trackId, trackName:e.trackName, collectionName:e.collectionName, episodeUrl:e.episodeUrl,
+             releaseDate:e.releaseDate, trackTimeMillis:e.trackTimeMillis, artworkUrl160:e.artworkUrl160||e.artworkUrl600||""} };
+      store.set("pod_prog", prog);
+      store.set("pod_last", e.trackId);
+    };
+    // Duraklatınca, sarınca, uygulamadan çıkınca kaydet
+    audio.addEventListener("pause",  ()=>saveProg());
+    audio.addEventListener("seeked", ()=>saveProg());
+    document.addEventListener("visibilitychange", ()=>{ if (document.hidden) saveProg(); });
+    window.addEventListener("pagehide", ()=>saveProg());
+
+    // Bölüm çalarken: önceki bölümün yerini kaydet, kayıtlı yere güvenle git
+    const eskiPlayEp = playEp;
+    playEp = function(e){
+      saveProg();
+      eskiPlayEp(e);
+      const pr = prog[e.trackId];
+      if (pr && pr.t > 5 && (!pr.d || pr.t < pr.d - 10)){
+        $("#status").textContent = "Kaldığınız yerden: " + tfmt(pr.t);
+        // Bazı sunucularda ilk deneme tutmaz; çalmaya hazır olunca tekrar dene
+        const tekrar = ()=>{ audio.removeEventListener("canplay", tekrar);
+          if (current === e && audio.currentTime < pr.t - 3) audio.currentTime = pr.t; };
+        audio.addEventListener("canplay", tekrar);
+      }
+      store.set("pod_last", e.trackId);
+      $("#resumeCard").hidden = true;
+      npUpdate();
+    };
+
+    // Hız tercihini hatırla
+    if (typeof speeds !== "undefined"){
+      const sp = store.get("pod_speed", 0);
+      if (speeds[sp]){ speedIdx = sp; $("#speed").textContent = speeds[sp] + "x"; }
+      $("#speed").addEventListener("click", ()=>{ store.set("pod_speed", speedIdx); npUpdate(); });
+    }
+
+    // Açılışta son yarım kalan bölümü öner
+    const last = prog[store.get("pod_last", "")];
+    if (last && last.ep && last.t > 30 && (!last.d || last.t < last.d - 30)){
+      $("#resumeName").textContent = last.ep.trackName;
+      $("#resumeTime").textContent = (last.ep.collectionName ? last.ep.collectionName + " · " : "") + tfmt(last.t) + (last.d ? " / " + tfmt(last.d) : "");
+      $("#resumeCard").hidden = false;
+      $("#resumeGo").onclick = ()=>{ playEp(last.ep); };
+      $("#resumeX").onclick  = ()=>{ $("#resumeCard").hidden = true; };
+    }
+  }
+
+  /* ---------- GELİŞMİŞ OYNATMA EKRANI ---------- */
+  // Çubuğa "büyüt" düğmesi
+  const ob = document.createElement("button");
+  ob.id = "npOpen"; ob.title = "Büyük oynatıcıyı aç"; ob.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>';
+  $("#now").after(ob);
+  const ac = ()=>{ if (!current) return; np.hidden = false; document.body.classList.add("npOn"); npUpdate(); };
+  ob.onclick = ac;
+  $("#now").addEventListener("click", ac);
+  $("#npClose").onclick = ()=>{ np.hidden = true; document.body.classList.remove("npOn"); };
+
+  // Dinleme süresi sayacı
+  let since = 0, item = null;
+  audio.addEventListener("playing", ()=>{ if (item !== current){ item = current; since = Date.now(); } });
+
+  // Ekrandaki bilgileri günceller
+  function npUpdate(){
+    if (!current) return;
+    const pod = isPod();
+    $("#npName").textContent = pod ? current.trackName : (current.name||"").trim();
+    $("#npKind").textContent = pod ? "PODCAST" : "CANLI RADYO";
+    const img = pod ? (current.artworkUrl600 || current.artworkUrl160 || (typeof curPod!=="undefined" && curPod && curPod.artworkUrl600) || "") : (current.favicon || "");
+    const harf = ((pod ? current.collectionName : current.name) || "♫").trim()[0] || "♫";
+    $("#npArt").innerHTML = img ? `<img src="${esc(img)}" alt="" onerror="this.outerHTML='${esc(harf)}'">` : esc(harf);
+    $("#npBg").style.backgroundImage = img ? `url("${img.replace(/"/g,"")}")` : "none";
+    if (pod){
+      $("#npSub").textContent = current.collectionName || "";
+      const d = current.releaseDate ? new Date(current.releaseDate).toLocaleDateString("tr-TR",{day:"numeric",month:"long",year:"numeric"}) : "";
+      $("#npChips").innerHTML = d ? `<span>${esc(d)}</span>` : "";
+    } else {
+      $("#npSub").textContent = [current.state, current.country].filter(Boolean).join(", ");
+      const tags = (current.tags||"").split(",").map(x=>x.trim()).filter(Boolean).slice(0,3);
+      $("#npChips").innerHTML = [...tags, current.codec, current.bitrate ? current.bitrate + " kbps" : ""].filter(Boolean).map(x=>`<span>${esc(x)}</span>`).join("");
+    }
+    // Podcastte sarma, hız; radyoda favori ve yayın akışı
+    $("#npSeek").hidden = !pod; $("#npB15").hidden = !pod; $("#npF30").hidden = !pod;
+    $("#npSpeed").hidden = !pod || typeof speeds === "undefined";
+    if (!$("#npSpeed").hidden) $("#npSpeed").textContent = "⏱ " + speeds[speedIdx] + "x";
+    $("#npFav").hidden = pod || current.custom;
+    const fav = !pod && favs.some(f=>f.stationuuid===current.stationuuid);
+    $("#npFav").textContent = fav ? "★ Favoride" : "☆ Favori";
+    $("#npFav").classList.toggle("yes", fav);
+    const w = $("#npWeb");
+    w.hidden = pod || !current.homepage; if (!w.hidden) w.href = current.homepage;
+    $("#npVol").value = audio.volume;
+    np.classList.toggle("playing", !audio.paused);
+    $("#npPP").textContent = audio.paused ? "▶" : "⏸";
+    // Kilit ekranı / bildirim bilgisi
+    try{ if (!pod) navigator.mediaSession.metadata = new MediaMetadata({title:current.name, artist:"Kızılelma Radyo", artwork: img ? [{src:img, sizes:"512x512"}] : []}); }catch(_){}
+  }
+  window.npUpdate = npUpdate;
+
+  // Alttaki durum yazısını büyük ekrana da yansıt
+  new MutationObserver(()=>{ $("#npStatus").textContent = $("#status").textContent; }).observe($("#status"), {childList:true, characterData:true, subtree:true});
+  ["playing","pause","waiting","emptied","loadstart"].forEach(ev=>audio.addEventListener(ev, npUpdate));
+
+  // Süre ve sarma çubuğu
+  let drag = false;
+  setInterval(()=>{
+    if (np.hidden || !current) return;
+    if (isPod()){
+      const d = audio.duration || 0;
+      if (!drag){ $("#npPos").max = Math.floor(d); $("#npPos").value = Math.floor(audio.currentTime); }
+      $("#npCur").textContent = tfmt(audio.currentTime); $("#npDur").textContent = tfmt(d);
+    } else if (!audio.paused && since){
+      const c = $("#npChips"); let s = c.querySelector(".sure");
+      if (!s){ s = document.createElement("span"); s.className = "sure"; c.appendChild(s); }
+      s.textContent = "⏱ " + tfmt((Date.now()-since)/1000);
+    }
+  }, 1000);
+  $("#npPos").oninput  = ()=>{ drag = true; $("#npCur").textContent = tfmt($("#npPos").value); };
+  $("#npPos").onchange = ()=>{ audio.currentTime = $("#npPos").value; drag = false; };
+
+  // Düğmeler
+  $("#npPP").onclick  = ()=> $("#pp").click();
+  $("#npB15").onclick = ()=> $("#back15").click();
+  $("#npF30").onclick = ()=> $("#fwd30").click();
+  $("#npSpeed").onclick = ()=> $("#speed").click();
+  $("#npVol").oninput = e=>{ audio.volume = e.target.value; $("#vol").value = e.target.value; store.set("radyo_vol", e.target.value); };
+  $("#npSleep").onclick = ()=> $("#sleepBtn").click();
+  $("#npFav").onclick = ()=>{
+    if (!current || isPod()) return;
+    const i = favs.findIndex(x=>x.stationuuid===current.stationuuid);
+    i>=0 ? favs.splice(i,1) : favs.push(current);
+    store.set("radyo_favs", favs);
+    if (typeof mode === "undefined" || mode === "radio") render(showFav ? favs : window._shown);
+    npUpdate();
+  };
+  // Önceki / sonraki: ekrandaki listede bir öncekine/sonrakine geç
+  function step(n){
+    if (!current) return;
+    if (isPod()){
+      const l = (typeof epsShown !== "undefined" ? epsShown : []);
+      const i = l.findIndex(x=>x.trackId===current.trackId);
+      if (i>=0 && l[i+n]) playEp(l[i+n]);
+    } else {
+      const l = (window._shown||[]).filter(x=>x && (x.url_resolved||x.url));
+      const i = l.findIndex(x=>x.stationuuid===current.stationuuid);
+      const j = i<0 ? 0 : (i+n+l.length) % l.length;
+      if (l[j]) play(l[j]);
+    }
+    setTimeout(npUpdate, 50);
+  }
+  $("#npPrev").onclick = ()=>step(-1);
+  $("#npNext").onclick = ()=>step(1);
+  try{
+    navigator.mediaSession.setActionHandler("previoustrack", ()=>step(-1));
+    navigator.mediaSession.setActionHandler("nexttrack", ()=>step(1));
+  }catch(_){}
+  // Paylaş: telefonun paylaş menüsü, yoksa panoya kopyala
+  $("#npShare").onclick = async ()=>{
+    if (!current) return;
+    const ad = isPod() ? current.trackName : current.name;
+    const url = isPod() ? current.episodeUrl : (current.homepage || current.url_resolved || current.url);
+    const text = ad + " · Kızılelma Radyo ile dinliyorum";
+    try{ if (navigator.share){ await navigator.share({title:ad, text, url}); return; } }catch(_){ return; }
+    try{ await navigator.clipboard.writeText(text + " " + url); $("#npStatus").textContent = "Bağlantı kopyalandı"; }catch(_){}
+  };
+
+  // Android geri tuşu: önce büyük oynatıcıyı kapat
+  if (window.androidBack){
+    const eskiGeri = window.androidBack;
+    window.androidBack = ()=>{
+      if (!$("#sleepPanel").hidden){ $("#sleepPanel").hidden = true; return true; }
+      if (!np.hidden){ $("#npClose").click(); return true; }
+      return eskiGeri();
+    };
+  }
+})();
+</script>
+
+
+<!-- ============================================================
+     ORTAK KATALOG: TÜM KAYNAKLAR TEK LİSTEDE
+     ------------------------------------------------------------
+     Radyo:   Radio Browser (ana) · TuneIn (isteğe bağlı)
+              · SHOUTcast (geliştirici anahtarı ile)
+     Podcast: Apple Podcasts · fyyd · Podcast Index
+              · Listen Notes (anahtar ile) · RSS (Spotify for
+              Creators dahil)
+     - Aynı radyo/podcast bir kez listelenir (tekilleştirme).
+     - Bir kaynak çalışmazsa diğerleri gösterilir; hiçbiri
+       çalışmazsa son kaydedilen liste gösterilir.
+     - Sonuçlar bir süre saklanır: aynı liste tekrar
+       indirilmez, internet kotası korunur.
+     - Çalmayan radyolar işaretlenir ve listenin sonuna iner.
+     ============================================================ -->
+<style>
+  #katBtn{margin-left:auto;padding:6px 9px;font-size:15px}
+  #destekBtn:not([hidden]) + #katBtn{margin-left:6px}
+  .row.filt select{flex:1;min-width:0}
+  #katNot{margin:6px 14px 0;font-size:13px;color:#ffd58a;display:grid;gap:3px}
+  #katNot:empty{display:none}
+  #katNot .kredi{color:var(--dim)}
+  .kyn{font-weight:600;color:#9ec5ff}
+  .bozuk{font-weight:600;color:#ff9b8a}
+  #katPanel{position:fixed;left:12px;right:12px;top:60px;z-index:25;background:#14171d;border:1px solid var(--line);border-radius:12px;padding:14px;max-width:520px;margin:auto;max-height:80vh;overflow:auto;box-shadow:0 8px 30px #0009;font-size:14px}
+  #katPanel h4{margin:12px 0 6px;color:var(--acc)}
+  #katPanel p{margin:4px 0 8px;color:var(--dim);line-height:1.45}
+  #katPanel label.k{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--line)}
+  #katPanel label.k input[type=checkbox]{margin:3px 0 0;padding:0;width:18px;min-width:18px;height:18px;flex:0 0 18px;accent-color:var(--acc)}
+  #katPanel label.k > span{flex:1;min-width:0}
+  #katPanel label.k small{display:block;color:var(--dim)}
+  #katPanel .anahtar{display:grid;gap:6px;margin:4px 0 6px 28px}
+  #katPanel .anahtar input{padding:7px 9px;font-size:13px}
+  #katPanel .yok{padding:7px 0;border-top:1px solid var(--line);color:var(--dim)}
+  #katPanel .alt{display:flex;gap:8px;margin-top:12px}
+  #katPanel .alt button{flex:1}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px;background:var(--line)}
+  .dot.ok{background:#3ecf8e}.dot.hata{background:#ff6b5a}
+  .rssform{padding:6px 2px;display:grid;gap:8px}
+  .rssform p{margin:0;color:var(--dim);font-size:14px;line-height:1.45}
+  #rssMsg{font-size:13px;color:#ffd58a;min-height:1em}
+</style>
+
+<div id="katPanel" hidden></div>
+
+<script>
+(function(){
+  const ANDROID = location.host === "appassets.androidplatform.net";
+
+  /* ---------- 1) AYARLAR (sadece bu cihazda saklanır) ---------- */
+  const VARSAYILAN = { rb:true, tunein:false, shoutcast:false, itunes:true, fyyd:true, pidx:true, ln:false,
+                       piKey:"", piSecret:"", lnKey:"", scKey:"" };
+  let ayar = Object.assign({}, VARSAYILAN, store.get("kat_ayar", {}));
+  const durum = {}; // Kaynak adı → "ok" / "hata" (paneldeki renkli nokta)
+
+  /* ---------- 2) UYARI SATIRI ---------- */
+  const not = document.createElement("div");
+  not.id = "katNot";
+  $("#list").before(not);
+  let notlar = [];
+  function katNot(m, kredi){
+    if (!notlar.includes(m)){ notlar.push(m); not.insertAdjacentHTML("beforeend", `<div class="${kredi?'kredi':''}">${esc(m)}</div>`); }
+  }
+  window.katNotTemizle = ()=>{ notlar = []; not.innerHTML = ""; };
+
+  /* ---------- 3) AĞ: önce doğrudan, olmazsa aracı (vekil) ----------
+     Bazı servisler tarayıcıdan doğrudan sorguya izin vermez (CORS).
+     Android'de uygulamanın kendi aracı kullanılır; web'de herkese
+     açık aracılar denenir. Hangi sunucunun aracı istediği
+     öğrenilir, sonraki isteklerde boşuna doğrudan denenmez. */
+  let corsYok = new Set();
+  try{ corsYok = new Set(JSON.parse(sessionStorage.getItem("kat_cors") || "[]")); }catch(_){}
+  const sure = ms => { const c = new AbortController(); setTimeout(()=>c.abort(), ms); return c.signal; };
+
+  async function al(url, {headers = {}, tur = "json", ms = 9000} = {}){
+    const host = new URL(url).host;
+    const yollar = [];
+    if (!corsYok.has(host)) yollar.push(["d", ()=>fetch(url, {headers, signal:sure(ms)})]);
+    if (ANDROID){
+      yollar.push(["v", ()=>fetch("/proxy?u=" + encodeURIComponent(url) + "&h=" + encodeURIComponent(JSON.stringify(headers)), {signal:sure(ms+5000)})]);
+    } else {
+      yollar.push(["v", ()=>fetch("https://corsproxy.io/?url=" + encodeURIComponent(url), {headers, signal:sure(ms+5000)})]);
+      if (!Object.keys(headers).length) yollar.push(["v", ()=>fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(url), {signal:sure(ms+5000)})]);
+    }
+    let hata;
+    for (const [tip, f] of yollar){
+      try{
+        const r = await f();
+        if (!r.ok){ const e = new Error("HTTP " + r.status); e.kod = r.status; throw e; }
+        const v = tur === "json" ? await r.json() : await r.text();
+        if (tip === "v"){ corsYok.add(host); try{ sessionStorage.setItem("kat_cors", JSON.stringify([...corsYok])); }catch(_){} }
+        return v;
+      }catch(e){
+        hata = e;
+        // Doğrudan istek "bulunamadı/yetkisiz" dediyse aracı da aynısını der; boşuna deneme
+        if (tip === "d" && e.kod >= 400 && e.kod < 500 && e.kod !== 403 && e.kod !== 429) break;
+      }
+    }
+    throw hata || new Error("Ağ hatası");
+  }
+  window.katAl = al;
+
+  /* ---------- 4) ÖNBELLEK ----------
+     Sonuçlar cihazda saklanır. "taze" süre içinde tekrar
+     indirilmez; servis çökerse eski kayıt gösterilir. */
+  const KC = "kat_cache";
+  let ob = store.get(KC, {});
+  function obYaz(k, v){
+    ob[k] = {t:Date.now(), v};
+    const anahtarlar = Object.keys(ob);
+    if (anahtarlar.length > 60) anahtarlar.sort((a,b)=>ob[a].t-ob[b].t).slice(0, anahtarlar.length-60).forEach(x=>delete ob[x]);
+    try{ localStorage.setItem(KC, JSON.stringify(ob)); }
+    catch(_){ // Yer kalmadıysa en eskilerin yarısını sil
+      Object.keys(ob).sort((a,b)=>ob[a].t-ob[b].t).slice(0, Math.ceil(Object.keys(ob).length/2)).forEach(x=>delete ob[x]);
+      try{ localStorage.setItem(KC, JSON.stringify(ob)); }catch(_){}
+    }
+  }
+  async function onbellekli(k, tazeMs, fn){
+    const c = ob[k];
+    if (c && Date.now() - c.t < tazeMs) return {v:c.v, eski:false};
+    try{ const v = await fn(); obYaz(k, v); return {v, eski:false}; }
+    catch(e){ if (c) return {v:c.v, eski:true}; throw e; }
+  }
+
+  /* ---------- 5) YARDIMCILAR ---------- */
+  const sade = s => norm(s).replace(/[^a-z0-9]/g, "");
+  const feedA = u => String(u||"").toLowerCase().replace(/^https?:\/\/(www\.)?/, "").replace(/\/+$/, "");
+  const urlA  = u => String(u||"").toLowerCase().replace(/^https?:\/\//, "").replace(/[\/;?]+$/, "");
+  function ozet(s){ let h = 0; s = String(s); for (let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) | 0; return (h>>>0).toString(36); }
+  function tarih(d){ const t = new Date(d); return isNaN(t) ? "" : t.toISOString(); }
+  function saniye(x){
+    if (!x) return 0; x = String(x).trim();
+    if (/^\d+$/.test(x)) return +x;
+    return x.split(":").reduce((a,b)=>a*60 + (+b||0), 0);
+  }
+  const etiket = (el, ad) => { const e = el.getElementsByTagName(ad)[0]; return e ? e.textContent.trim() : ""; };
+
+  /* ============================================================
+     RADYO
+     ============================================================ */
+
+  // Radyo listesini küçültür (saklanırken yer kaplamasın)
+  const inceRadyo = s => ({stationuuid:s.stationuuid, name:s.name, url:s.url, url_resolved:s.url_resolved, favicon:s.favicon,
+    country:s.country, countrycode:s.countrycode, state:s.state, language:s.language, tags:s.tags, codec:s.codec,
+    bitrate:s.bitrate, homepage:s.homepage, lastcheckok:s.lastcheckok});
+
+  // Radio Browser istekleri: 10 dk taze tutulur; ulaşılamazsa son liste
+  const eskiApi = api;
+  api = async function(path){
+    const liste = path.startsWith("/json/stations");
+    if (liste && !ayar.rb) return [];
+    try{
+      const r = await onbellekli("rb:" + path, liste ? 10*60e3 : 24*3600e3, async ()=>{
+        const x = await eskiApi(path);
+        return liste && Array.isArray(x) ? x.slice(0, 150).map(inceRadyo) : x;
+      });
+      durum["Radio Browser"] = r.eski ? "hata" : "ok";
+      if (r.eski && liste) katNot("⚠️ Radio Browser'a ulaşılamadı; son kaydedilen liste gösteriliyor.");
+      return r.v;
+    }catch(e){
+      durum["Radio Browser"] = "hata";
+      if (liste){ katNot("⚠️ Radio Browser'a ulaşılamadı; diğer kaynaklar gösteriliyor."); return []; }
+      throw e;
+    }
+  };
+
+  // TuneIn araması (resmî olmayan, herkese açık OPML servisi)
+  async function tuneinAra(q){
+    const j = await al("https://opml.radiotime.com/Search.ashx?render=json&types=station&formats=mp3,aac,ogg,hls&query=" + encodeURIComponent(q));
+    return (j.body||[]).filter(x=>x.type === "audio" && x.URL && x.guide_id).slice(0, 40).map(x=>({
+      stationuuid:"ti-" + x.guide_id, name:x.text, url:x.URL, url_resolved:x.URL, favicon:x.image||"",
+      state:x.subtext||"", country:x.subtext||"", tags:"", bitrate:+x.bitrate||0, codec:String(x.formats||"").toUpperCase(), kaynak:"TuneIn"}));
+  }
+
+  // SHOUTcast araması (geliştirici anahtarı gerekir)
+  async function shoutAra(q){
+    const t = await al("https://api.shoutcast.com/legacy/stationsearch?k=" + encodeURIComponent(ayar.scKey) + "&limit=30&search=" + encodeURIComponent(q), {tur:"text"});
+    const x = new DOMParser().parseFromString(t, "text/xml");
+    return [...x.getElementsByTagName("station")].map(s=>{
+      const id = s.getAttribute("id"), u = "https://yp.shoutcast.com/sbin/tunein-station.pls?id=" + id;
+      return {stationuuid:"sc-" + id, name:s.getAttribute("name"), url:u, url_resolved:u, favicon:s.getAttribute("logo")||"",
+        tags:s.getAttribute("genre")||"", bitrate:+s.getAttribute("br")||0, codec:/aac/i.test(s.getAttribute("mt")||"") ? "AAC" : "MP3", kaynak:"SHOUTcast"};
+    });
+  }
+
+  // Aynı radyoyu bir kez göster: aynı ad veya aynı yayın adresi
+  function tekRadyo(arr){
+    const adlar = new Set(), adresler = new Set(), out = [];
+    for (const s of arr){
+      if (!s || !s.name) continue;
+      const a = sade(s.name), b = urlA(s.url_resolved || s.url);
+      if ((a && adlar.has(a)) || (b && adresler.has(b))) continue;
+      if (a) adlar.add(a); if (b) adresler.add(b);
+      out.push(s);
+    }
+    return out;
+  }
+
+  // load() buradan geçer: diğer kaynakları ekler, tekrarları ayıklar
+  window.katalogRadyo = async function(list, q){
+    let hepsi = list.slice();
+    if (q){
+      const isler = [];
+      if (ayar.tunein) isler.push(["TuneIn", tuneinAra(q)]);
+      if (ayar.shoutcast && ayar.scKey) isler.push(["SHOUTcast", shoutAra(q)]);
+      const rs = await Promise.allSettled(isler.map(x=>x[1]));
+      const hatali = [];
+      rs.forEach((r,i)=>{ const ad = isler[i][0];
+        if (r.status === "fulfilled"){ hepsi = hepsi.concat(r.value); durum[ad] = "ok"; } else { hatali.push(ad); durum[ad] = "hata"; } });
+      if (hatali.length) katNot("⚠️ " + hatali.join(", ") + " kaynağına ulaşılamadı; diğer kaynaklar gösteriliyor.");
+    }
+    return tekRadyo(hepsi);
+  };
+
+  // Yayın adresini çözer: TuneIn, .m3u ve .pls listeleri
+  resolveUrl = async function(u, derin){
+    try{
+      if (/opml\.radiotime\.com\/Tune\.ashx/i.test(u)){
+        const j = await al(u + (u.includes("?") ? "&" : "?") + "render=json", {ms:8000});
+        const x = (j.body||[]).find(b=>b.url);
+        if (x) return (!derin && /\.(m3u|pls)(\?|$)/i.test(x.url)) ? resolveUrl(x.url, true) : x.url;
+      }
+      if (/\.(m3u|pls)(\?|$)/i.test(u)){
+        const t = await al(u, {tur:"text", ms:8000});
+        const line = t.split(/\r?\n/).map(x=>x.trim()).find(x=>/^https?:\/\//i.test(x) || /^File\d*=https?:\/\//i.test(x));
+        if (line) return line.replace(/^File\d*=/i, "");
+      }
+    }catch(_){}
+    return u;
+  };
+
+  // Çalmayan radyoları hatırla (bir gün), listede işaretle ve sona al
+  let kotu = store.get("radyo_kotu", {});
+  const kotuMu = s => { const t = kotu[s.stationuuid || s.url]; return s.lastcheckok === 0 || (t && Date.now() - t < 864e5); };
+  const eskiPlay = play;
+  play = async function(s){
+    await eskiPlay(s);
+    if (current !== s) return;
+    const id = s.stationuuid || s.url;
+    if (audio.paused && /çalınamıyor|engelledi/.test($("#status").textContent)) kotu[id] = Date.now();
+    else delete kotu[id];
+    store.set("radyo_kotu", kotu);
+    if (typeof mode === "undefined" || mode === "radio") render(window._shown);
+  };
+  const eskiRender = render;
+  render = function(arr){
+    if (Array.isArray(arr) && !showMine){
+      const iyi = [], kot = [];
+      arr.forEach(s=> s && (kotuMu(s) ? kot : iyi).push(s));
+      arr = iyi.concat(kot);
+    }
+    eskiRender(arr);
+    if (showMine) return;
+    document.querySelectorAll("#list .st[data-i]").forEach(el=>{
+      const s = (window._shown||[])[el.dataset.i], m = el.querySelector(".meta");
+      if (!s || !m) return;
+      const ek = html => m.insertAdjacentHTML("beforeend", (m.textContent.trim() ? " · " : "") + html);
+      if (s.kaynak) ek(`<b class="kyn">${esc(s.kaynak)}</b>`);
+      if (kotuMu(s)) ek(`<b class="bozuk">⚠ çalışmıyor olabilir</b>`);
+    });
+  };
+
+  /* --- Şehir ve dil filtreleri --- */
+  const DILLER_R = [["","Tüm diller"],["turkish","Türkçe"],["kurdish","Kürtçe"],["arabic","Arapça"],["azerbaijani","Azerice"],
+    ["english","İngilizce"],["german","Almanca"],["french","Fransızca"],["persian","Farsça"],["russian","Rusça"],["spanish","İspanyolca"]];
+  const satir = document.createElement("div");
+  satir.className = "row filt";
+  satir.innerHTML = `<select id="city" title="Şehir"><option value="">Tüm şehirler</option></select>
+    <select id="lang" title="Dil">${DILLER_R.map(d=>`<option value="${d[0]}">${d[1]}</option>`).join("")}</select>`;
+  $("#radioBar .row").after(satir);
+
+  async function sehirler(){
+    const sel = $("#city"), cc = $("#country").value;
+    sel.innerHTML = '<option value="">Tüm şehirler</option>';
+    if (!cc) return;
+    let adlar = [];
+    try{
+      const ulkeler = await api("/json/countries");
+      const u = (ulkeler||[]).find(x=>x.iso_3166_1 === cc);
+      if (u){
+        const st = await api("/json/states/" + encodeURIComponent(u.name) + "/?order=stationcount&reverse=true&hidebroken=true");
+        adlar = (st||[]).filter(x=>x.name && x.stationcount > 0 && (!x.country || x.country === u.name)).map(x=>x.name);
+      }
+    }catch(_){}
+    if (!adlar.length){ // Yedek: ülkenin popüler radyolarındaki şehirlerden çıkar
+      try{ const ls = await api("/json/stations/search?countrycode=" + cc + "&hidebroken=true&order=clickcount&reverse=true&limit=150");
+        adlar = [...new Set(ls.map(s=>s.state).filter(Boolean))]; }catch(_){}
+    }
+    if ($("#country").value !== cc) return;
+    sel.innerHTML += [...new Set(adlar)].slice(0, 120).sort((a,b)=>a.localeCompare(b,"tr")).map(a=>`<option>${esc(a)}</option>`).join("");
+  }
+  $("#country").addEventListener("change", ()=>{ $("#city").value = ""; sehirler(); }, true);
+  $("#city").onchange = load;
+  $("#lang").onchange = load;
+  sehirler();
+
+  /* ============================================================
+     PODCAST
+     ============================================================ */
+  const KATEGORI = [["","Tüm kategoriler",""],["1489","Haber","News"],["1324","Toplum ve kültür","Society"],["1487","Tarih","History"],
+    ["1533","Bilim","Science"],["1304","Eğitim","Education"],["1321","İş dünyası","Business"],["1318","Teknoloji","Technology"],
+    ["1545","Spor","Sports"],["1303","Komedi","Comedy"],["1512","Sağlık","Health"],["1314","Din ve maneviyat","Religion"],
+    ["1305","Çocuk ve aile","Kids"],["1301","Sanat","Arts"],["1310","Müzik","Music"],["1488","Gerçek suç","True Crime"],
+    ["1483","Kurgu","Fiction"],["1309","TV ve film","TV"]];
+  // [kod, ad, Apple mağazası, Listen Notes dili]
+  const DILLER_P = [["tr","Türkçe","tr","Turkish"],["en","İngilizce","us","English"],["de","Almanca","de","German"],
+    ["ar","Arapça","sa","Arabic"],["az","Azerice","az","Azerbaijani"],["fr","Fransızca","fr","French"],
+    ["es","İspanyolca","es","Spanish"],["ru","Rusça","ru","Russian"]];
+
+  const pSatir = document.createElement("div");
+  pSatir.className = "row filt";
+  pSatir.innerHTML = `<select id="pcat" title="Kategori">${KATEGORI.map(k=>`<option value="${k[0]}">${k[1]}</option>`).join("")}</select>
+    <select id="plang" title="Dil">${DILLER_P.map(d=>`<option value="${d[0]}">${d[1]}</option>`).join("")}</select>`;
+  $("#podBar .row").after(pSatir);
+  $("#plang").value = store.get("pod_dil", "tr");
+  const dil = ()=> DILLER_P.find(d=>d[0] === $("#plang").value) || DILLER_P[0];
+  const yeniden = ()=>{ store.set("pod_dil", $("#plang").value); if (!/^__(rss)__$/.test(podTerm) && mode === "pod" && !curPod) podSearch(podTerm); };
+  $("#pcat").onchange = yeniden;
+  $("#plang").onchange = yeniden;
+
+  // Podcast bilgisini küçültür
+  const incePod = p => ({collectionId:p.collectionId, collectionName:p.collectionName, artistName:p.artistName||"",
+    artworkUrl100:p.artworkUrl100||p.artworkUrl600||"", artworkUrl600:p.artworkUrl600||"", feedUrl:p.feedUrl||"",
+    primaryGenreName:p.primaryGenreName||"", releaseDate:p.releaseDate||"", trackCount:p.trackCount||0,
+    fyydId:p.fyydId, src:p.src, _rank:p._rank});
+  const inceEp = e => ({trackId:e.trackId, trackName:e.trackName, collectionName:e.collectionName, episodeUrl:e.episodeUrl,
+    releaseDate:e.releaseDate||"", trackTimeMillis:e.trackTimeMillis||0, artworkUrl160:e.artworkUrl160||"", artworkUrl600:e.artworkUrl600||""});
+
+  // --- Apple ---
+  async function appleAra(t, cc, kat, limit){
+    const j = await itunes("/search?media=podcast&entity=podcast&country=" + cc + "&limit=" + limit + "&term=" + encodeURIComponent(t) + (kat ? "&genreId=" + kat : ""));
+    return (j.results||[]).map(p=>Object.assign(p, {src:"apple"}));
+  }
+  async function appleTop(cc, kat){
+    const j = await al("https://itunes.apple.com/" + cc + "/rss/toppodcasts/limit=100/" + (kat ? "genre=" + kat + "/" : "") + "json");
+    let e = j.feed && j.feed.entry; if (!e) return []; if (!Array.isArray(e)) e = [e];
+    return e.map((x,i)=>{
+      const resim = (x["im:image"]||[]).slice(-1)[0];
+      const r = resim ? resim.label : "";
+      return {collectionId:+x.id.attributes["im:id"], collectionName:x["im:name"].label, artistName:(x["im:artist"]||{}).label||"",
+        artworkUrl100:r, artworkUrl600:r.replace(/\/\d+x\d+(bb)?\./, "/600x600bb."), primaryGenreName:((x.category||{}).attributes||{}).label||"",
+        releaseDate:(x["im:releaseDate"]||{}).label||"", _rank:i, src:"apple"};
+    });
+  }
+  // --- fyyd ---
+  async function fyydAra(t, dk){
+    const j = await al("https://api.fyyd.de/0.2/search/podcast?count=50&term=" + encodeURIComponent(t));
+    return (j.data||[]).filter(x=>!dk || !x.language || String(x.language).toLowerCase().startsWith(dk)).map(x=>({
+      collectionId:"fy-" + x.id, fyydId:x.id, collectionName:x.title, artistName:x.author||"", artworkUrl100:x.smallImageURL||x.imgURL||"",
+      artworkUrl600:x.imgURL||"", feedUrl:x.xmlURL||"", releaseDate:tarih(x.lastpub), trackCount:x.episode_count||0, src:"fyyd"}));
+  }
+  // --- Podcast Index ---
+  async function piBaslik(){
+    const t = String(Math.floor(Date.now()/1000));
+    const b = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(ayar.piKey + ayar.piSecret + t));
+    return {"X-Auth-Key":ayar.piKey, "X-Auth-Date":t, "Authorization":[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")};
+  }
+  const piAnahtar = ()=> ayar.piKey && ayar.piSecret;
+  const piPod = (x,i,rank) => ({collectionId:x.itunesId || "pi-" + x.id, collectionName:x.title, artistName:x.author||x.ownerName||"",
+    artworkUrl100:x.artwork||x.image||"", artworkUrl600:x.artwork||x.image||"", feedUrl:x.url||"",
+    releaseDate:x.newestItemPublishTime ? tarih(x.newestItemPublishTime*1000) : (x.lastUpdateTime ? tarih(x.lastUpdateTime*1000) : ""),
+    trackCount:x.episodeCount||0, primaryGenreName:Object.values(x.categories||{})[0]||"", _rank:rank!=null ? rank+i : undefined, src:"pidx"});
+  async function piAra(t, dk){
+    if (piAnahtar()){
+      const j = await al("https://api.podcastindex.org/api/1.0/search/byterm?max=50&q=" + encodeURIComponent(t), {headers:await piBaslik()});
+      return (j.feeds||[]).filter(x=>!dk || !x.language || String(x.language).toLowerCase().startsWith(dk)).map((x,i)=>piPod(x,i));
+    }
+    // Anahtarsız: Apple yerine geçen arama ucu
+    let j;
+    try{ j = await al("https://api.podcastindex.org/search?term=" + encodeURIComponent(t)); }
+    catch(_){ j = await al("https://api.podcastindex.org/api/1.0/search?term=" + encodeURIComponent(t)); }
+    return (j.results||[]).map(p=>Object.assign(p, {src:"pidx"}));
+  }
+  async function piTrend(dk, kat){
+    const c = (KATEGORI.find(k=>k[0] === kat)||[])[2];
+    const j = await al("https://api.podcastindex.org/api/1.0/podcasts/trending?max=60&lang=" + dk + (c ? "&cat=" + encodeURIComponent(c) : ""), {headers:await piBaslik()});
+    return (j.feeds||[]).map((x,i)=>piPod(x,i,1000));
+  }
+  // --- Listen Notes ---
+  const lnPod = (x,i,rank) => ({collectionId:x.itunes_id || "ln-" + x.id, collectionName:x.title_original||x.title, artistName:x.publisher_original||x.publisher||"",
+    artworkUrl100:x.thumbnail||x.image||"", artworkUrl600:x.image||"", feedUrl:x.rss||"", releaseDate:x.latest_pub_date_ms ? tarih(x.latest_pub_date_ms) : "",
+    trackCount:x.total_episodes||0, _rank:rank!=null ? rank+i : undefined, src:"ln"});
+  const lnBaslik = ()=>({"X-ListenAPI-Key":ayar.lnKey});
+  async function lnAra(t, lnDil){
+    const j = await al("https://listen-api.listennotes.com/api/v2/search?type=podcast&q=" + encodeURIComponent(t) + "&language=" + encodeURIComponent(lnDil), {headers:lnBaslik()});
+    return (j.results||[]).map((x,i)=>lnPod(x,i));
+  }
+  async function lnEnIyi(cc){
+    const j = await al("https://listen-api.listennotes.com/api/v2/best_podcasts?page=1&region=" + cc, {headers:lnBaslik()});
+    return (j.podcasts||[]).map((x,i)=>lnPod(x,i,2000));
+  }
+
+  // Aynı podcasti bir kez göster: aynı RSS adresi, aynı kimlik veya aynı ad
+  function tekPod(arr){
+    const F = new Map(), I = new Map(), T = new Map(), out = [];
+    for (const p of arr){
+      if (!p || !p.collectionName) continue;
+      const f = feedA(p.feedUrl), id = String(p.collectionId), t = sade(p.collectionName);
+      const v = (f && F.get(f)) || I.get(id) || (t && T.get(t));
+      if (v){ // Eksik bilgileri tamamla
+        ["feedUrl","artworkUrl600","artworkUrl100","releaseDate","trackCount","primaryGenreName","fyydId"].forEach(k=>{ if (!v[k] && p[k]) v[k] = p[k]; });
+        if (p._rank != null && (v._rank == null || p._rank < v._rank)) v._rank = p._rank;
+        if (!/^\d+$/.test(String(v.collectionId)) && /^\d+$/.test(id)) v.collectionId = p.collectionId; // Apple kimliği daha iyi
+        if (f) F.set(f, v); I.set(id, v);
+        continue;
+      }
+      out.push(p); if (f) F.set(f, p); I.set(id, p); if (t) T.set(t, p);
+    }
+    return out;
+  }
+
+  async function podTopla(term, d, kat){
+    const [dk, , cc, lnDil] = d;
+    const isler = [];
+    if (term === "__top__"){
+      isler.push(["Apple", appleTop(cc, kat)]);
+      if (ayar.pidx && piAnahtar()) isler.push(["Podcast Index", piTrend(dk, kat)]);
+      if (ayar.ln && ayar.lnKey) isler.push(["Listen Notes", lnEnIyi(cc)]);
+    } else {
+      const hepsi = term === "__all__";
+      const tek = hepsi ? (dk === "tr" ? "türkçe" : "podcast") : term;
+      if (ayar.itunes){
+        const kelimeler = hepsi ? ALL_TERMS : [term];
+        isler.push(["Apple", Promise.allSettled(kelimeler.map(t=>appleAra(t, cc, kat, hepsi ? 40 : 100))).then(rs=>{
+          const ok = rs.filter(x=>x.status === "fulfilled");
+          if (!ok.length) throw new Error("Apple");
+          return ok.flatMap(x=>x.value);
+        })]);
+      }
+      if (ayar.fyyd) isler.push(["fyyd", fyydAra(tek, dk)]);
+      if (ayar.pidx) isler.push(["Podcast Index", piAra(tek, dk)]);
+      if (ayar.ln && ayar.lnKey) isler.push(["Listen Notes", lnAra(tek, lnDil)]);
+    }
+    if (!isler.length) throw new Error("Açık podcast kaynağı yok");
+    const rs = await Promise.allSettled(isler.map(x=>x[1]));
+    let hepsi = []; const hatali = [];
+    rs.forEach((r,i)=>{ const ad = isler[i][0];
+      if (r.status === "fulfilled"){ hepsi = hepsi.concat(r.value); durum[ad] = "ok"; } else { hatali.push(ad); durum[ad] = "hata"; } });
+    if (hatali.length === isler.length) throw new Error("Podcast kaynaklarına ulaşılamadı");
+    if (hatali.length) katNot("⚠️ " + hatali.join(", ") + " kaynağına ulaşılamadı; diğer kaynaklar gösteriliyor.");
+    // Kategori seçiliyse, kategorisi belli olup uymayanları çıkar (Apple zaten süzüyor)
+    return tekPod(hepsi).slice(0, 250).map(incePod);
+  }
+
+  // Podcast arama/listeleme: tüm kaynaklardan tek katalog
+  podSearch = async function(term){
+    const my = ++podReq;
+    podTerm = term; curPod = null;
+    katNotTemizle();
+    if (term === "__rss__"){ rssFormu(); return; }
+    $("#list").innerHTML = '<div class="msg">Yükleniyor…</div>';
+    const d = dil(), kat = $("#pcat").value;
+    let r;
+    try{ r = await onbellekli("pod:" + term + "|" + d[0] + "|" + kat, 30*60e3, ()=>podTopla(term, d, kat)); }
+    catch(e){
+      if (my === podReq && mode === "pod") $("#list").innerHTML = '<div class="msg">Podcast kaynaklarına ulaşılamadı. Aboneliklerim ve Devam et bölümleri yine çalışır.</div>';
+      return;
+    }
+    if (my !== podReq || mode !== "pod") return;
+    if (r.eski) katNot("⚠️ Podcast kaynaklarına ulaşılamadı; son kaydedilen liste gösteriliyor.");
+    if (r.v.some(p=>p.src === "ln")) katNot("Powered by Listen Notes", true);
+    renderPods(r.v, term === "__top__" ? "Bu kategori ve dilde popüler liste bulunamadı." : "Sonuç bulunamadı.");
+  };
+
+  // --- Bölümler: Apple → fyyd → RSS ---
+  async function rssBolum(url, p){
+    const t = await al(url, {tur:"text", ms:15000});
+    const x = new DOMParser().parseFromString(t, "text/xml");
+    const k = x.getElementsByTagName("channel")[0];
+    if (!k) throw new Error("RSS değil");
+    const ki = k.getElementsByTagName("itunes:image")[0];
+    const kapak = (ki && ki.getAttribute("href")) || etiket(k.getElementsByTagName("image")[0] || k, "url") || p.artworkUrl600 || p.artworkUrl100 || "";
+    const ad = p.collectionName || etiket(k, "title");
+    return [...k.getElementsByTagName("item")].slice(0, 300).map(it=>{
+      const enc = it.getElementsByTagName("enclosure")[0], u = enc && enc.getAttribute("url");
+      if (!u) return null;
+      const im = it.getElementsByTagName("itunes:image")[0];
+      const resim = (im && im.getAttribute("href")) || kapak;
+      return {trackId:"r" + ozet(etiket(it, "guid") || u), trackName:etiket(it, "title") || "Bölüm", collectionName:ad, episodeUrl:u,
+        releaseDate:tarih(etiket(it, "pubDate")), trackTimeMillis:saniye(etiket(it, "itunes:duration"))*1000, artworkUrl160:resim, artworkUrl600:resim};
+    }).filter(Boolean);
+  }
+  async function fyydBolum(id, p){
+    const j = await al("https://api.fyyd.de/0.2/podcast/episodes?count=200&podcast_id=" + id);
+    const eps = (j.data && j.data.episodes) || [];
+    return eps.filter(e=>e.enclosure).map(e=>({trackId:"f" + e.id, trackName:e.title, collectionName:p.collectionName, episodeUrl:e.enclosure,
+      releaseDate:tarih(e.pubdate), trackTimeMillis:(+e.duration||0)*1000, artworkUrl160:e.imgURL||p.artworkUrl100||"", artworkUrl600:e.imgURL||p.artworkUrl600||""}));
+  }
+  async function bolumTopla(p){
+    if (/^\d+$/.test(String(p.collectionId)) && ayar.itunes){
+      for (const ulke of ["&country=" + dil()[2], ""]){
+        try{
+          const j = await itunes("/lookup?id=" + p.collectionId + "&entity=podcastEpisode&limit=200" + ulke);
+          const k = (j.results||[]).find(r=>r.feedUrl); if (k && !p.feedUrl) p.feedUrl = k.feedUrl;
+          const eps = (j.results||[]).filter(r=>r.episodeUrl);
+          if (eps.length) return eps.map(inceEp);
+        }catch(_){ durum["Apple"] = "hata"; }
+      }
+    }
+    if (p.fyydId && ayar.fyyd){ try{ const e = await fyydBolum(p.fyydId, p); if (e.length) return e; }catch(_){ durum["fyyd"] = "hata"; } }
+    if (p.feedUrl){ try{ const e = await rssBolum(p.feedUrl, p); if (e.length) return e; }catch(_){} }
+    // Son çare: aynı adla fyyd arşivinde bul
+    if (ayar.fyyd){
+      const alt = (await fyydAra(p.collectionName, "")).find(x=>sade(x.collectionName) === sade(p.collectionName));
+      if (alt){ const e = alt.feedUrl ? await rssBolum(alt.feedUrl, p).catch(()=>[]) : []; if (e.length) return e;
+        const f = await fyydBolum(alt.fyydId, p); if (f.length) return f; }
+    }
+    throw new Error("Bölüm bulunamadı");
+  }
+  openPod = async function(p){
+    const my = ++podReq;
+    curPod = p;
+    katNotTemizle();
+    $("#list").innerHTML = '<div class="msg">Bölümler yükleniyor…</div>';
+    let r;
+    try{ r = await onbellekli("eps:" + (p.feedUrl ? feedA(p.feedUrl) : p.collectionId), 30*60e3, async ()=>(await bolumTopla(p)).map(inceEp)); }
+    catch(e){
+      if (my !== podReq || mode !== "pod") return;
+      renderEps([]); katNot("⚠️ Bölümler alınamadı. İnternet bağlantınızı kontrol edin veya sonra tekrar deneyin.");
+      return;
+    }
+    if (my !== podReq || mode !== "pod") return;
+    if (r.eski) katNot("⚠️ Kaynağa ulaşılamadı; son kaydedilen bölüm listesi gösteriliyor.");
+    renderEps(r.v.filter(e=>!isBlocked(e)).sort((a,b)=>(b.releaseDate||"").localeCompare(a.releaseDate||"")));
+  };
+
+  // --- RSS ile podcast ekleme (Spotify for Creators dahil) ---
+  function rssFormu(){
+    $("#list").innerHTML = `<div class="rssform">
+      <b>➕ RSS ile podcast ekle</b>
+      <p>Podcastin RSS adresini yapıştırın. Spotify for Creators (Anchor) podcastlerinin RSS adresi
+         "anchor.fm/s/…/podcast/rss" biçimindedir; podcastin sitesinde veya Spotify for Creators ayarlarında bulunur.</p>
+      <div class="row"><input id="rssUrl" placeholder="https://… (RSS adresi)"><button id="rssEkle">Ekle</button></div>
+      <div id="rssMsg"></div></div>`;
+    $("#rssEkle").onclick = async ()=>{
+      const u = $("#rssUrl").value.trim(), m = $("#rssMsg");
+      if (!/^https?:\/\//i.test(u)){ m.textContent = "Adres http:// veya https:// ile başlamalı."; return; }
+      m.textContent = "Kontrol ediliyor…";
+      try{
+        const t = await al(u, {tur:"text", ms:15000});
+        const x = new DOMParser().parseFromString(t, "text/xml");
+        const k = x.getElementsByTagName("channel")[0];
+        if (!k || !k.getElementsByTagName("enclosure").length) throw new Error();
+        const ki = k.getElementsByTagName("itunes:image")[0];
+        const resim = (ki && ki.getAttribute("href")) || etiket(k.getElementsByTagName("image")[0] || k, "url") || "";
+        const p = {collectionId:"rss-" + ozet(feedA(u)), collectionName:etiket(k, "title") || u, artistName:etiket(k, "itunes:author"),
+          artworkUrl100:resim, artworkUrl600:resim, feedUrl:u, src:"rss"};
+        if (!subs.some(s=>s.collectionId === p.collectionId)) toggleSub(p);
+        openPod(p);
+      }catch(_){ m.textContent = "Bu adreste podcast bulunamadı. Adresin RSS (XML) olduğundan emin olun."; }
+    };
+  }
+
+  /* ============================================================
+     KAYNAKLAR PANELİ
+     ============================================================ */
+  const btn = document.createElement("button");
+  btn.id = "katBtn"; btn.title = "Kaynaklar"; btn.textContent = "⚙️";
+  $("header h1").appendChild(btn);
+  const panel = $("#katPanel");
+  const nokta = ad => `<span class="dot ${durum[ad]||''}" title="${durum[ad]==='ok'?'Çalışıyor':durum[ad]==='hata'?'Ulaşılamadı':'Henüz denenmedi'}"></span>`;
+  function satirK(k, ad, aciklama, ekler){
+    return `<label class="k"><input type="checkbox" data-k="${k}" ${ayar[k]?"checked":""}><span><b>${ad}</b>${nokta(ad)}<small>${aciklama}</small></span></label>${ekler||""}`;
+  }
+  const kutu = (k, ph, tip) => `<input data-a="${k}" type="${tip||"text"}" placeholder="${ph}" value="${esc(ayar[k])}" autocomplete="off" spellcheck="false">`;
+  function paneliCiz(){
+    panel.innerHTML = `<b>⚙️ Kaynaklar</b>
+      <p>Ücretsiz ve anahtarsız kaynaklar açık gelir. Anahtar isteyen servisler için ücretsiz anahtar alıp buraya yazabilirsiniz; anahtarlar sadece bu cihazda saklanır.</p>
+      <h4>📻 Radyo</h4>
+      ${satirK("rb","Radio Browser","Ücretsiz, anahtarsız. Ana kaynak; ülke, şehir, dil ve tür filtresi buradan.")}
+      ${satirK("tunein","TuneIn","Anahtarsız ama resmî olmayan servis; TuneIn ticari kullanım için ortaklık ister. Aramalarda ek sonuç getirir.")}
+      ${satirK("shoutcast","SHOUTcast","Geliştirici anahtarı (DevID) gerekir; shoutcast.com/Developer adresinden başvurulur.",`<div class="anahtar">${kutu("scKey","SHOUTcast DevID")}</div>`)}
+      <div class="yok"><b>Radio Garden</b><small style="display:block">Eklenmedi: resmî bir API sunmuyor ve 2022'den beri Türkiye'de erişime kapalı.</small></div>
+      <h4>🎙️ Podcast</h4>
+      ${satirK("itunes","Apple","Ücretsiz, anahtarsız. Arama, kategori ve popüler listeler.")}
+      ${satirK("fyyd","fyyd","Ücretsiz, anahtarsız ikinci podcast arşivi.")}
+      ${satirK("pidx","Podcast Index","Arama anahtarsız. Ücretsiz anahtar ile dil ve kategoriye göre popüler listeler (podcastindex.org).",`<div class="anahtar">${kutu("piKey","API Key")}${kutu("piSecret","API Secret","password")}</div>`)}
+      ${satirK("ln","Listen Notes","Ücretsiz paket ayda 300 istek. Anahtar: listennotes.com/api",`<div class="anahtar">${kutu("lnKey","X-ListenAPI-Key","password")}</div>`)}
+      <div class="yok"><b>RSS ve Spotify for Creators</b><small style="display:block">Her zaman açık: Podcast → "➕ RSS ekle". Spotify'ın kendi API'si podcast bölümlerini çalmaya izin vermez; RSS adresi kullanılır.</small></div>
+      <div class="alt"><button id="katSil">Kayıtlı listeleri sil</button><button id="katKapat">Kapat</button></div>`;
+    panel.querySelectorAll("[data-k]").forEach(c=>c.onchange = ()=>{ ayar[c.dataset.k] = c.checked; kaydet(); });
+    panel.querySelectorAll("[data-a]").forEach(c=>c.onchange = ()=>{ ayar[c.dataset.a] = c.value.trim(); kaydet(); });
+    $("#katSil").onclick = ()=>{ ob = {}; try{ localStorage.removeItem(KC); }catch(_){} kotu = {}; store.set("radyo_kotu", kotu); $("#katSil").textContent = "Silindi ✓"; };
+    $("#katKapat").onclick = kapat;
+  }
+  let degisti = false;
+  function kaydet(){ store.set("kat_ayar", ayar); degisti = true; }
+  function kapat(){
+    panel.hidden = true;
+    if (degisti){ degisti = false; ob = {}; try{ localStorage.removeItem(KC); }catch(_){}
+      if (mode === "pod") podSearch(podTerm); else if (mode === "radio") load(); }
+  }
+  btn.onclick = ()=>{ if (panel.hidden){ paneliCiz(); panel.hidden = false; } else kapat(); };
+
+  // Android geri tuşu: önce paneli kapat
+  if (window.androidBack){
+    const eski = window.androidBack;
+    window.androidBack = ()=>{ if (!panel.hidden){ kapat(); return true; } return eski(); };
+  }
+})();
+</script>
+
+</body>
+</html>

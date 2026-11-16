@@ -23,6 +23,11 @@ import androidx.core.view.ViewCompat
 import androidx.core.view.WindowCompat
 import androidx.core.view.WindowInsetsCompat
 import androidx.webkit.WebViewAssetLoader
+import org.json.JSONObject
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
 
 /**
  * Uygulamanın ana ekranı.
@@ -79,7 +84,13 @@ class MainActivity : ComponentActivity() {
         web.webViewClient = object : WebViewClient() {
             override fun shouldInterceptRequest(
                 view: WebView, request: WebResourceRequest
-            ): WebResourceResponse? = sunucu.shouldInterceptRequest(request.url)
+            ): WebResourceResponse? {
+                val u = request.url
+                // Sayfanın "/proxy?u=..." istekleri: tarayıcı engeli (CORS) olan
+                // servislere uygulamanın kendisi bağlanır
+                if (u.host == "appassets.androidplatform.net" && u.path == "/proxy") return vekil(u)
+                return sunucu.shouldInterceptRequest(u)
+            }
 
             // Uygulama dışı bağlantılar (yayın akışı, web siteleri) telefonun tarayıcısında açılır
             override fun shouldOverrideUrlLoading(view: WebView, request: WebResourceRequest): Boolean {
@@ -125,6 +136,60 @@ class MainActivity : ComponentActivity() {
         destek.kapat()
         web.destroy()
         super.onDestroy()
+    }
+
+    /**
+     * Basit aracı (vekil): sayfanın istediği adresi uygulama indirir ve sayfaya verir.
+     * Sadece http/https, sadece GET; en fazla beş yönlendirme ve beş MB.
+     * Sadece uygulamanın kendi sayfası kullanabilir (dışarıya açık değildir).
+     */
+    private fun vekil(u: Uri): WebResourceResponse {
+        val basliklar = mapOf("Access-Control-Allow-Origin" to "*", "Cache-Control" to "no-store")
+        fun hata() = WebResourceResponse("text/plain", "utf-8", 502, "Bad Gateway", basliklar, ByteArrayInputStream(ByteArray(0)))
+        return try {
+            val hedef = u.getQueryParameter("u") ?: return hata()
+            if (!hedef.startsWith("https://") && !hedef.startsWith("http://")) return hata()
+            val ekler = u.getQueryParameter("h")?.let { runCatching { JSONObject(it) }.getOrNull() }
+            var adres = URL(hedef)
+            var son: HttpURLConnection? = null
+            var yon = 0
+            while (true) {
+                val c = adres.openConnection() as HttpURLConnection
+                son = c
+                c.connectTimeout = 10000
+                c.readTimeout = 15000
+                c.instanceFollowRedirects = false
+                c.setRequestProperty("User-Agent", "KizilelmaRadyo/2.4 (Android)")
+                ekler?.let { j -> j.keys().forEach { k -> c.setRequestProperty(k, j.optString(k)) } }
+                val kod = c.responseCode
+                val yeni = c.getHeaderField("Location")
+                if (kod in 300..399 && yeni != null && yon < 5) {
+                    c.disconnect(); adres = URL(adres, yeni); yon++; continue
+                }
+                break
+            }
+            val con = son ?: return hata()
+            val kod = con.responseCode
+            if (kod in 300..399) return hata()
+            val akis = (if (kod >= 400) con.errorStream else con.inputStream) ?: ByteArrayInputStream(ByteArray(0))
+            val cikti = ByteArrayOutputStream()
+            akis.use { g ->
+                val tampon = ByteArray(16 * 1024)
+                while (true) {
+                    val n = g.read(tampon); if (n < 0) break
+                    cikti.write(tampon, 0, n)
+                    if (cikti.size() > 5 * 1024 * 1024) break
+                }
+            }
+            val tur = con.contentType ?: "application/octet-stream"
+            val mesaj = con.responseMessage?.ifBlank { null } ?: "OK"
+            con.disconnect()
+            val mime = tur.substringBefore(";").trim().ifEmpty { "application/octet-stream" }
+            val cs = tur.substringAfter("charset=", "").trim().trim('"').ifEmpty { "utf-8" }
+            WebResourceResponse(mime, cs, kod, mesaj, basliklar, ByteArrayInputStream(cikti.toByteArray()))
+        } catch (_: Exception) {
+            hata()
+        }
     }
 
     private fun disaridaAc(uri: Uri) {

@@ -11,8 +11,8 @@ android {
         applicationId = "com.hasan.radyo"
         minSdk = 26
         targetSdk = 36          // Google Play'in güncel hedef sürüm şartı
-        versionCode = 7         // Play'e her yeni yüklemede bir artırın
-        versionName = "2.3"
+        versionCode = 8         // Play'e her yeni yüklemede bir artırın
+        versionName = "2.4"
     }
 
     signingConfigs {

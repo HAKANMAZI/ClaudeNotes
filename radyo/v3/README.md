@@ -1,4 +1,4 @@
-# Radyo – v3 (en güncel)
+# Radyo – v3
 
 **Ne:** Radyo + Podcast + Köşe Yazıları. v2'nin her şeyi var, üstüne köşe yazıları ve yedek kaynaklar eklendi.
 

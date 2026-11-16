@@ -242,7 +242,7 @@
     <div class="row ptabs">
       <!-- Tümü: birçok aramayı birleştirir, en yeni bölümü olan en üstte -->
       <button data-term="__all__" class="on">Tümü</button>
-      <button data-term="türkçe podcast">Popüler</button>
+      <button data-term="__top__">🔥 Popüler</button>
       <button data-term="belgesel">Belgesel</button>
       <button data-term="tarih">Tarih</button>
       <button data-term="bilim">Bilim</button>
@@ -255,6 +255,7 @@
       <button data-term="çocuk masalları">Çocuk</button>
       <button data-psubs="1">★ Aboneliklerim</button>
       <button data-pcont="1">⏯ Devam et</button>
+      <button data-term="__rss__">➕ RSS ekle</button>
     </div>
   </div>
 </header>
@@ -390,6 +391,7 @@ let reqNo = 0; // Her aramaya sıra numarası; eski aramanın geç gelen sonucu 
 
 async function load(){
   const my = ++reqNo;
+  if (window.katNotTemizle) katNotTemizle();
   showFav = false; showMine = false;
   $("#list").innerHTML = '<div class="msg">Yükleniyor…</div>';
 
@@ -412,7 +414,10 @@ async function load(){
     p.set("name", q);
   }
   if (c) p.set("countrycode", c); // Ülke filtresi
-  if (tag) p.set("tag", tag);     // Tür filtresi
+  if (tag) p.set("tag", tag);
+  // Şehir ve dil filtreleri (katalog bölümü ekler)
+  if ($("#city") && $("#city").value) p.set("state", $("#city").value);
+  if ($("#lang") && $("#lang").value) p.set("language", $("#lang").value);     // Tür filtresi
 
   try{
     stations = await api("/json/stations/search?" + p);
@@ -435,6 +440,8 @@ async function load(){
       const own = mine.filter(s=>s.name.toLocaleLowerCase("tr").includes(k));
       stations = own.concat(stations);
     }
+    // Diğer kaynakları ekle, tekrarları ayıkla
+    if (window.katalogRadyo){ stations = await katalogRadyo(stations, q); if (my !== reqNo) return; }
     render(stations);
   }
   catch(e){ if (my === reqNo) $("#list").innerHTML = '<div class="msg">'+e.message+'</div>'; }
@@ -463,7 +470,7 @@ function rows(arr){
     const isFav = favs.some(f=>f.stationuuid===s.stationuuid); // Favoride mi?
     // Logo varsa resmi göster; yüklenemezse veya yoksa adın baş harfini göster
     const logo = s.favicon
-      ? `<img class="logo" src="${esc(s.favicon)}" onerror="this.outerHTML='<div class=logo>${esc(s.name[0]||'?')}</div>'">`
+      ? `<img class="logo" loading="lazy" src="${esc(s.favicon)}" onerror="this.outerHTML='<div class=logo>${esc(s.name[0]||'?')}</div>'">`
       : `<div class="logo">${esc((s.name||"?")[0])}</div>`;
     return `<div class="st ${current&&current.stationuuid===s.stationuuid?'playing':''}" data-i="${i}">
       ${logo}
@@ -601,7 +608,7 @@ async function play(s){
     if (my !== playNo) return; // Bu arada başka radyo/bölüm seçildi
     if (await tryPlay(u)){
       // Veritabanına "bu radyo dinlendi" bilgisi (popülerlik için)
-      if (!s.custom && !String(s.stationuuid||"").startsWith("ek-")) fetch(API[0] + "/json/url/" + s.stationuuid).catch(()=>{});
+      if (!s.custom && !/^(ek|ti|sc)-/.test(String(s.stationuuid||""))) fetch(API[0] + "/json/url/" + s.stationuuid).catch(()=>{});
       return;
     }
   }
@@ -800,13 +807,14 @@ async function podSearch(term){
 function renderPods(arr, emptyText){
   // Güncel tarihten geriye: en yeni bölümü yayınlanan podcast en üstte
   arr = arr.filter(p => !isBlocked(p)); // Engellenenleri çıkar
-  arr = arr.slice().sort((a,b) => (b.releaseDate||"").localeCompare(a.releaseDate||""));
+  arr = arr.slice().sort((a,b) => (a._rank!=null && b._rank!=null) ? a._rank-b._rank  // Popüler listede sıra korunur
+    : (b.releaseDate||"").localeCompare(a.releaseDate||""));
   podsShown = arr; curPod = null;
   if (!arr.length){ $("#list").innerHTML = '<div class="msg">'+emptyText+'</div>'; return; }
   $("#list").innerHTML = arr.map((p,i)=>{
     const isSub = subs.some(s=>s.collectionId===p.collectionId);
     return `<div class="st" data-p="${i}">
-      <img class="logo" src="${esc(p.artworkUrl100||"")}" onerror="this.style.visibility='hidden'">
+      <img class="logo" loading="lazy" src="${esc(p.artworkUrl100||"")}" onerror="this.style.visibility='hidden'">
       <div class="info"><div class="name">${esc(p.collectionName)}</div>
       <div class="meta">${esc([p.releaseDate ? "Son bölüm: " + trDate(p.releaseDate) : "", p.artistName, p.primaryGenreName, p.trackCount ? p.trackCount+" bölüm" : ""].filter(Boolean).join(" · "))}</div></div>
       <button class="fav ${isSub?'yes':''}" data-ps="${i}" title="Abone ol">${isSub?'★':'☆'}</button>
@@ -913,7 +921,7 @@ function podClick(e){
 function toggleSub(p){
   const i = subs.findIndex(s=>s.collectionId===p.collectionId);
   if (i>=0) subs.splice(i,1);
-  else subs.push({collectionId:p.collectionId, collectionName:p.collectionName, artistName:p.artistName, artworkUrl100:p.artworkUrl100, primaryGenreName:p.primaryGenreName, releaseDate:p.releaseDate, trackCount:p.trackCount});
+  else subs.push({collectionId:p.collectionId, collectionName:p.collectionName, artistName:p.artistName, artworkUrl100:p.artworkUrl100, primaryGenreName:p.primaryGenreName, releaseDate:p.releaseDate, trackCount:p.trackCount, feedUrl:p.feedUrl, src:p.src, fyydId:p.fyydId, artworkUrl600:p.artworkUrl600});
   store.set("pod_subs", subs);
 }
 
@@ -1405,6 +1413,609 @@ load();
       if (!np.hidden){ $("#npClose").click(); return true; }
       return eskiGeri();
     };
+  }
+})();
+</script>
+
+
+<!-- ============================================================
+     ORTAK KATALOG: TÜM KAYNAKLAR TEK LİSTEDE
+     ------------------------------------------------------------
+     Radyo:   Radio Browser (ana) · TuneIn (isteğe bağlı)
+              · SHOUTcast (geliştirici anahtarı ile)
+     Podcast: Apple Podcasts · fyyd · Podcast Index
+              · Listen Notes (anahtar ile) · RSS (Spotify for
+              Creators dahil)
+     - Aynı radyo/podcast bir kez listelenir (tekilleştirme).
+     - Bir kaynak çalışmazsa diğerleri gösterilir; hiçbiri
+       çalışmazsa son kaydedilen liste gösterilir.
+     - Sonuçlar bir süre saklanır: aynı liste tekrar
+       indirilmez, internet kotası korunur.
+     - Çalmayan radyolar işaretlenir ve listenin sonuna iner.
+     ============================================================ -->
+<style>
+  #katBtn{margin-left:auto;padding:6px 9px;font-size:15px}
+  #destekBtn:not([hidden]) + #katBtn{margin-left:6px}
+  .row.filt select{flex:1;min-width:0}
+  #katNot{margin:6px 14px 0;font-size:13px;color:#ffd58a;display:grid;gap:3px}
+  #katNot:empty{display:none}
+  #katNot .kredi{color:var(--dim)}
+  .kyn{font-weight:600;color:#9ec5ff}
+  .bozuk{font-weight:600;color:#ff9b8a}
+  #katPanel{position:fixed;left:12px;right:12px;top:60px;z-index:25;background:#14171d;border:1px solid var(--line);border-radius:12px;padding:14px;max-width:520px;margin:auto;max-height:80vh;overflow:auto;box-shadow:0 8px 30px #0009;font-size:14px}
+  #katPanel h4{margin:12px 0 6px;color:var(--acc)}
+  #katPanel p{margin:4px 0 8px;color:var(--dim);line-height:1.45}
+  #katPanel label.k{display:flex;gap:10px;align-items:flex-start;padding:7px 0;border-top:1px solid var(--line)}
+  #katPanel label.k input[type=checkbox]{margin:3px 0 0;padding:0;width:18px;min-width:18px;height:18px;flex:0 0 18px;accent-color:var(--acc)}
+  #katPanel label.k > span{flex:1;min-width:0}
+  #katPanel label.k small{display:block;color:var(--dim)}
+  #katPanel .anahtar{display:grid;gap:6px;margin:4px 0 6px 28px}
+  #katPanel .anahtar input{padding:7px 9px;font-size:13px}
+  #katPanel .yok{padding:7px 0;border-top:1px solid var(--line);color:var(--dim)}
+  #katPanel .alt{display:flex;gap:8px;margin-top:12px}
+  #katPanel .alt button{flex:1}
+  .dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-left:6px;background:var(--line)}
+  .dot.ok{background:#3ecf8e}.dot.hata{background:#ff6b5a}
+  .rssform{padding:6px 2px;display:grid;gap:8px}
+  .rssform p{margin:0;color:var(--dim);font-size:14px;line-height:1.45}
+  #rssMsg{font-size:13px;color:#ffd58a;min-height:1em}
+</style>
+
+<div id="katPanel" hidden></div>
+
+<script>
+(function(){
+  const ANDROID = location.host === "appassets.androidplatform.net";
+
+  /* ---------- 1) AYARLAR (sadece bu cihazda saklanır) ---------- */
+  const VARSAYILAN = { rb:true, tunein:false, shoutcast:false, itunes:true, fyyd:true, pidx:true, ln:false,
+                       piKey:"", piSecret:"", lnKey:"", scKey:"" };
+  let ayar = Object.assign({}, VARSAYILAN, store.get("kat_ayar", {}));
+  const durum = {}; // Kaynak adı → "ok" / "hata" (paneldeki renkli nokta)
+
+  /* ---------- 2) UYARI SATIRI ---------- */
+  const not = document.createElement("div");
+  not.id = "katNot";
+  $("#list").before(not);
+  let notlar = [];
+  function katNot(m, kredi){
+    if (!notlar.includes(m)){ notlar.push(m); not.insertAdjacentHTML("beforeend", `<div class="${kredi?'kredi':''}">${esc(m)}</div>`); }
+  }
+  window.katNotTemizle = ()=>{ notlar = []; not.innerHTML = ""; };
+
+  /* ---------- 3) AĞ: önce doğrudan, olmazsa aracı (vekil) ----------
+     Bazı servisler tarayıcıdan doğrudan sorguya izin vermez (CORS).
+     Android'de uygulamanın kendi aracı kullanılır; web'de herkese
+     açık aracılar denenir. Hangi sunucunun aracı istediği
+     öğrenilir, sonraki isteklerde boşuna doğrudan denenmez. */
+  let corsYok = new Set();
+  try{ corsYok = new Set(JSON.parse(sessionStorage.getItem("kat_cors") || "[]")); }catch(_){}
+  const sure = ms => { const c = new AbortController(); setTimeout(()=>c.abort(), ms); return c.signal; };
+
+  async function al(url, {headers = {}, tur = "json", ms = 9000} = {}){
+    const host = new URL(url).host;
+    const yollar = [];
+    if (!corsYok.has(host)) yollar.push(["d", ()=>fetch(url, {headers, signal:sure(ms)})]);
+    if (ANDROID){
+      yollar.push(["v", ()=>fetch("/proxy?u=" + encodeURIComponent(url) + "&h=" + encodeURIComponent(JSON.stringify(headers)), {signal:sure(ms+5000)})]);
+    } else {
+      yollar.push(["v", ()=>fetch("https://corsproxy.io/?url=" + encodeURIComponent(url), {headers, signal:sure(ms+5000)})]);
+      if (!Object.keys(headers).length) yollar.push(["v", ()=>fetch("https://api.allorigins.win/raw?url=" + encodeURIComponent(url), {signal:sure(ms+5000)})]);
+    }
+    let hata;
+    for (const [tip, f] of yollar){
+      try{
+        const r = await f();
+        if (!r.ok){ const e = new Error("HTTP " + r.status); e.kod = r.status; throw e; }
+        const v = tur === "json" ? await r.json() : await r.text();
+        if (tip === "v"){ corsYok.add(host); try{ sessionStorage.setItem("kat_cors", JSON.stringify([...corsYok])); }catch(_){} }
+        return v;
+      }catch(e){
+        hata = e;
+        // Doğrudan istek "bulunamadı/yetkisiz" dediyse aracı da aynısını der; boşuna deneme
+        if (tip === "d" && e.kod >= 400 && e.kod < 500 && e.kod !== 403 && e.kod !== 429) break;
+      }
+    }
+    throw hata || new Error("Ağ hatası");
+  }
+  window.katAl = al;
+
+  /* ---------- 4) ÖNBELLEK ----------
+     Sonuçlar cihazda saklanır. "taze" süre içinde tekrar
+     indirilmez; servis çökerse eski kayıt gösterilir. */
+  const KC = "kat_cache";
+  let ob = store.get(KC, {});
+  function obYaz(k, v){
+    ob[k] = {t:Date.now(), v};
+    const anahtarlar = Object.keys(ob);
+    if (anahtarlar.length > 60) anahtarlar.sort((a,b)=>ob[a].t-ob[b].t).slice(0, anahtarlar.length-60).forEach(x=>delete ob[x]);
+    try{ localStorage.setItem(KC, JSON.stringify(ob)); }
+    catch(_){ // Yer kalmadıysa en eskilerin yarısını sil
+      Object.keys(ob).sort((a,b)=>ob[a].t-ob[b].t).slice(0, Math.ceil(Object.keys(ob).length/2)).forEach(x=>delete ob[x]);
+      try{ localStorage.setItem(KC, JSON.stringify(ob)); }catch(_){}
+    }
+  }
+  async function onbellekli(k, tazeMs, fn){
+    const c = ob[k];
+    if (c && Date.now() - c.t < tazeMs) return {v:c.v, eski:false};
+    try{ const v = await fn(); obYaz(k, v); return {v, eski:false}; }
+    catch(e){ if (c) return {v:c.v, eski:true}; throw e; }
+  }
+
+  /* ---------- 5) YARDIMCILAR ---------- */
+  const sade = s => norm(s).replace(/[^a-z0-9]/g, "");
+  const feedA = u => String(u||"").toLowerCase().replace(/^https?:\/\/(www\.)?/, "").replace(/\/+$/, "");
+  const urlA  = u => String(u||"").toLowerCase().replace(/^https?:\/\//, "").replace(/[\/;?]+$/, "");
+  function ozet(s){ let h = 0; s = String(s); for (let i=0;i<s.length;i++) h = (h*31 + s.charCodeAt(i)) | 0; return (h>>>0).toString(36); }
+  function tarih(d){ const t = new Date(d); return isNaN(t) ? "" : t.toISOString(); }
+  function saniye(x){
+    if (!x) return 0; x = String(x).trim();
+    if (/^\d+$/.test(x)) return +x;
+    return x.split(":").reduce((a,b)=>a*60 + (+b||0), 0);
+  }
+  const etiket = (el, ad) => { const e = el.getElementsByTagName(ad)[0]; return e ? e.textContent.trim() : ""; };
+
+  /* ============================================================
+     RADYO
+     ============================================================ */
+
+  // Radyo listesini küçültür (saklanırken yer kaplamasın)
+  const inceRadyo = s => ({stationuuid:s.stationuuid, name:s.name, url:s.url, url_resolved:s.url_resolved, favicon:s.favicon,
+    country:s.country, countrycode:s.countrycode, state:s.state, language:s.language, tags:s.tags, codec:s.codec,
+    bitrate:s.bitrate, homepage:s.homepage, lastcheckok:s.lastcheckok});
+
+  // Radio Browser istekleri: 10 dk taze tutulur; ulaşılamazsa son liste
+  const eskiApi = api;
+  api = async function(path){
+    const liste = path.startsWith("/json/stations");
+    if (liste && !ayar.rb) return [];
+    try{
+      const r = await onbellekli("rb:" + path, liste ? 10*60e3 : 24*3600e3, async ()=>{
+        const x = await eskiApi(path);
+        return liste && Array.isArray(x) ? x.slice(0, 150).map(inceRadyo) : x;
+      });
+      durum["Radio Browser"] = r.eski ? "hata" : "ok";
+      if (r.eski && liste) katNot("⚠️ Radio Browser'a ulaşılamadı; son kaydedilen liste gösteriliyor.");
+      return r.v;
+    }catch(e){
+      durum["Radio Browser"] = "hata";
+      if (liste){ katNot("⚠️ Radio Browser'a ulaşılamadı; diğer kaynaklar gösteriliyor."); return []; }
+      throw e;
+    }
+  };
+
+  // TuneIn araması (resmî olmayan, herkese açık OPML servisi)
+  async function tuneinAra(q){
+    const j = await al("https://opml.radiotime.com/Search.ashx?render=json&types=station&formats=mp3,aac,ogg,hls&query=" + encodeURIComponent(q));
+    return (j.body||[]).filter(x=>x.type === "audio" && x.URL && x.guide_id).slice(0, 40).map(x=>({
+      stationuuid:"ti-" + x.guide_id, name:x.text, url:x.URL, url_resolved:x.URL, favicon:x.image||"",
+      state:x.subtext||"", country:x.subtext||"", tags:"", bitrate:+x.bitrate||0, codec:String(x.formats||"").toUpperCase(), kaynak:"TuneIn"}));
+  }
+
+  // SHOUTcast araması (geliştirici anahtarı gerekir)
+  async function shoutAra(q){
+    const t = await al("https://api.shoutcast.com/legacy/stationsearch?k=" + encodeURIComponent(ayar.scKey) + "&limit=30&search=" + encodeURIComponent(q), {tur:"text"});
+    const x = new DOMParser().parseFromString(t, "text/xml");
+    return [...x.getElementsByTagName("station")].map(s=>{
+      const id = s.getAttribute("id"), u = "https://yp.shoutcast.com/sbin/tunein-station.pls?id=" + id;
+      return {stationuuid:"sc-" + id, name:s.getAttribute("name"), url:u, url_resolved:u, favicon:s.getAttribute("logo")||"",
+        tags:s.getAttribute("genre")||"", bitrate:+s.getAttribute("br")||0, codec:/aac/i.test(s.getAttribute("mt")||"") ? "AAC" : "MP3", kaynak:"SHOUTcast"};
+    });
+  }
+
+  // Aynı radyoyu bir kez göster: aynı ad veya aynı yayın adresi
+  function tekRadyo(arr){
+    const adlar = new Set(), adresler = new Set(), out = [];
+    for (const s of arr){
+      if (!s || !s.name) continue;
+      const a = sade(s.name), b = urlA(s.url_resolved || s.url);
+      if ((a && adlar.has(a)) || (b && adresler.has(b))) continue;
+      if (a) adlar.add(a); if (b) adresler.add(b);
+      out.push(s);
+    }
+    return out;
+  }
+
+  // load() buradan geçer: diğer kaynakları ekler, tekrarları ayıklar
+  window.katalogRadyo = async function(list, q){
+    let hepsi = list.slice();
+    if (q){
+      const isler = [];
+      if (ayar.tunein) isler.push(["TuneIn", tuneinAra(q)]);
+      if (ayar.shoutcast && ayar.scKey) isler.push(["SHOUTcast", shoutAra(q)]);
+      const rs = await Promise.allSettled(isler.map(x=>x[1]));
+      const hatali = [];
+      rs.forEach((r,i)=>{ const ad = isler[i][0];
+        if (r.status === "fulfilled"){ hepsi = hepsi.concat(r.value); durum[ad] = "ok"; } else { hatali.push(ad); durum[ad] = "hata"; } });
+      if (hatali.length) katNot("⚠️ " + hatali.join(", ") + " kaynağına ulaşılamadı; diğer kaynaklar gösteriliyor.");
+    }
+    return tekRadyo(hepsi);
+  };
+
+  // Yayın adresini çözer: TuneIn, .m3u ve .pls listeleri
+  resolveUrl = async function(u, derin){
+    try{
+      if (/opml\.radiotime\.com\/Tune\.ashx/i.test(u)){
+        const j = await al(u + (u.includes("?") ? "&" : "?") + "render=json", {ms:8000});
+        const x = (j.body||[]).find(b=>b.url);
+        if (x) return (!derin && /\.(m3u|pls)(\?|$)/i.test(x.url)) ? resolveUrl(x.url, true) : x.url;
+      }
+      if (/\.(m3u|pls)(\?|$)/i.test(u)){
+        const t = await al(u, {tur:"text", ms:8000});
+        const line = t.split(/\r?\n/).map(x=>x.trim()).find(x=>/^https?:\/\//i.test(x) || /^File\d*=https?:\/\//i.test(x));
+        if (line) return line.replace(/^File\d*=/i, "");
+      }
+    }catch(_){}
+    return u;
+  };
+
+  // Çalmayan radyoları hatırla (bir gün), listede işaretle ve sona al
+  let kotu = store.get("radyo_kotu", {});
+  const kotuMu = s => { const t = kotu[s.stationuuid || s.url]; return s.lastcheckok === 0 || (t && Date.now() - t < 864e5); };
+  const eskiPlay = play;
+  play = async function(s){
+    await eskiPlay(s);
+    if (current !== s) return;
+    const id = s.stationuuid || s.url;
+    if (audio.paused && /çalınamıyor|engelledi/.test($("#status").textContent)) kotu[id] = Date.now();
+    else delete kotu[id];
+    store.set("radyo_kotu", kotu);
+    if (typeof mode === "undefined" || mode === "radio") render(window._shown);
+  };
+  const eskiRender = render;
+  render = function(arr){
+    if (Array.isArray(arr) && !showMine){
+      const iyi = [], kot = [];
+      arr.forEach(s=> s && (kotuMu(s) ? kot : iyi).push(s));
+      arr = iyi.concat(kot);
+    }
+    eskiRender(arr);
+    if (showMine) return;
+    document.querySelectorAll("#list .st[data-i]").forEach(el=>{
+      const s = (window._shown||[])[el.dataset.i], m = el.querySelector(".meta");
+      if (!s || !m) return;
+      const ek = html => m.insertAdjacentHTML("beforeend", (m.textContent.trim() ? " · " : "") + html);
+      if (s.kaynak) ek(`<b class="kyn">${esc(s.kaynak)}</b>`);
+      if (kotuMu(s)) ek(`<b class="bozuk">⚠ çalışmıyor olabilir</b>`);
+    });
+  };
+
+  /* --- Şehir ve dil filtreleri --- */
+  const DILLER_R = [["","Tüm diller"],["turkish","Türkçe"],["kurdish","Kürtçe"],["arabic","Arapça"],["azerbaijani","Azerice"],
+    ["english","İngilizce"],["german","Almanca"],["french","Fransızca"],["persian","Farsça"],["russian","Rusça"],["spanish","İspanyolca"]];
+  const satir = document.createElement("div");
+  satir.className = "row filt";
+  satir.innerHTML = `<select id="city" title="Şehir"><option value="">Tüm şehirler</option></select>
+    <select id="lang" title="Dil">${DILLER_R.map(d=>`<option value="${d[0]}">${d[1]}</option>`).join("")}</select>`;
+  $("#radioBar .row").after(satir);
+
+  async function sehirler(){
+    const sel = $("#city"), cc = $("#country").value;
+    sel.innerHTML = '<option value="">Tüm şehirler</option>';
+    if (!cc) return;
+    let adlar = [];
+    try{
+      const ulkeler = await api("/json/countries");
+      const u = (ulkeler||[]).find(x=>x.iso_3166_1 === cc);
+      if (u){
+        const st = await api("/json/states/" + encodeURIComponent(u.name) + "/?order=stationcount&reverse=true&hidebroken=true");
+        adlar = (st||[]).filter(x=>x.name && x.stationcount > 0 && (!x.country || x.country === u.name)).map(x=>x.name);
+      }
+    }catch(_){}
+    if (!adlar.length){ // Yedek: ülkenin popüler radyolarındaki şehirlerden çıkar
+      try{ const ls = await api("/json/stations/search?countrycode=" + cc + "&hidebroken=true&order=clickcount&reverse=true&limit=150");
+        adlar = [...new Set(ls.map(s=>s.state).filter(Boolean))]; }catch(_){}
+    }
+    if ($("#country").value !== cc) return;
+    sel.innerHTML += [...new Set(adlar)].slice(0, 120).sort((a,b)=>a.localeCompare(b,"tr")).map(a=>`<option>${esc(a)}</option>`).join("");
+  }
+  $("#country").addEventListener("change", ()=>{ $("#city").value = ""; sehirler(); }, true);
+  $("#city").onchange = load;
+  $("#lang").onchange = load;
+  sehirler();
+
+  /* ============================================================
+     PODCAST
+     ============================================================ */
+  const KATEGORI = [["","Tüm kategoriler",""],["1489","Haber","News"],["1324","Toplum ve kültür","Society"],["1487","Tarih","History"],
+    ["1533","Bilim","Science"],["1304","Eğitim","Education"],["1321","İş dünyası","Business"],["1318","Teknoloji","Technology"],
+    ["1545","Spor","Sports"],["1303","Komedi","Comedy"],["1512","Sağlık","Health"],["1314","Din ve maneviyat","Religion"],
+    ["1305","Çocuk ve aile","Kids"],["1301","Sanat","Arts"],["1310","Müzik","Music"],["1488","Gerçek suç","True Crime"],
+    ["1483","Kurgu","Fiction"],["1309","TV ve film","TV"]];
+  // [kod, ad, Apple mağazası, Listen Notes dili]
+  const DILLER_P = [["tr","Türkçe","tr","Turkish"],["en","İngilizce","us","English"],["de","Almanca","de","German"],
+    ["ar","Arapça","sa","Arabic"],["az","Azerice","az","Azerbaijani"],["fr","Fransızca","fr","French"],
+    ["es","İspanyolca","es","Spanish"],["ru","Rusça","ru","Russian"]];
+
+  const pSatir = document.createElement("div");
+  pSatir.className = "row filt";
+  pSatir.innerHTML = `<select id="pcat" title="Kategori">${KATEGORI.map(k=>`<option value="${k[0]}">${k[1]}</option>`).join("")}</select>
+    <select id="plang" title="Dil">${DILLER_P.map(d=>`<option value="${d[0]}">${d[1]}</option>`).join("")}</select>`;
+  $("#podBar .row").after(pSatir);
+  $("#plang").value = store.get("pod_dil", "tr");
+  const dil = ()=> DILLER_P.find(d=>d[0] === $("#plang").value) || DILLER_P[0];
+  const yeniden = ()=>{ store.set("pod_dil", $("#plang").value); if (!/^__(rss)__$/.test(podTerm) && mode === "pod" && !curPod) podSearch(podTerm); };
+  $("#pcat").onchange = yeniden;
+  $("#plang").onchange = yeniden;
+
+  // Podcast bilgisini küçültür
+  const incePod = p => ({collectionId:p.collectionId, collectionName:p.collectionName, artistName:p.artistName||"",
+    artworkUrl100:p.artworkUrl100||p.artworkUrl600||"", artworkUrl600:p.artworkUrl600||"", feedUrl:p.feedUrl||"",
+    primaryGenreName:p.primaryGenreName||"", releaseDate:p.releaseDate||"", trackCount:p.trackCount||0,
+    fyydId:p.fyydId, src:p.src, _rank:p._rank});
+  const inceEp = e => ({trackId:e.trackId, trackName:e.trackName, collectionName:e.collectionName, episodeUrl:e.episodeUrl,
+    releaseDate:e.releaseDate||"", trackTimeMillis:e.trackTimeMillis||0, artworkUrl160:e.artworkUrl160||"", artworkUrl600:e.artworkUrl600||""});
+
+  // --- Apple ---
+  async function appleAra(t, cc, kat, limit){
+    const j = await itunes("/search?media=podcast&entity=podcast&country=" + cc + "&limit=" + limit + "&term=" + encodeURIComponent(t) + (kat ? "&genreId=" + kat : ""));
+    return (j.results||[]).map(p=>Object.assign(p, {src:"apple"}));
+  }
+  async function appleTop(cc, kat){
+    const j = await al("https://itunes.apple.com/" + cc + "/rss/toppodcasts/limit=100/" + (kat ? "genre=" + kat + "/" : "") + "json");
+    let e = j.feed && j.feed.entry; if (!e) return []; if (!Array.isArray(e)) e = [e];
+    return e.map((x,i)=>{
+      const resim = (x["im:image"]||[]).slice(-1)[0];
+      const r = resim ? resim.label : "";
+      return {collectionId:+x.id.attributes["im:id"], collectionName:x["im:name"].label, artistName:(x["im:artist"]||{}).label||"",
+        artworkUrl100:r, artworkUrl600:r.replace(/\/\d+x\d+(bb)?\./, "/600x600bb."), primaryGenreName:((x.category||{}).attributes||{}).label||"",
+        releaseDate:(x["im:releaseDate"]||{}).label||"", _rank:i, src:"apple"};
+    });
+  }
+  // --- fyyd ---
+  async function fyydAra(t, dk){
+    const j = await al("https://api.fyyd.de/0.2/search/podcast?count=50&term=" + encodeURIComponent(t));
+    return (j.data||[]).filter(x=>!dk || !x.language || String(x.language).toLowerCase().startsWith(dk)).map(x=>({
+      collectionId:"fy-" + x.id, fyydId:x.id, collectionName:x.title, artistName:x.author||"", artworkUrl100:x.smallImageURL||x.imgURL||"",
+      artworkUrl600:x.imgURL||"", feedUrl:x.xmlURL||"", releaseDate:tarih(x.lastpub), trackCount:x.episode_count||0, src:"fyyd"}));
+  }
+  // --- Podcast Index ---
+  async function piBaslik(){
+    const t = String(Math.floor(Date.now()/1000));
+    const b = await crypto.subtle.digest("SHA-1", new TextEncoder().encode(ayar.piKey + ayar.piSecret + t));
+    return {"X-Auth-Key":ayar.piKey, "X-Auth-Date":t, "Authorization":[...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,"0")).join("")};
+  }
+  const piAnahtar = ()=> ayar.piKey && ayar.piSecret;
+  const piPod = (x,i,rank) => ({collectionId:x.itunesId || "pi-" + x.id, collectionName:x.title, artistName:x.author||x.ownerName||"",
+    artworkUrl100:x.artwork||x.image||"", artworkUrl600:x.artwork||x.image||"", feedUrl:x.url||"",
+    releaseDate:x.newestItemPublishTime ? tarih(x.newestItemPublishTime*1000) : (x.lastUpdateTime ? tarih(x.lastUpdateTime*1000) : ""),
+    trackCount:x.episodeCount||0, primaryGenreName:Object.values(x.categories||{})[0]||"", _rank:rank!=null ? rank+i : undefined, src:"pidx"});
+  async function piAra(t, dk){
+    if (piAnahtar()){
+      const j = await al("https://api.podcastindex.org/api/1.0/search/byterm?max=50&q=" + encodeURIComponent(t), {headers:await piBaslik()});
+      return (j.feeds||[]).filter(x=>!dk || !x.language || String(x.language).toLowerCase().startsWith(dk)).map((x,i)=>piPod(x,i));
+    }
+    // Anahtarsız: Apple yerine geçen arama ucu
+    let j;
+    try{ j = await al("https://api.podcastindex.org/search?term=" + encodeURIComponent(t)); }
+    catch(_){ j = await al("https://api.podcastindex.org/api/1.0/search?term=" + encodeURIComponent(t)); }
+    return (j.results||[]).map(p=>Object.assign(p, {src:"pidx"}));
+  }
+  async function piTrend(dk, kat){
+    const c = (KATEGORI.find(k=>k[0] === kat)||[])[2];
+    const j = await al("https://api.podcastindex.org/api/1.0/podcasts/trending?max=60&lang=" + dk + (c ? "&cat=" + encodeURIComponent(c) : ""), {headers:await piBaslik()});
+    return (j.feeds||[]).map((x,i)=>piPod(x,i,1000));
+  }
+  // --- Listen Notes ---
+  const lnPod = (x,i,rank) => ({collectionId:x.itunes_id || "ln-" + x.id, collectionName:x.title_original||x.title, artistName:x.publisher_original||x.publisher||"",
+    artworkUrl100:x.thumbnail||x.image||"", artworkUrl600:x.image||"", feedUrl:x.rss||"", releaseDate:x.latest_pub_date_ms ? tarih(x.latest_pub_date_ms) : "",
+    trackCount:x.total_episodes||0, _rank:rank!=null ? rank+i : undefined, src:"ln"});
+  const lnBaslik = ()=>({"X-ListenAPI-Key":ayar.lnKey});
+  async function lnAra(t, lnDil){
+    const j = await al("https://listen-api.listennotes.com/api/v2/search?type=podcast&q=" + encodeURIComponent(t) + "&language=" + encodeURIComponent(lnDil), {headers:lnBaslik()});
+    return (j.results||[]).map((x,i)=>lnPod(x,i));
+  }
+  async function lnEnIyi(cc){
+    const j = await al("https://listen-api.listennotes.com/api/v2/best_podcasts?page=1&region=" + cc, {headers:lnBaslik()});
+    return (j.podcasts||[]).map((x,i)=>lnPod(x,i,2000));
+  }
+
+  // Aynı podcasti bir kez göster: aynı RSS adresi, aynı kimlik veya aynı ad
+  function tekPod(arr){
+    const F = new Map(), I = new Map(), T = new Map(), out = [];
+    for (const p of arr){
+      if (!p || !p.collectionName) continue;
+      const f = feedA(p.feedUrl), id = String(p.collectionId), t = sade(p.collectionName);
+      const v = (f && F.get(f)) || I.get(id) || (t && T.get(t));
+      if (v){ // Eksik bilgileri tamamla
+        ["feedUrl","artworkUrl600","artworkUrl100","releaseDate","trackCount","primaryGenreName","fyydId"].forEach(k=>{ if (!v[k] && p[k]) v[k] = p[k]; });
+        if (p._rank != null && (v._rank == null || p._rank < v._rank)) v._rank = p._rank;
+        if (!/^\d+$/.test(String(v.collectionId)) && /^\d+$/.test(id)) v.collectionId = p.collectionId; // Apple kimliği daha iyi
+        if (f) F.set(f, v); I.set(id, v);
+        continue;
+      }
+      out.push(p); if (f) F.set(f, p); I.set(id, p); if (t) T.set(t, p);
+    }
+    return out;
+  }
+
+  async function podTopla(term, d, kat){
+    const [dk, , cc, lnDil] = d;
+    const isler = [];
+    if (term === "__top__"){
+      isler.push(["Apple", appleTop(cc, kat)]);
+      if (ayar.pidx && piAnahtar()) isler.push(["Podcast Index", piTrend(dk, kat)]);
+      if (ayar.ln && ayar.lnKey) isler.push(["Listen Notes", lnEnIyi(cc)]);
+    } else {
+      const hepsi = term === "__all__";
+      const tek = hepsi ? (dk === "tr" ? "türkçe" : "podcast") : term;
+      if (ayar.itunes){
+        const kelimeler = hepsi ? ALL_TERMS : [term];
+        isler.push(["Apple", Promise.allSettled(kelimeler.map(t=>appleAra(t, cc, kat, hepsi ? 40 : 100))).then(rs=>{
+          const ok = rs.filter(x=>x.status === "fulfilled");
+          if (!ok.length) throw new Error("Apple");
+          return ok.flatMap(x=>x.value);
+        })]);
+      }
+      if (ayar.fyyd) isler.push(["fyyd", fyydAra(tek, dk)]);
+      if (ayar.pidx) isler.push(["Podcast Index", piAra(tek, dk)]);
+      if (ayar.ln && ayar.lnKey) isler.push(["Listen Notes", lnAra(tek, lnDil)]);
+    }
+    if (!isler.length) throw new Error("Açık podcast kaynağı yok");
+    const rs = await Promise.allSettled(isler.map(x=>x[1]));
+    let hepsi = []; const hatali = [];
+    rs.forEach((r,i)=>{ const ad = isler[i][0];
+      if (r.status === "fulfilled"){ hepsi = hepsi.concat(r.value); durum[ad] = "ok"; } else { hatali.push(ad); durum[ad] = "hata"; } });
+    if (hatali.length === isler.length) throw new Error("Podcast kaynaklarına ulaşılamadı");
+    if (hatali.length) katNot("⚠️ " + hatali.join(", ") + " kaynağına ulaşılamadı; diğer kaynaklar gösteriliyor.");
+    // Kategori seçiliyse, kategorisi belli olup uymayanları çıkar (Apple zaten süzüyor)
+    return tekPod(hepsi).slice(0, 250).map(incePod);
+  }
+
+  // Podcast arama/listeleme: tüm kaynaklardan tek katalog
+  podSearch = async function(term){
+    const my = ++podReq;
+    podTerm = term; curPod = null;
+    katNotTemizle();
+    if (term === "__rss__"){ rssFormu(); return; }
+    $("#list").innerHTML = '<div class="msg">Yükleniyor…</div>';
+    const d = dil(), kat = $("#pcat").value;
+    let r;
+    try{ r = await onbellekli("pod:" + term + "|" + d[0] + "|" + kat, 30*60e3, ()=>podTopla(term, d, kat)); }
+    catch(e){
+      if (my === podReq && mode === "pod") $("#list").innerHTML = '<div class="msg">Podcast kaynaklarına ulaşılamadı. Aboneliklerim ve Devam et bölümleri yine çalışır.</div>';
+      return;
+    }
+    if (my !== podReq || mode !== "pod") return;
+    if (r.eski) katNot("⚠️ Podcast kaynaklarına ulaşılamadı; son kaydedilen liste gösteriliyor.");
+    if (r.v.some(p=>p.src === "ln")) katNot("Powered by Listen Notes", true);
+    renderPods(r.v, term === "__top__" ? "Bu kategori ve dilde popüler liste bulunamadı." : "Sonuç bulunamadı.");
+  };
+
+  // --- Bölümler: Apple → fyyd → RSS ---
+  async function rssBolum(url, p){
+    const t = await al(url, {tur:"text", ms:15000});
+    const x = new DOMParser().parseFromString(t, "text/xml");
+    const k = x.getElementsByTagName("channel")[0];
+    if (!k) throw new Error("RSS değil");
+    const ki = k.getElementsByTagName("itunes:image")[0];
+    const kapak = (ki && ki.getAttribute("href")) || etiket(k.getElementsByTagName("image")[0] || k, "url") || p.artworkUrl600 || p.artworkUrl100 || "";
+    const ad = p.collectionName || etiket(k, "title");
+    return [...k.getElementsByTagName("item")].slice(0, 300).map(it=>{
+      const enc = it.getElementsByTagName("enclosure")[0], u = enc && enc.getAttribute("url");
+      if (!u) return null;
+      const im = it.getElementsByTagName("itunes:image")[0];
+      const resim = (im && im.getAttribute("href")) || kapak;
+      return {trackId:"r" + ozet(etiket(it, "guid") || u), trackName:etiket(it, "title") || "Bölüm", collectionName:ad, episodeUrl:u,
+        releaseDate:tarih(etiket(it, "pubDate")), trackTimeMillis:saniye(etiket(it, "itunes:duration"))*1000, artworkUrl160:resim, artworkUrl600:resim};
+    }).filter(Boolean);
+  }
+  async function fyydBolum(id, p){
+    const j = await al("https://api.fyyd.de/0.2/podcast/episodes?count=200&podcast_id=" + id);
+    const eps = (j.data && j.data.episodes) || [];
+    return eps.filter(e=>e.enclosure).map(e=>({trackId:"f" + e.id, trackName:e.title, collectionName:p.collectionName, episodeUrl:e.enclosure,
+      releaseDate:tarih(e.pubdate), trackTimeMillis:(+e.duration||0)*1000, artworkUrl160:e.imgURL||p.artworkUrl100||"", artworkUrl600:e.imgURL||p.artworkUrl600||""}));
+  }
+  async function bolumTopla(p){
+    if (/^\d+$/.test(String(p.collectionId)) && ayar.itunes){
+      for (const ulke of ["&country=" + dil()[2], ""]){
+        try{
+          const j = await itunes("/lookup?id=" + p.collectionId + "&entity=podcastEpisode&limit=200" + ulke);
+          const k = (j.results||[]).find(r=>r.feedUrl); if (k && !p.feedUrl) p.feedUrl = k.feedUrl;
+          const eps = (j.results||[]).filter(r=>r.episodeUrl);
+          if (eps.length) return eps.map(inceEp);
+        }catch(_){ durum["Apple"] = "hata"; }
+      }
+    }
+    if (p.fyydId && ayar.fyyd){ try{ const e = await fyydBolum(p.fyydId, p); if (e.length) return e; }catch(_){ durum["fyyd"] = "hata"; } }
+    if (p.feedUrl){ try{ const e = await rssBolum(p.feedUrl, p); if (e.length) return e; }catch(_){} }
+    // Son çare: aynı adla fyyd arşivinde bul
+    if (ayar.fyyd){
+      const alt = (await fyydAra(p.collectionName, "")).find(x=>sade(x.collectionName) === sade(p.collectionName));
+      if (alt){ const e = alt.feedUrl ? await rssBolum(alt.feedUrl, p).catch(()=>[]) : []; if (e.length) return e;
+        const f = await fyydBolum(alt.fyydId, p); if (f.length) return f; }
+    }
+    throw new Error("Bölüm bulunamadı");
+  }
+  openPod = async function(p){
+    const my = ++podReq;
+    curPod = p;
+    katNotTemizle();
+    $("#list").innerHTML = '<div class="msg">Bölümler yükleniyor…</div>';
+    let r;
+    try{ r = await onbellekli("eps:" + (p.feedUrl ? feedA(p.feedUrl) : p.collectionId), 30*60e3, async ()=>(await bolumTopla(p)).map(inceEp)); }
+    catch(e){
+      if (my !== podReq || mode !== "pod") return;
+      renderEps([]); katNot("⚠️ Bölümler alınamadı. İnternet bağlantınızı kontrol edin veya sonra tekrar deneyin.");
+      return;
+    }
+    if (my !== podReq || mode !== "pod") return;
+    if (r.eski) katNot("⚠️ Kaynağa ulaşılamadı; son kaydedilen bölüm listesi gösteriliyor.");
+    renderEps(r.v.filter(e=>!isBlocked(e)).sort((a,b)=>(b.releaseDate||"").localeCompare(a.releaseDate||"")));
+  };
+
+  // --- RSS ile podcast ekleme (Spotify for Creators dahil) ---
+  function rssFormu(){
+    $("#list").innerHTML = `<div class="rssform">
+      <b>➕ RSS ile podcast ekle</b>
+      <p>Podcastin RSS adresini yapıştırın. Spotify for Creators (Anchor) podcastlerinin RSS adresi
+         "anchor.fm/s/…/podcast/rss" biçimindedir; podcastin sitesinde veya Spotify for Creators ayarlarında bulunur.</p>
+      <div class="row"><input id="rssUrl" placeholder="https://… (RSS adresi)"><button id="rssEkle">Ekle</button></div>
+      <div id="rssMsg"></div></div>`;
+    $("#rssEkle").onclick = async ()=>{
+      const u = $("#rssUrl").value.trim(), m = $("#rssMsg");
+      if (!/^https?:\/\//i.test(u)){ m.textContent = "Adres http:// veya https:// ile başlamalı."; return; }
+      m.textContent = "Kontrol ediliyor…";
+      try{
+        const t = await al(u, {tur:"text", ms:15000});
+        const x = new DOMParser().parseFromString(t, "text/xml");
+        const k = x.getElementsByTagName("channel")[0];
+        if (!k || !k.getElementsByTagName("enclosure").length) throw new Error();
+        const ki = k.getElementsByTagName("itunes:image")[0];
+        const resim = (ki && ki.getAttribute("href")) || etiket(k.getElementsByTagName("image")[0] || k, "url") || "";
+        const p = {collectionId:"rss-" + ozet(feedA(u)), collectionName:etiket(k, "title") || u, artistName:etiket(k, "itunes:author"),
+          artworkUrl100:resim, artworkUrl600:resim, feedUrl:u, src:"rss"};
+        if (!subs.some(s=>s.collectionId === p.collectionId)) toggleSub(p);
+        openPod(p);
+      }catch(_){ m.textContent = "Bu adreste podcast bulunamadı. Adresin RSS (XML) olduğundan emin olun."; }
+    };
+  }
+
+  /* ============================================================
+     KAYNAKLAR PANELİ
+     ============================================================ */
+  const btn = document.createElement("button");
+  btn.id = "katBtn"; btn.title = "Kaynaklar"; btn.textContent = "⚙️";
+  $("header h1").appendChild(btn);
+  const panel = $("#katPanel");
+  const nokta = ad => `<span class="dot ${durum[ad]||''}" title="${durum[ad]==='ok'?'Çalışıyor':durum[ad]==='hata'?'Ulaşılamadı':'Henüz denenmedi'}"></span>`;
+  function satirK(k, ad, aciklama, ekler){
+    return `<label class="k"><input type="checkbox" data-k="${k}" ${ayar[k]?"checked":""}><span><b>${ad}</b>${nokta(ad)}<small>${aciklama}</small></span></label>${ekler||""}`;
+  }
+  const kutu = (k, ph, tip) => `<input data-a="${k}" type="${tip||"text"}" placeholder="${ph}" value="${esc(ayar[k])}" autocomplete="off" spellcheck="false">`;
+  function paneliCiz(){
+    panel.innerHTML = `<b>⚙️ Kaynaklar</b>
+      <p>Ücretsiz ve anahtarsız kaynaklar açık gelir. Anahtar isteyen servisler için ücretsiz anahtar alıp buraya yazabilirsiniz; anahtarlar sadece bu cihazda saklanır.</p>
+      <h4>📻 Radyo</h4>
+      ${satirK("rb","Radio Browser","Ücretsiz, anahtarsız. Ana kaynak; ülke, şehir, dil ve tür filtresi buradan.")}
+      ${satirK("tunein","TuneIn","Anahtarsız ama resmî olmayan servis; TuneIn ticari kullanım için ortaklık ister. Aramalarda ek sonuç getirir.")}
+      ${satirK("shoutcast","SHOUTcast","Geliştirici anahtarı (DevID) gerekir; shoutcast.com/Developer adresinden başvurulur.",`<div class="anahtar">${kutu("scKey","SHOUTcast DevID")}</div>`)}
+      <div class="yok"><b>Radio Garden</b><small style="display:block">Eklenmedi: resmî bir API sunmuyor ve 2022'den beri Türkiye'de erişime kapalı.</small></div>
+      <h4>🎙️ Podcast</h4>
+      ${satirK("itunes","Apple","Ücretsiz, anahtarsız. Arama, kategori ve popüler listeler.")}
+      ${satirK("fyyd","fyyd","Ücretsiz, anahtarsız ikinci podcast arşivi.")}
+      ${satirK("pidx","Podcast Index","Arama anahtarsız. Ücretsiz anahtar ile dil ve kategoriye göre popüler listeler (podcastindex.org).",`<div class="anahtar">${kutu("piKey","API Key")}${kutu("piSecret","API Secret","password")}</div>`)}
+      ${satirK("ln","Listen Notes","Ücretsiz paket ayda 300 istek. Anahtar: listennotes.com/api",`<div class="anahtar">${kutu("lnKey","X-ListenAPI-Key","password")}</div>`)}
+      <div class="yok"><b>RSS ve Spotify for Creators</b><small style="display:block">Her zaman açık: Podcast → "➕ RSS ekle". Spotify'ın kendi API'si podcast bölümlerini çalmaya izin vermez; RSS adresi kullanılır.</small></div>
+      <div class="alt"><button id="katSil">Kayıtlı listeleri sil</button><button id="katKapat">Kapat</button></div>`;
+    panel.querySelectorAll("[data-k]").forEach(c=>c.onchange = ()=>{ ayar[c.dataset.k] = c.checked; kaydet(); });
+    panel.querySelectorAll("[data-a]").forEach(c=>c.onchange = ()=>{ ayar[c.dataset.a] = c.value.trim(); kaydet(); });
+    $("#katSil").onclick = ()=>{ ob = {}; try{ localStorage.removeItem(KC); }catch(_){} kotu = {}; store.set("radyo_kotu", kotu); $("#katSil").textContent = "Silindi ✓"; };
+    $("#katKapat").onclick = kapat;
+  }
+  let degisti = false;
+  function kaydet(){ store.set("kat_ayar", ayar); degisti = true; }
+  function kapat(){
+    panel.hidden = true;
+    if (degisti){ degisti = false; ob = {}; try{ localStorage.removeItem(KC); }catch(_){}
+      if (mode === "pod") podSearch(podTerm); else if (mode === "radio") load(); }
+  }
+  btn.onclick = ()=>{ if (panel.hidden){ paneliCiz(); panel.hidden = false; } else kapat(); };
+
+  // Android geri tuşu: önce paneli kapat
+  if (window.androidBack){
+    const eski = window.androidBack;
+    window.androidBack = ()=>{ if (!panel.hidden){ kapat(); return true; } return eski(); };
   }
 })();
 </script>
