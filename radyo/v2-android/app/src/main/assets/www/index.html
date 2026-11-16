@@ -172,7 +172,7 @@
     #player{padding:8px 10px 10px;gap:8px}
     #pp{width:46px;height:46px;font-size:20px}
     #vol{display:none}
-    #web .yazi{display:none}           /* Sadece 📅 simgesi */
+    #web .yazi{display:none}           /* Sadece 🌐 simgesi */
     #web{padding:8px 10px}
     #sleepPanel{left:10px;right:10px;width:auto;bottom:120px}
     #seek{font-size:11px;gap:6px}
@@ -277,7 +277,7 @@
   <button id="pp">▶</button>
   <div id="now"><div class="name">İstasyon seçin</div><div class="meta" id="status">—</div></div>
   <!-- Radyonun web sitesi varsa görünür; program akışı genelde oradadır -->
-  <a id="web" target="_blank" rel="noopener" style="display:none">📅<span class="yazi"> Yayın akışı</span></a>
+  <a id="web" target="_blank" rel="noopener" style="display:none"><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg><span class="yazi"> Radyo sitesi</span></a>
   <!-- Kapanma zamanlayıcısı düğmesi; çalışırken kalan süreyi gösterir -->
   <button id="sleepBtn" title="Kapanma zamanlayıcısı">🌙</button>
   <!-- Ses: 0 = sessiz, 1 = en yüksek -->
@@ -1144,7 +1144,8 @@ load();
      ============================================================ -->
 <style>
   #now{cursor:pointer}
-  #npOpen{padding:8px 10px;flex:none}
+  #npOpen{padding:8px 10px;flex:none;line-height:0}
+  #web{display:inline-flex;align-items:center;gap:4px}
   #np{position:fixed;inset:0;z-index:20;background:var(--bg);display:flex;flex-direction:column;align-items:center;overflow:auto;padding:14px 18px 24px}
   #np .bgart{position:absolute;inset:0;background-size:cover;background-position:center;filter:blur(40px) brightness(.35);transform:scale(1.2);z-index:-1}
   #np .top{width:100%;max-width:480px;display:flex;align-items:center;justify-content:space-between;color:var(--dim);font-size:13px;letter-spacing:.5px}
@@ -1206,7 +1207,7 @@ load();
     <button id="npFav">☆ Favori</button>
     <button id="npSleep">🌙 Uyku</button>
     <button id="npSpeed" hidden>1x</button>
-    <a id="npWeb" target="_blank" rel="noopener" hidden>📅 Yayın akışı</a>
+    <a id="npWeb" target="_blank" rel="noopener" hidden><svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px"><circle cx="12" cy="12" r="9"/><path d="M3 12h18"/><path d="M12 3c2.5 2.7 3.8 5.7 3.8 9s-1.3 6.3-3.8 9c-2.5-2.7-3.8-5.7-3.8-9S9.5 5.7 12 3z"/></svg> Radyo sitesi</a>
   </div>
   <div id="npVolRow"><span>🔈</span><input id="npVol" type="range" min="0" max="1" step="0.05"><span>🔊</span></div>
 </div>
@@ -1281,7 +1282,7 @@ load();
   /* ---------- GELİŞMİŞ OYNATMA EKRANI ---------- */
   // Çubuğa "büyüt" düğmesi
   const ob = document.createElement("button");
-  ob.id = "npOpen"; ob.title = "Oynatıcıyı aç"; ob.textContent = "⌃";
+  ob.id = "npOpen"; ob.title = "Büyük oynatıcıyı aç"; ob.innerHTML = '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-4px"><path d="M15 3h6v6"/><path d="M9 21H3v-6"/><path d="M21 3l-7 7"/><path d="M3 21l7-7"/></svg>';
   $("#now").after(ob);
   const ac = ()=>{ if (!current) return; np.hidden = false; document.body.classList.add("npOn"); npUpdate(); };
   ob.onclick = ac;
