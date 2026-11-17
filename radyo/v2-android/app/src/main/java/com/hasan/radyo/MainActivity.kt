@@ -110,9 +110,10 @@ class MainActivity : ComponentActivity() {
         destek = Destek(this) { js -> runOnUiThread { web.evaluateJavascript(js, null) } }
         destek.baglan()
 
-        // Bildirimdeki "Durdur" düğmesi sayfadaki çaları durdurur
-        PlaybackService.durdur = {
-            runOnUiThread { web.evaluateJavascript("document.getElementById('audio').pause()", null) }
+        // Kilit ekranı kartındaki düğmeler (önceki/çal/sonraki/kapat/sarma) sayfaya iletilir
+        PlaybackService.komut = { k ->
+            val guvenli = k.replace(Regex("[^a-z0-9:]"), "")
+            runOnUiThread { web.evaluateJavascript("window.medyaKomut && window.medyaKomut('$guvenli')", null) }
         }
 
         // Geri tuşu: önce sayfa içinde geri (ör. bölüm listesinden podcast listesine);
@@ -134,7 +135,7 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onDestroy() {
-        PlaybackService.durdur = null
+        PlaybackService.komut = null
         PlaybackService.durdurServis(this)
         destek.kapat()
         web.destroy()
@@ -261,11 +262,18 @@ class MainActivity : ComponentActivity() {
 
     /** Web sayfasının çağırabildiği komutlar (JavaScript'te "Android.xxx") */
     inner class Kopru {
+        /** Çalma durumu: kilit ekranı kartını açar/günceller */
         @JavascriptInterface
-        fun playing(caliyor: Boolean, baslik: String) = runOnUiThread {
-            if (caliyor) PlaybackService.baslat(this@MainActivity, baslik)
-            else PlaybackService.durdurServis(this@MainActivity)
+        fun durum(caliyor: Boolean, baslik: String, alt: String, kapak: String, konum: Double, sure: Double) = runOnUiThread {
+            PlaybackService.durum(
+                this@MainActivity,
+                PlaybackService.Bilgi(caliyor, baslik.take(120), alt.take(120), kapak, konum.toLong(), sure.toLong())
+            )
         }
+
+        /** Kartı kapat (uyku zamanlayıcısı bitince) */
+        @JavascriptInterface
+        fun kapat() = runOnUiThread { PlaybackService.kapat() }
 
         @JavascriptInterface
         fun download(url: String, baslik: String) = runOnUiThread { indir(url, baslik) }

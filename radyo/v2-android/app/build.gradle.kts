@@ -11,8 +11,8 @@ android {
         applicationId = "com.hasan.radyo"
         minSdk = 26
         targetSdk = 36          // Google Play'in güncel hedef sürüm şartı
-        versionCode = 13         // Play'e her yeni yüklemede bir artırın
-        versionName = "2.9"
+        versionCode = 14         // Play'e her yeni yüklemede bir artırın
+        versionName = "3.0"
     }
 
     signingConfigs {
@@ -52,6 +52,8 @@ dependencies {
     implementation("androidx.core:core-ktx:1.16.0")
     implementation("androidx.activity:activity-ktx:1.10.1")
     implementation("androidx.webkit:webkit:1.13.0")
+    // Kilit ekranı medya kartı ve kulaklık düğmeleri
+    implementation("androidx.media:media:1.7.0")
     // Ödeme kütüphanesi eski bir "fragment" sürümü getiriyor; izin isteme hatası olmasın diye güncel sürüm
     implementation("androidx.fragment:fragment-ktx:1.8.6")
     // Google Play ödeme sistemi: sadece gönüllü destek (bağış) için

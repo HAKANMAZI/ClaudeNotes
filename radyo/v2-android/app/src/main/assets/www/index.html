@@ -1076,6 +1076,7 @@ function sleepFadeStop(){
     if (step >= 20){
       clearInterval(fade);
       audio.pause();
+      try{ if (window.Android) Android.kapat(); }catch(_){} // Kilit ekranı kartını da kapat
       audio.volume = v;
       setSleep(0);
       setTimeout(()=>{ $("#status").textContent = "Zamanlayıcı ile durduruldu"; }, 100);
@@ -1094,11 +1095,27 @@ function sleepFadeStop(){
 // Çalmaya başlayınca/durunca telefona haber ver:
 // çalarken bildirim çıkar ve ekran kapansa da yayın sürer
 if (window.Android){
-  const haber = on => { try{ Android.playing(on, on ? $("#now .name").textContent : ""); }catch(_){} };
-  audio.addEventListener("playing", ()=> haber(true));
-  audio.addEventListener("pause",   ()=> haber(false));
-  audio.addEventListener("ended",   ()=> haber(false));
-  audio.addEventListener("error",   ()=> haber(false));
+  // Kilit ekranı kartına bilgi gönder: ad, alt yazı, kapak, konum ve süre (podcastte sarma için)
+  const haber = ()=>{
+    if (!current) return;
+    const pod = !!current.episodeUrl;
+    const ad = pod ? (current.trackName||"") : (current.name||"").trim();
+    const alt = pod ? (current.collectionName || "Podcast")
+                    : [current.state || current.country, "Canlı radyo"].filter(Boolean).join(" · ");
+    const kapak = guvenli(pod ? (current.artworkUrl600 || current.artworkUrl160 || "") : (current.favicon || ""));
+    const sure = pod && isFinite(audio.duration) && audio.duration > 0 ? audio.duration * 1000 : -1;
+    try{ Android.durum(!audio.paused && !audio.ended, ad, alt, kapak, (audio.currentTime||0) * 1000, sure); }catch(_){}
+  };
+  ["playing","pause","ended","error","seeked","durationchange"].forEach(e=>audio.addEventListener(e, haber));
+  // Karttaki düğmeler buraya gelir
+  window.medyaKomut = k=>{
+    if (k === "play"){ if (audio.paused) $("#pp").click(); }
+    else if (k === "pause"){ if (!audio.paused) $("#pp").click(); }
+    else if (k === "next"){ const b = $("#npNext"); if (b) b.click(); }
+    else if (k === "prev"){ const b = $("#npPrev"); if (b) b.click(); }
+    else if (k === "stop"){ audio.pause(); }
+    else if (k.startsWith("seek:")){ audio.currentTime = (+k.slice(5) || 0) / 1000; }
+  };
 }
 
 // Telefonun geri tuşu: açık panel varsa kapat, bölüm listesindeysen geri dön.
