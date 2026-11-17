@@ -400,11 +400,11 @@ async function load(){
   $("#list").innerHTML = '<div class="msg">Yükleniyor…</div>';
 
   // Arama ayarları:
-  // limit=80        → en fazla seksen radyo getir
+  // limit=100       → her seferde yüz radyo getir (aşağı kaydırdıkça devamı gelir)
   // order=clickcount→ en çok dinlenene göre sırala
   // reverse=true    → çoktan aza
   // hidebroken=true → bozuk (çalışmayan) radyoları gizle
-  const p = new URLSearchParams({limit:80, order:"clickcount", reverse:"true", hidebroken:"true"});
+  const p = new URLSearchParams({limit:100, order:"clickcount", reverse:"true", hidebroken:"true"});
 
   const c = $("#country").value;   // Seçili ülke kodu
   const q = $("#q").value.trim();  // Arama kutusundaki yazı
@@ -423,15 +423,18 @@ async function load(){
   if ($("#city") && $("#city").value) p.set("state", $("#city").value);
   if ($("#lang") && $("#lang").value) p.set("language", $("#lang").value);     // Tür filtresi
 
+  // Kaydırdıkça devamını yüklemek için ayarları sakla
+  window._sonParam = new URLSearchParams(p); window._sayfa = 0; window._bitti = false;
   try{
     stations = await api("/json/stations/search?" + p);
     if (my !== reqNo || mode !== "radio") return; // Bu arada yeni arama başladıysa veya podcaste geçildiyse sonucu at
     // Seçili ülkede bulunamazsa ülke filtresini kaldırıp tüm dünyada ara
     if (!stations.length && q && c){
-      p.delete("countrycode");
+      p.delete("countrycode"); window._sonParam.delete("countrycode");
       stations = await api("/json/stations/search?" + p);
       if (my !== reqNo) return;
     }
+    window._bitti = stations.length < 100; // Yüzden az geldiyse devamı yok
     // Hazır eklenen radyolar (EXTRA): ülke, tür ve aramaya uyuyorsa listenin başına eklenir
     const extra = EXTRA.filter(s =>
       (!c || s.countrycode === c || q) &&
@@ -2601,6 +2604,76 @@ load();
   ["loadstart","playing","pause"].forEach(ev=>audio.addEventListener(ev, ()=>{ miniCiz(); heroCiz(); }));
 
   modDurumu();
+})();
+</script>
+
+
+<!-- ============================================================
+     KAYDIRDIKÇA DEVAMI: radyo listesi yüzer yüzer yüklenir.
+     Aşağı indikçe sıradaki yüz radyo gelir; böylece seçilen
+     ülkedeki (veya tüm dünyadaki) bütün radyolara ulaşılır.
+     Listenin altında kaç radyo gösterildiği ve toplam sayı yazar.
+     ============================================================ -->
+<script>
+(function(){
+  const SAYFA = 100;
+  let yukleniyor = false;
+  const sade = s => norm(s||"").replace(/[^a-z0-9]/g, "");
+
+  // Filtre yoksa toplam radyo sayısını göster (ülke veya tüm dünya)
+  async function toplam(){
+    const p = window._sonParam; if (!p) return "";
+    if (p.get("name") || p.get("tag") || p.get("state") || p.get("language")) return "";
+    const cc = p.get("countrycode");
+    try{
+      if (cc){
+        const u = (await api("/json/countries") || []).find(x=>x.iso_3166_1 === cc);
+        const ad = $("#country").selectedOptions[0] ? $("#country").selectedOptions[0].textContent.trim() : cc;
+        return u && u.stationcount ? ad + " · toplam " + u.stationcount.toLocaleString("tr-TR") + " radyo" : "";
+      }
+      const s = await api("/json/stats");
+      return s && s.stations ? "Dünyada toplam " + s.stations.toLocaleString("tr-TR") + " radyo" : "";
+    }catch(_){ return ""; }
+  }
+
+  async function altBilgi(){
+    if ((typeof mode !== "undefined" && mode !== "radio") || showFav || showMine || !window._sonParam) return;
+    const say = (window._shown || []).length;
+    if (!say) return;
+    const a = document.createElement("div");
+    a.id = "dahaFazla"; a.className = "msg";
+    a.textContent = say.toLocaleString("tr-TR") + " radyo gösteriliyor" + (window._bitti ? "" : " · aşağı kaydırdıkça devamı gelir");
+    $("#list").appendChild(a);
+    const t = await toplam();
+    if (t && a.isConnected) a.textContent += " · " + t;
+  }
+
+  async function devam(){
+    if (yukleniyor || window._bitti || !window._sonParam || showFav || showMine) return;
+    if (typeof mode !== "undefined" && mode !== "radio") return;
+    yukleniyor = true;
+    const my = reqNo, sayfa = (window._sayfa || 0) + 1;
+    const p = new URLSearchParams(window._sonParam);
+    p.set("limit", SAYFA); p.set("offset", sayfa * SAYFA);
+    const a = $("#dahaFazla"); if (a) a.textContent = "Devamı yükleniyor…";
+    try{
+      const yeni = await api("/json/stations/search?" + p);
+      if (my !== reqNo) return;
+      window._sayfa = sayfa;
+      if (yeni.length < SAYFA) window._bitti = true;
+      const adlar = new Set(stations.map(s=>sade(s.name)));
+      const ek = yeni.filter(s=>{ const k = sade(s.name); if (!k || adlar.has(k)) return false; adlar.add(k); return true; });
+      stations = stations.concat(ek);
+      render(stations);
+    }catch(_){ if (a && a.isConnected) a.textContent = "Devamı yüklenemedi; tekrar kaydırın."; }
+    finally{ yukleniyor = false; }
+  }
+
+  window.addEventListener("scroll", ()=>{
+    if (window.innerHeight + window.scrollY > document.body.scrollHeight - 1200) devam();
+  }, {passive:true});
+  const eskiRender = render;
+  render = function(a){ eskiRender(a); altBilgi(); };
 })();
 </script>
 
