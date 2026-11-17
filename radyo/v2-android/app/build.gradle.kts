@@ -45,7 +45,6 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions { jvmTarget = "17" }
 }
 
 dependencies {
@@ -58,4 +57,9 @@ dependencies {
     implementation("androidx.fragment:fragment-ktx:1.8.6")
     // Google Play ödeme sistemi: sadece gönüllü destek (bağış) için
     implementation("com.android.billingclient:billing-ktx:8.3.0")
+}
+
+// Kotlin derleyici ayarı (yeni yazım)
+kotlin {
+    compilerOptions { jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_17) }
 }
