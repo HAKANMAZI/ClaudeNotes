@@ -41,6 +41,7 @@ class Destek(
     private val istemci: BillingClient = BillingClient.newBuilder(etkinlik)
         .setListener(this)
         .enablePendingPurchases(PendingPurchasesParams.newBuilder().enableOneTimeProducts().build())
+        .enableAutoServiceReconnection() // Bağlantı koparsa kendiliğinden yeniden bağlan
         .build()
 
     @Volatile private var urunler: List<ProductDetails> = emptyList()
@@ -69,9 +70,9 @@ class Destek(
                     .build()
             })
             .build()
-        istemci.queryProductDetailsAsync(params) { _, liste ->
+        istemci.queryProductDetailsAsync(params) { _, sonuc ->
             // Ucuzdan pahalıya sırala
-            urunler = liste.sortedBy { it.oneTimePurchaseOfferDetails?.priceAmountMicros ?: 0L }
+            urunler = sonuc.productDetailsList.sortedBy { it.oneTimePurchaseOfferDetails?.priceAmountMicros ?: 0L }
         }
     }
 
