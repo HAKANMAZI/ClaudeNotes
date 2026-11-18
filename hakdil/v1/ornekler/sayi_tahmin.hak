@@ -1,0 +1,15 @@
+# Sayı tahmin oyunu (gizli sayı sabit: 42)
+
+gizli = 42
+deneme = 0
+
+iken doğru:
+    tahmin = sayı(girdi("Tahminin: "))
+    deneme += 1
+    eğer tahmin < gizli:
+        yazdır("Daha büyük!")
+    yada tahmin > gizli:
+        yazdır("Daha küçük!")
+    değilse:
+        yazdır("Bildin! Deneme sayısı:", deneme)
+        kır

@@ -1,0 +1,19 @@
+# Basit hesap makinesi: kullanıcıdan iki sayı ve işlem alır
+
+fonk hesapla(a, b, işlem):
+    eğer işlem == "+":
+        döndür a + b
+    yada işlem == "-":
+        döndür a - b
+    yada işlem == "*":
+        döndür a * b
+    yada işlem == "/":
+        eğer b == 0:
+            döndür "Sıfıra bölünemez"
+        döndür a / b
+    döndür "Bilinmeyen işlem"
+
+a = ondalık(girdi("Birinci sayı: "))
+b = ondalık(girdi("İkinci sayı: "))
+işlem = girdi("İşlem (+ - * /): ").kırp()
+yazdır("Sonuç:", hesapla(a, b, işlem))

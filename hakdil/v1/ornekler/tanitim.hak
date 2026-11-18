@@ -1,0 +1,45 @@
+# HakDil örnek programı
+
+isim = "Hasan"
+yaş = 45
+yazdır("Merhaba, " + isim + "! Yaşın: " + yaş)
+
+# Koşullar
+eğer yaş >= 18:
+    yazdır("Yetişkin")
+yada yaş >= 13:
+    yazdır("Genç")
+değilse:
+    yazdır("Çocuk")
+
+# Fonksiyon ve özyineleme
+fonk faktöriyel(n):
+    eğer n <= 1:
+        döndür 1
+    döndür n * faktöriyel(n - 1)
+
+yazdır("5! =", faktöriyel(5))
+
+# Listeler ve döngüler
+meyveler = ["elma", "armut", "kiraz"]
+meyveler.ekle("incir")
+için m içinde meyveler:
+    yazdır("-", m.büyük())
+
+# iken döngüsü
+sayaç = 0
+iken doğru:
+    sayaç += 1
+    eğer sayaç % 2 == 0: devam
+    eğer sayaç > 7: kır
+    yazdır("Tek sayı:", sayaç)
+
+# Sözlük
+kişi = {"ad": "Hasan", "şehir": "Kerkük"}
+için anahtar içinde kişi.anahtarlar():
+    yazdır(anahtar, "=", kişi[anahtar])
+
+# Hazır fonksiyonlar
+sayılar = aralık(1, 11)
+yazdır("Toplam:", toplam(sayılar), "En büyük:", en_büyük(sayılar))
+yazdır("İlk üç:", sayılar[:3], "Tür:", tür(sayılar))
