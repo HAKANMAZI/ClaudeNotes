@@ -1,0 +1,39 @@
+# Video İndirici (v2-android) uygulamasını derler, Releases'e koyar.
+# Sabit indirme linki: .../releases/download/video-indirici-android/VideoIndirici.apk
+name: Video Indirici Android
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths: ['Mp3-Mp4 downloader/v2-android/**', '.github/workflows/video-indirici-android.yml']
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: Mp3-Mp4 downloader/v2-android
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.11.1'
+      - name: APK derle
+        run: |
+          gradle assembleDebug --no-daemon
+          cp app/build/outputs/apk/debug/app-debug.apk VideoIndirici.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: VideoIndirici-apk
+          path: Mp3-Mp4 downloader/v2-android/VideoIndirici.apk
+      - name: Sabit linke koy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete video-indirici-android --yes --cleanup-tag || true
+          gh release create video-indirici-android VideoIndirici.apk --title "Video İndirici Android (son sürüm)" --notes "Telefondan indirip kurun."
