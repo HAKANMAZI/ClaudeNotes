@@ -1,135 +1,342 @@
 <?xml version="1.0" encoding="utf-8"?>
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:id="@+id/kok"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true">
+    android:clipToPadding="false">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="20dp">
+        android:paddingBottom="24dp">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Video İndirici"
-            android:textColor="#2E7D32"
-            android:textSize="26sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginBottom="16dp"
-            android:text="YouTube ve diğer sitelerden MP3 / MP4"
-            android:textColor="#666666" />
-
-        <EditText
-            android:id="@+id/link"
+        <!-- Üst başlık -->
+        <LinearLayout
+            android:id="@+id/ust"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:hint="Video linkini yapıştırın"
-            android:inputType="textUri"
-            android:maxLines="3" />
+            android:background="@drawable/ust_zemin"
+            android:gravity="center_vertical"
+            android:orientation="horizontal"
+            android:paddingStart="24dp"
+            android:paddingTop="28dp"
+            android:paddingEnd="24dp"
+            android:paddingBottom="56dp">
 
-        <Button
-            android:id="@+id/yapistir"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="📋 Panodan yapıştır" />
+            <ImageView
+                android:layout_width="52dp"
+                android:layout_height="52dp"
+                android:padding="12dp"
+                android:background="@drawable/yuvarlak_beyaz"
+                android:src="@drawable/ic_indir"
+                app:tint="#FFFFFF" />
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:text="Biçim"
-            android:textStyle="bold" />
-
-        <RadioGroup
-            android:id="@+id/bicim"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:orientation="horizontal">
-
-            <RadioButton
-                android:id="@+id/mp4"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:checked="true"
-                android:text="MP4 (video)" />
-
-            <RadioButton
-                android:id="@+id/mp3"
-                android:layout_width="wrap_content"
+            <LinearLayout
+                android:layout_width="0dp"
                 android:layout_height="wrap_content"
                 android:layout_marginStart="16dp"
-                android:text="MP3 (ses)" />
-        </RadioGroup>
+                android:layout_weight="1"
+                android:orientation="vertical">
 
-        <TextView
-            android:id="@+id/kaliteBaslik"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="Kalite"
-            android:textStyle="bold" />
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Video İndirici"
+                    android:textColor="#FFFFFF"
+                    android:textSize="26sp"
+                    android:textStyle="bold" />
 
-        <Spinner
-            android:id="@+id/kalite"
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="YouTube ve yüzlerce siteden video ve ses"
+                    android:textColor="#D8F0D9"
+                    android:textSize="14sp" />
+            </LinearLayout>
+        </LinearLayout>
+
+        <!-- Link kartı (başlığın üstüne biner) -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Kart"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="-36dp"
+            android:layout_marginEnd="16dp">
 
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <TextView style="@style/Baslik"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Video linki" />
+
+                <com.google.android.material.textfield.TextInputLayout
+                    android:id="@+id/linkKutu"
+                    style="@style/Widget.Material3.TextInputLayout.OutlinedBox"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:hint="https://..."
+                    app:boxCornerRadiusBottomEnd="14dp"
+                    app:boxCornerRadiusBottomStart="14dp"
+                    app:boxCornerRadiusTopEnd="14dp"
+                    app:boxCornerRadiusTopStart="14dp"
+                    app:endIconContentDescription="Yapıştır"
+                    app:endIconDrawable="@drawable/ic_yapistir"
+                    app:endIconMode="custom"
+                    app:endIconTint="#2E7D32">
+
+                    <com.google.android.material.textfield.TextInputEditText
+                        android:id="@+id/link"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:inputType="textUri"
+                        android:maxLines="3" />
+                </com.google.android.material.textfield.TextInputLayout>
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    android:text="İpucu: YouTube'da Paylaş → Video İndirici"
+                    android:textColor="#8A968A"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Biçim ve kalite kartı -->
+        <com.google.android.material.card.MaterialCardView
+            style="@style/Kart"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginEnd="16dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="18dp">
+
+                <TextView style="@style/Baslik"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Ne indirilsin?" />
+
+                <com.google.android.material.button.MaterialButtonToggleGroup
+                    android:id="@+id/bicim"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="10dp"
+                    app:checkedButton="@+id/mp4"
+                    app:selectionRequired="true"
+                    app:singleSelection="true">
+
+                    <Button
+                        android:id="@+id/mp4"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Video\nMP4"
+                        app:icon="@drawable/ic_video"
+                        app:iconGravity="top" />
+
+                    <Button
+                        android:id="@+id/mp3"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Ses\nMP3"
+                        app:icon="@drawable/ic_muzik"
+                        app:iconGravity="top" />
+
+                    <Button
+                        android:id="@+id/m4a"
+                        style="@style/Widget.Material3.Button.OutlinedButton"
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:text="Ses\nM4A"
+                        app:icon="@drawable/ic_kulaklik"
+                        app:iconGravity="top" />
+                </com.google.android.material.button.MaterialButtonToggleGroup>
+
+                <TextView
+                    android:id="@+id/bicimAciklama"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="8dp"
+                    android:textColor="#8A968A"
+                    android:textSize="12sp" />
+
+                <TextView style="@style/Baslik"
+                    android:id="@+id/kaliteBaslik"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="16dp"
+                    android:text="Kalite" />
+
+                <com.google.android.material.chip.ChipGroup
+                    android:id="@+id/kalite"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="6dp"
+                    app:selectionRequired="true"
+                    app:singleSelection="true" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- Önizleme kartı (indirme başlayınca görünür) -->
+        <com.google.android.material.card.MaterialCardView
+            android:id="@+id/onizleme"
+            style="@style/Kart"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="14dp"
+            android:layout_marginEnd="16dp"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical">
+
+                <ImageView
+                    android:id="@+id/kapak"
+                    android:layout_width="match_parent"
+                    android:layout_height="180dp"
+                    android:background="#DDE5DD"
+                    android:scaleType="centerCrop" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:id="@+id/baslik"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:maxLines="2"
+                        android:ellipsize="end"
+                        android:textColor="#1C251C"
+                        android:textSize="16sp"
+                        android:textStyle="bold" />
+
+                    <TextView
+                        android:id="@+id/altBilgi"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="2dp"
+                        android:textColor="#6B776B"
+                        android:textSize="13sp" />
+
+                    <com.google.android.material.progressindicator.LinearProgressIndicator
+                        android:id="@+id/cubuk"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="14dp"
+                        android:max="100"
+                        app:indicatorColor="#2E7D32"
+                        app:trackColor="#DCEBDC"
+                        app:trackCornerRadius="4dp"
+                        app:trackThickness="8dp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="8dp"
+                        android:gravity="center_vertical"
+                        android:orientation="horizontal">
+
+                        <TextView
+                            android:id="@+id/durum"
+                            android:layout_width="0dp"
+                            android:layout_height="wrap_content"
+                            android:layout_weight="1"
+                            android:textColor="#3C4A3C"
+                            android:textSize="14sp" />
+
+                        <Button
+                            android:id="@+id/iptal"
+                            style="@style/Widget.Material3.Button.TextButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="İptal"
+                            android:textColor="#C62828" />
+
+                        <Button
+                            android:id="@+id/ac"
+                            style="@style/Widget.Material3.Button.TonalButton"
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:text="Aç"
+                            android:visibility="gone" />
+                    </LinearLayout>
+                </LinearLayout>
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <!-- İndir düğmesi -->
         <Button
             android:id="@+id/indir"
+            style="@style/Widget.Material3.Button"
             android:layout_width="match_parent"
-            android:layout_height="60dp"
-            android:layout_marginTop="20dp"
-            android:backgroundTint="#2E7D32"
-            android:text="İNDİR"
-            android:textColor="#FFFFFF"
-            android:textSize="18sp"
-            android:textStyle="bold" />
-
-        <Button
-            android:id="@+id/iptal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:text="İptal"
-            android:visibility="gone" />
-
-        <ProgressBar
-            android:id="@+id/cubuk"
-            style="@android:style/Widget.Material.ProgressBar.Horizontal"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="16dp"
-            android:max="100" />
-
-        <TextView
-            android:id="@+id/durum"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="8dp"
-            android:gravity="center"
+            android:layout_height="64dp"
+            android:layout_marginStart="16dp"
+            android:layout_marginTop="18dp"
+            android:layout_marginEnd="16dp"
             android:text="Hazırlanıyor..."
-            android:textColor="#555555" />
+            android:textSize="18sp"
+            android:textStyle="bold"
+            app:cornerRadius="20dp"
+            app:icon="@drawable/ic_indir"
+            app:iconGravity="textStart"
+            app:iconSize="26dp" />
 
-        <Button
-            android:id="@+id/guncelle"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:layout_marginTop="24dp"
-            android:text="🔄 İndirme motorunu güncelle" />
-
-        <TextView
+        <!-- Alt bilgi -->
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
+            android:layout_marginTop="14dp"
             android:gravity="center"
-            android:text="Dosyalar: İndirilenler / VideoIndirici\nİpucu: YouTube'da Paylaş → Video İndirici"
-            android:textColor="#888888"
+            android:orientation="horizontal">
+
+            <Button
+                android:id="@+id/klasor"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="İndirilenler"
+                app:icon="@drawable/ic_klasor" />
+
+            <Button
+                android:id="@+id/guncelle"
+                style="@style/Widget.Material3.Button.TextButton"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Motoru güncelle"
+                app:icon="@drawable/ic_yenile" />
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/motorDurum"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:gravity="center"
+            android:textColor="#8A968A"
             android:textSize="12sp" />
     </LinearLayout>
 </ScrollView>
