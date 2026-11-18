@@ -8,13 +8,16 @@ Mimarisi SQL Server ve Oracle'daki temel katmanların sade bir karşılığıdı
 | Klasör | Durum | İçerik |
 |---|---|---|
 | [v1](v1/) | Hazır | SQL ayrıştırıcı, sayfa tabanlı depolama, transaction, çökme kurtarma, primary key indeksi |
+| [v2](v2/) | Hazır | JOIN, diskte B+ ağacı indeksleri, sorgu planlayıcı ve EXPLAIN, alt sorgu, VIEW, IDENTITY, DEFAULT, atomik commit, kilit, sys tabloları |
 
 ## Hızlı başlangıç
 
 ```bash
-cd v1
+cd v2
 python hakengine.py veritabanim
 ```
+
+En güncel sürüm v2'dir. v1 öğrenmek için daha sade bir başlangıçtır.
 
 ```sql
 hakengine> CREATE TABLE urun (id INT PRIMARY KEY, ad TEXT, fiyat REAL);

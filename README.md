@@ -5,4 +5,4 @@
 - [fis_takip](fis_takip/): Fiş Takip, fişten bütçe takibi (v2: claude.ai + Türkçe Android; v1: tüm sürümler)
 - [hesap-tablom](hesap-tablom/): Hesap Tablom, Windows için Türkçe hesap tablosu (Python + PySide6, EXE)
 - [hakdil](hakdil/): HakDil, Türkçe programlama dili (v2: makine koduna derleyen derleyici, Windows .exe; v1: Python yorumlayıcı)
-- [HakEngine](HakEngine/): HakEngine, SQL Server ve Oracle mimarisine benzer eğitim amaçlı veritabanı motoru (v1: SQL, depolama, transaction)
+- [HakEngine](HakEngine/): HakEngine, SQL Server ve Oracle mimarisine benzer eğitim amaçlı veritabanı motoru (v2: JOIN, B+ ağacı indeks, EXPLAIN, alt sorgu, VIEW; v1: temel motor)
