@@ -1,0 +1,7 @@
+__pycache__/
+*.pyc
+*.tbl
+*.tbl-journal
+catalog.json
+veritabanim/
+ornek_veritabani/
