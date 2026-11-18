@@ -1,0 +1,15 @@
+# Öğrenci notları: ortalama, en yüksek, geçti/kaldı
+
+notlar = {"Ali": 85, "Ayşe": 92, "Mehmet": 48, "Zeynep": 70}
+
+için ad içinde notlar.anahtarlar():
+    puan = notlar[ad]
+    durum = "geçti"
+    eğer puan < 50:
+        durum = "kaldı"
+    yazdır(ad, ":", puan, "-", durum)
+
+puanlar = notlar.değerler()
+ortalama = toplam(puanlar) / uzunluk(puanlar)
+yazdır("Ortalama:", yuvarla(ortalama, 1))
+yazdır("En yüksek:", en_büyük(puanlar))

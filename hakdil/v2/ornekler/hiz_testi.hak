@@ -1,0 +1,10 @@
+fonk fib(n):
+    eğer n < 2:
+        döndür n
+    döndür fib(n - 1) + fib(n - 2)
+
+yazdır("fib(32) =", fib(32))
+toplam_ = 0
+için i içinde aralık(50000000):
+    toplam_ += i % 7
+yazdır("döngü toplamı:", toplam_)

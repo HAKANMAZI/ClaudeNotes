@@ -1,18 +1,17 @@
 # HakDil
 
-Hasan'a ait, Python benzeri, Türkçe anahtar kelimeli programlama dili.
+Hasan'a ait, Türkçe anahtar kelimeli, Python gibi kolay yazılan programlama dili.
 
 ## Sürümler
 | Klasör | Açıklama |
 |---|---|
-| [v1](v1/) | İlk sürüm: Python ile yazılmış yorumlayıcı, Türkçe kelimeler, örnek programlar |
+| [v2](v2/) | **Güncel.** Makine koduna derlenir, tek başına çalışan `.exe` üretir, Python gerekmez |
+| [v1](v1/) | İlk sürüm: Python ile yazılmış yorumlayıcı |
 
-## Hızlı başlangıç
-Python 3 kurulu olmalı.
+## Hızlı başlangıç (v2)
+Windows: [v2/windows](v2/windows/) klasöründeki kurulum adımlarını izleyin. Ardından:
 ```
-cd v1
-python hakdil.py ornekler/tanitim.hak   # örnek çalıştır
-python hakdil.py                        # etkileşimli mod
+hakc -r program.hak
 ```
 
 ## Kısa örnek
@@ -27,4 +26,4 @@ için i içinde aralık(1, 4):
     yazdır(i, "x", i, "=", i * i)
 ```
 
-Ayrıntılı rehber: [v1/README.md](v1/README.md) · Örnekler: [v1/ornekler](v1/ornekler/)
+Ayrıntılı rehber: [v2/README.md](v2/README.md) · Örnekler: [v2/ornekler](v2/ornekler/)

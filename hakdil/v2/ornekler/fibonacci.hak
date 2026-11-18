@@ -1,0 +1,20 @@
+# Fibonacci dizisi: döngüyle ve özyinelemeyle
+
+fonk fib(n):
+    eğer n < 2:
+        döndür n
+    döndür fib(n - 1) + fib(n - 2)
+
+dizi = []
+için i içinde aralık(10):
+    dizi.ekle(fib(i))
+yazdır("İlk on terim:", dizi)
+
+# Döngüyle daha hızlı
+a = 0
+b = 1
+için i içinde aralık(30):
+    geçici = a + b
+    a = b
+    b = geçici
+yazdır("Otuzuncu terim:", a)
