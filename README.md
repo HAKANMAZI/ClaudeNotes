@@ -6,4 +6,4 @@
 - [hesap-tablom](hesap-tablom/): Hesap Tablom, Windows için Türkçe hesap tablosu (Python + PySide6, EXE)
 - [hakdil](hakdil/): HakDil, Türkçe programlama dili (v2: makine koduna derleyen derleyici, Windows .exe; v1: Python yorumlayıcı)
 - [HakEngine](HakEngine/): HakEngine, SQL Server ve Oracle mimarisine benzer eğitim amaçlı veritabanı motoru (v2: JOIN, B+ ağacı indeks, EXPLAIN, alt sorgu, VIEW; v1: temel motor)
-- [hakterm](hakterm/): HakTerm, MobaXterm benzeri SSH + SFTP istemcisi (v2: renkler, vim/htop, geçmişe kaydırma; v1: temel sürüm)
+- [hakterm](hakterm/): HakTerm, MobaXterm benzeri SSH + SFTP istemcisi (v3: şık koyu arayüz ve temalar; v2: renkler, vim/htop; v1: temel sürüm)
