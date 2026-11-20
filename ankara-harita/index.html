@@ -284,14 +284,14 @@ const P=[
 P.forEach((p,i)=>p.id=i);
 const $=id=>document.getElementById(id);
 let sel=0,filter=null;
-/* Google Maps anahtarınızı buraya yazın. Boş kalırsa OpenStreetMap kullanılır. */
+/* Google Maps anahtarınızı buraya yazın. Boş kalırsa CARTO haritası kullanılır. */
 const GOOGLE_KEY='';
 const HEX={tarih:'#b3261e',muze:'#6a3fa0',cami:'#0f766e',doga:'#2f7d32',sehir:'#1d4ed8',avm:'#c2410c',okul:'#a21668'};
 const visible=()=>P.filter(p=>!filter||p.c===filter);
 let M=null; /* harita uyarlayıcısı */
 function leafletMap(){
   const map=L.map('map');
-  L.tileLayer('https://tile.openstreetmap.org/{z}/{x}/{y}.png',{maxZoom:19,attribution:'&copy; OpenStreetMap katkıcıları'}).addTo(map);
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',{subdomains:'abcd',maxZoom:20,attribution:'&copy; OpenStreetMap katkıcıları &copy; CARTO'}).addTo(map);
   const icon=p=>L.divIcon({className:'',iconSize:[26,26],iconAnchor:[13,13],
     html:'<div class="pin'+(p.id===sel?' sel':'')+'" style="background:'+HEX[p.c]+'">'+(p.id+1)+'</div>'});
   const mk=P.map(p=>L.marker([p.lat,p.lon],{icon:icon(p),title:p.n}).on('click',()=>select(p.id,false)).addTo(map));
@@ -366,7 +366,7 @@ if(GOOGLE_KEY){
   window.initGoogle=()=>start(true);
   const s=document.createElement('script');
   s.src='https://maps.googleapis.com/maps/api/js?key='+encodeURIComponent(GOOGLE_KEY)+'&callback=initGoogle&language=tr&region=TR';
-  s.async=true;s.onerror=()=>{alertBox('Google Haritalar yüklenemedi. OpenStreetMap gösteriliyor.');start(false)};
+  s.async=true;s.onerror=()=>{alertBox('Google Haritalar yüklenemedi. CARTO haritası gösteriliyor.');start(false)};
   document.head.append(s);
 }else start(false);
 function alertBox(msg){const d=document.createElement('div');d.className='warn';d.textContent=msg;document.querySelector('.mapwrap').append(d)}

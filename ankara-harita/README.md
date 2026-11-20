@@ -8,7 +8,7 @@ Ankara'nın ünlü mekanlarını, AVM'lerini, okullarını ve camilerini haritad
 2. Bir API anahtarı oluşturun. Anahtarı yalnızca `hakanmazi.github.io` sitesine kısıtlayın.
 3. `index.html` içindeki `const GOOGLE_KEY='';` satırına anahtarı yazın.
 
-Anahtar boş kalırsa harita OpenStreetMap ile açılır.
+Anahtar boş kalırsa harita CARTO altlığıyla açılır (dosyadan açınca da çalışır).
 
 ## Anahtarsız: Google Haritam
 
