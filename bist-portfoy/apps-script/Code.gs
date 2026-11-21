@@ -33,9 +33,12 @@ function doGet(e) {
     }
   }
 
-  const enf = ss.getSheetByName('Enflasyon').getRange('A4:B99').getValues()
-    .filter(r => r[0] instanceof Date && r[1] !== '' && r[1] !== null)
-    .map(r => [Utilities.formatDate(r[0], 'Europe/Istanbul', 'yyyy-MM'), Number(r[1])]);
+  // Enflasyon!B4 = Ocak 2020, her satır bir sonraki ay
+  const enf = [];
+  ss.getSheetByName('Enflasyon').getRange('B4:B99').getValues().forEach((r, i) => {
+    if (r[0] === '' || r[0] === null) return;
+    enf.push([(2020 + Math.floor(i / 12)) + '-' + String(i % 12 + 1).padStart(2, '0'), Number(r[0])]);
+  });
 
   return out_({
     values: sh.getRange('A3:BN35').getDisplayValues(),
