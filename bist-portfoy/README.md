@@ -15,7 +15,7 @@ Google Sheets üzerinde çalışan BIST hisse takip tablosu ve onu okuyan web uy
 | `scripts/build_xlsx.py` | Excel dosyasını üreten openpyxl betiği. |
 | `android/` | Android uygulaması (WebView). Fiyat ve teknik veriler Yahoo Finance'ten, portföy/temel analiz/KAP Google Sheet'ten (Apps Script) gelir. APK'yı GitHub Actions derler. |
 | `apps-script/Code.gs` | Android uygulamasının Sheet'i okuyup yazması için Sheet'e eklenen Apps Script. |
-| `haftalik-gorev.md` | Her pazartesi 07:41'de (İstanbul) çalışan Claude görevinin talimatı. |
+| `haftalik-gorev.md` | Her cumartesi 07:41'de (İstanbul) çalışan Claude görevinin talimatı. |
 
 ## Google Sheet yapısı
 

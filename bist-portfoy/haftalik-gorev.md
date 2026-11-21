@@ -1,8 +1,8 @@
 # Haftalık görev: KAP İhale Güncelleme
 
-Claude Code Routine. Her pazartesi 07:41 (Europe/Istanbul), Google Sheets bağlayıcısıyla yeni bir oturumda çalışır ve özeti telefona bildirim olarak gönderir.
+Claude Code Routine. Her cumartesi 07:41 (Europe/Istanbul), Google Sheets bağlayıcısıyla yeni bir oturumda çalışır ve özeti telefona bildirim olarak gönderir.
 
-- Cron: `CRON_TZ=Europe/Istanbul 41 7 * * 1`
+- Cron: `CRON_TZ=Europe/Istanbul 41 7 * * 6`
 - Bağlayıcı: Google Sheets
 
 ## Talimat
