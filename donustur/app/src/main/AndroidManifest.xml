@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <application
+        android:label="Dönüştür"
+        android:icon="@drawable/ic_launcher"
+        android:requestLegacyExternalStorage="true"
+        android:theme="@android:style/Theme.Material.Light.DarkActionBar">
+
+        <!-- Ana ekran + "Paylaş → Dönüştür" ile dosya alma -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:launchMode="singleTop">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+            <intent-filter android:label="Dönüştür">
+                <action android:name="android.intent.action.SEND" />
+                <action android:name="android.intent.action.SEND_MULTIPLE" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+
+        <!-- Dosya açıcı: "Birlikte aç → Dönüştür" -->
+        <activity
+            android:name=".GoruntuleActivity"
+            android:exported="true"
+            android:label="Dönüştür ile aç">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" android:mimeType="*/*" />
+            </intent-filter>
+        </activity>
+
+        <activity android:name=".PdfDuzenleActivity" android:exported="false" android:label="PDF Düzenle" />
+    </application>
+</manifest>

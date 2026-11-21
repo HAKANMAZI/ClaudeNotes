@@ -1,0 +1,35 @@
+name: Dönüştür Android APK
+on:
+  workflow_dispatch:
+  push:
+    paths: ['donustur/**', '.github/workflows/donustur.yml']
+permissions:
+  contents: write
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: donustur
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.7'
+      - run: gradle assembleDebug
+      - run: cp app/build/outputs/apk/debug/app-debug.apk Donustur.apk
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Donustur-apk
+          path: donustur/Donustur.apk
+      # Sabit indirme linki: .../releases/download/donustur-android/Donustur.apk
+      - name: Sabit linke koy
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release delete donustur-android --yes --cleanup-tag || true
+          gh release create donustur-android Donustur.apk --title "Dönüştür — her şeyi her şeye (son sürüm)" --notes "Telefondan indirip kurun."
