@@ -34,6 +34,7 @@ jobs:
           printf '{"appId":"com.hakanmazi.fistakip","appName":"Fiş Takip","webDir":"www"}\n' > capacitor.config.json
           npx cap add android
           sed -i 's#<uses-permission android:name="android.permission.INTERNET" />#<uses-permission android:name="android.permission.INTERNET" />\n    <uses-permission android:name="android.permission.CAMERA" />#' android/app/src/main/AndroidManifest.xml
+          sed -i 's#<uses-permission android:name="android.permission.CAMERA" />#<uses-permission android:name="android.permission.CAMERA" />\n    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />\n    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />\n    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />#' android/app/src/main/AndroidManifest.xml
           npx cap sync android
           (cd android && chmod +x gradlew && ./gradlew assembleDebug --no-daemon)
           cp android/app/build/outputs/apk/debug/app-debug.apk fis-takip-tr.apk
