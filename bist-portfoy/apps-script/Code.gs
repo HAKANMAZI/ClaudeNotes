@@ -2,7 +2,7 @@
  * BIST Portföy Android uygulaması için Google Sheet API'si.
  *
  * Kurulum:
- * 1. Google Sheet'i açın → Uzantılar → Apps Script.
+ * 1. Google Sheet'i açın → Uzantılar → Apps Komut Dosyası (Apps Script).
  * 2. Bu dosyanın tamamını Code.gs içine yapıştırın.
  * 3. Aşağıdaki TOKEN değerini kendinize özel uzun bir şifreyle değiştirin.
  * 4. Dağıt → Yeni dağıtım → Tür: Web uygulaması

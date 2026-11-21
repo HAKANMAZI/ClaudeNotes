@@ -50,7 +50,7 @@ Sarı hücreler girdi: Hedef %, Stop %, ROE eşiği, Giriş Tarihi ve portföy a
 1. Telefondan [BistPortfoy.apk](https://github.com/HAKANMAZI/claudenotes/releases/download/bist-portfoy/BistPortfoy.apk) dosyasını indirip kurun (bilinmeyen kaynaklara izin vermeniz gerekebilir).
 2. Uygulama ilk açılışta yerel modda çalışır: fiyatlar gelir, portföy telefonda tutulur.
 3. Google Sheet ile eşitlemek için:
-   - Sheet → Uzantılar → Apps Script → `apps-script/Code.gs` içeriğini yapıştırın.
+   - Sheet → Uzantılar → **Apps Komut Dosyası** (Apps Script) → `apps-script/Code.gs` içeriğini yapıştırın.
    - `TOKEN` satırına kendi şifrenizi yazın.
    - Dağıt → Yeni dağıtım → Web uygulaması (Yürüten: Ben, Erişim: Herkes).
    - Uygulamada Ayarlar → /exec adresi ve şifre → Kaydet ve bağlan.
