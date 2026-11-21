@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Slipper Strike 2</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden;background:#ffe9c7;font-family:system-ui,-apple-system,"Segoe UI",sans-serif;touch-action:none;user-select:none}
+canvas{display:block;width:100%;height:100%}
+#ui{position:fixed;top:0;left:0;right:0;display:flex;justify-content:space-between;align-items:center;padding:8px 12px;font-weight:800;color:#fff;font-size:16px;background:rgba(90,45,12,.8);pointer-events:none}
+#mute{pointer-events:auto;background:none;border:none;font-size:20px;cursor:pointer}
+#overlay{position:fixed;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;background:rgba(255,233,199,.96);padding:22px;gap:12px;overflow:auto}
+#overlay h1{font-size:36px;color:#c0392b;line-height:1.1}
+#overlay h2{font-size:20px;color:#a04f0b}
+#overlay p{font-size:17px;color:#5a2d0c;max-width:350px;line-height:1.4}
+.btn{font-size:20px;font-weight:800;padding:13px 30px;border:none;border-radius:40px;background:#e67e22;color:#fff;box-shadow:0 5px 0 #a04f0b;cursor:pointer}
+.btn.alt{background:#8e6e53;box-shadow:0 5px 0 #5a2d0c;font-size:16px;padding:10px 22px}
+.btn:active{transform:translateY(4px);box-shadow:0 1px 0 #a04f0b}
+.big{font-size:58px}
+.grid{display:grid;grid-template-columns:repeat(4,64px);gap:10px;margin:6px 0}
+.lv{height:64px;border-radius:16px;border:none;font-size:26px;font-weight:800;background:#e67e22;color:#fff;box-shadow:0 4px 0 #a04f0b;cursor:pointer}
+.lv.lock{background:#ccc;color:#888;box-shadow:0 4px 0 #999}
+.tip{background:#fff;border:2px dashed #e67e22;border-radius:14px;padding:10px 14px}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="ui"><span id="lvl">1</span><span id="score">🎯 0/5</span><span id="time">⏱ 30</span><span id="pts">⭐ 0</span><span id="vase">🏺3</span><button id="mute">🔊</button></div>
+<div id="overlay"></div>
+<script>
+const cv=document.getElementById('c'),ctx=cv.getContext('2d'),ov=document.getElementById('overlay');
+let W,H;
+function resize(){const d=devicePixelRatio||1;W=innerWidth;H=innerHeight;cv.width=W*d;cv.height=H*d;ctx.setTransform(d,0,0,d,0,0);placeVases()}
+addEventListener('resize',resize);
+
+const ones=["","one","two","three","four","five","six","seven","eight","nine","ten","eleven","twelve","thirteen","fourteen","fifteen","sixteen","seventeen","eighteen","nineteen"],tens=["","","twenty","thirty","forty","fifty","sixty","seventy","eighty","ninety"];
+function words(n){if(n===0)return"zero";if(n<20)return ones[n];return tens[Math.floor(n/10)]+(n%10?"-"+ones[n%10]:"")}
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+
+// ---------- SOUND ----------
+let AC=null,muted=false;try{muted=localStorage.getItem('ssMute')==='1'}catch(e){}
+function audio(){if(!AC){try{AC=new(window.AudioContext||window.webkitAudioContext)()}catch(e){}}if(AC&&AC.state==='suspended')AC.resume()}
+function tone(f1,f2,dur,type='sine',vol=.25,delay=0){
+  if(!AC||muted)return;const t0=AC.currentTime+delay,o=AC.createOscillator(),g=AC.createGain();
+  o.type=type;o.frequency.setValueAtTime(f1,t0);o.frequency.exponentialRampToValueAtTime(Math.max(20,f2),t0+dur);
+  g.gain.setValueAtTime(vol,t0);g.gain.exponentialRampToValueAtTime(.001,t0+dur);o.connect(g).connect(AC.destination);o.start(t0);o.stop(t0+dur+.02);
+}
+function noise(dur,vol=.3,fFrom=3000,fTo=300,delay=0,q=1){
+  if(!AC||muted)return;const t0=AC.currentTime+delay,len=Math.floor(AC.sampleRate*dur),b=AC.createBuffer(1,len,AC.sampleRate),d=b.getChannelData(0);
+  for(let i=0;i<len;i++)d[i]=Math.random()*2-1;
+  const s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();s.buffer=b;f.type='bandpass';f.Q.value=q;
+  f.frequency.setValueAtTime(fFrom,t0);f.frequency.exponentialRampToValueAtTime(fTo,t0+dur);
+  g.gain.setValueAtTime(vol,t0);g.gain.exponentialRampToValueAtTime(.001,t0+dur);s.connect(f).connect(g).connect(AC.destination);s.start(t0);
+}
+const SFX={
+  throw(){noise(.18,.25,800,3000,0,2)},
+  hit(){noise(.08,.5,1500,400);tone(500,120,.12,'square',.15);tone(300,900,.25,'sine',.15,.08)},
+  shield(){tone(1800,1700,.35,'triangle',.2);tone(2600,2500,.3,'sine',.12);tone(1200,1150,.4,'sine',.1)},
+  miss(){noise(.12,.25,500,150)},
+  vase(){noise(.35,.5,4000,800,0,.7);for(let i=0;i<5;i++)tone(2500+Math.random()*2500,2000,.15,'triangle',.08,.05+i*.05)},
+  cat(){meow(0,true);meow(.9,false)},
+  grandpa(){},
+  baby(){},
+  tea(){[880,1100,1320].forEach((f,i)=>tone(f,f,.2,'sine',.18,i*.09))},
+  empty(){tone(200,180,.1,'square',.1)},
+  hide(){tone(400,1200,.2,'sine',.1)},
+  win(){[523,659,784,1046].forEach((f,i)=>tone(f,f,.25,'square',.12,i*.12));tone(1046,1046,.6,'sine',.15,.48)},
+  lose(){[392,370,349,294].forEach((f,i)=>tone(f,f*.97,i===3?.8:.35,'sawtooth',.13,i*.35))},
+  click(){tone(600,800,.06,'sine',.15)},
+  combo(n){const b=440*Math.pow(1.12,Math.min(n,8));tone(b,b*1.5,.15,'square',.12);tone(b*1.5,b*2,.15,'square',.1,.1)},
+  power(){[523,784,1046,1568].forEach((f,i)=>tone(f,f*1.02,.15,'triangle',.15,i*.06))},
+  door(){noise(.15,.5,300,100);noise(.15,.5,300,100,.25);tone(90,60,.5,'sawtooth',.2,.5)},
+  taunt(){[700,900,700,900,1000].forEach((f,i)=>tone(f,f,.1,'triangle',.1,i*.1))},
+  freeze(){for(let i=0;i<6;i++)tone(2000+i*300,1800+i*300,.15,'sine',.08,i*.05)},
+  bonk(){tone(180,80,.25,'sine',.35);noise(.1,.4,800,200)},
+  big(){noise(.3,.5,2000,200);tone(120,40,.4,'square',.25)}
+};
+
+// ---------- VOICES ----------
+// speech (if the phone supports it)
+let voices=[];const SS=window.speechSynthesis;
+function loadVoices(){try{voices=SS.getVoices().filter(v=>/^en/i.test(v.lang))}catch(e){}}
+if(SS){loadVoices();try{SS.onvoiceschanged=loadVoices}catch(e){}}
+let speakingKid=0;
+function speak(txt,pitch,rate,kid){
+  if(muted||!SS)return;
+  try{
+    if(!kid&&performance.now()<speakingKid)return;
+    SS.cancel();const u=new SpeechSynthesisUtterance(txt.replace(/[^\w\s'!?,.-]/g,''));
+    const fem=voices.find(v=>/female|samantha|zira|karen|victoria|susan|aria|jenny/i.test(v.name));
+    u.voice=fem||voices[0]||null;u.lang='en-US';u.pitch=pitch;u.rate=rate;u.volume=1;
+    if(kid)speakingKid=performance.now()+1200;
+    SS.speak(u);
+  }catch(e){}
+}
+const KID_OW=["Ouch!","Ow, ow, ow!","Owwie!","Aaah! Mommy!","Ow! That hurts!","Ouchie!"];
+function kidHurt(line){speak(pick(KID_OW)+" "+line,1.6,1.15,true)}
+const MOM_SHOUT=["Hey!","Come here!","You!","Stop right there!","Gotcha!","Don't you run!"];
+function momThrow(){if(Math.random()<.5)speak(pick(MOM_SHOUT),1.0,1.1,false)}
+// realistic-ish cat meow: pitch + formant sweep (m-i-a-o-w)
+function meow(delay=0,angry=false){
+  if(!AC||muted)return;const t0=AC.currentTime+delay,d=angry?.8:.65;
+  const o=AC.createOscillator();o.type='sawtooth';
+  const p=angry?380:480;
+  o.frequency.setValueAtTime(p,t0);o.frequency.linearRampToValueAtTime(p*1.5,t0+d*.35);o.frequency.linearRampToValueAtTime(p*1.15,t0+d*.75);o.frequency.linearRampToValueAtTime(p*.9,t0+d);
+  const vib=AC.createOscillator(),vg=AC.createGain();vib.frequency.value=6;vg.gain.value=angry?25:12;vib.connect(vg).connect(o.frequency);
+  const mix=AC.createGain();
+  [[350,950,600,0,1],[2300,1500,1000,0,.7],[3200,2800,2500,0,.3]].forEach(([a,b,c,_,gv])=>{
+    const f=AC.createBiquadFilter();f.type='bandpass';f.Q.value=7;
+    f.frequency.setValueAtTime(a,t0);f.frequency.linearRampToValueAtTime(b,t0+d*.4);f.frequency.linearRampToValueAtTime(c,t0+d);
+    const g=AC.createGain();g.gain.value=gv;o.connect(f).connect(g).connect(mix);
+  });
+  const lp=AC.createBiquadFilter();lp.type='lowpass';lp.frequency.value=4000;
+  const env=AC.createGain();env.gain.setValueAtTime(.001,t0);env.gain.linearRampToValueAtTime(.08,t0+.06);env.gain.linearRampToValueAtTime(.9,t0+d*.3);env.gain.setValueAtTime(.9,t0+d*.6);env.gain.exponentialRampToValueAtTime(.001,t0+d);
+  mix.connect(lp).connect(env).connect(AC.destination);
+  o.start(t0);vib.start(t0);o.stop(t0+d+.05);vib.stop(t0+d+.05);
+  if(angry)noise(.5,.18,6000,3000,d+.02,.5);
+}
+function momSay(txt,ttl){momB={txt,ttl};speak(txt,1.0,1.1,false)}
+
+document.getElementById('mute').onclick=()=>{muted=!muted;try{if(muted&&SS)SS.cancel()}catch(e){}try{localStorage.setItem('ssMute',muted?'1':'0')}catch(e){}document.getElementById('mute').textContent=muted?'🔇':'🔊'};
+document.getElementById('mute').textContent=muted?'🔇':'🔊';
+
+// ---------- LEVELS ----------
+const LEVELS=[
+ {name:"Living Room",emoji:"🛋️",floor:"#d9a066",rug:["#c0392b","#e67e22"],target:5,time:30,speed:2.4,dodge:.05,hide:0,
+  tip:"Warm-up round. The kid is slow. Enjoy it."},
+ {name:"Kitchen",emoji:"🍳",floor:"#cfd8dc",rug:["#90a4ae","#b0bec5"],target:7,time:35,speed:3.2,dodge:.15,hide:.06,
+  tip:"Now the kid dodges and hides behind the counter."},
+ {name:"Garden",emoji:"🌳",floor:"#7cb342",rug:["#558b2f","#9ccc65"],target:8,time:35,speed:3.6,dodge:.2,hide:.05,extras:["cat"],
+  tip:"There's a cat in the garden! Hit the cat and you lose three seconds."},
+ {name:"Holiday Visit",emoji:"👴",floor:"#bcaaa4",rug:["#6d4c41","#a1887f"],target:9,time:40,speed:3.8,dodge:.25,hide:.06,extras:["grandpa","cat"],
+  tip:"Grandpa is visiting! Do NOT throw at Grandpa. Five seconds penalty."},
+ {name:"The Twins",emoji:"👬",floor:"#f8bbd0",rug:["#ad1457","#f06292"],target:12,time:45,speed:3.6,dodge:.25,hide:.05,kids:2,extras:["baby"],
+  tip:"Two troublemakers at once! Careful with the baby: hit the baby and a vase breaks."},
+ {name:"The Shield",emoji:"🛡️",floor:"#b39ddb",rug:["#4527a0","#7e57c2"],target:10,time:45,speed:4,dodge:.3,hide:.05,shield:true,extras:["cat"],
+  tip:"The kid grabbed a pot lid as a shield! Slippers bounce off it. Wait for it to drop."},
+ {name:"The Wedding",emoji:"💃",floor:"#ffe082",rug:["#ff6f00","#ffca28"],target:12,time:50,speed:4.4,dodge:.35,hide:.07,shield:true,extras:["grandpa","baby","cat"],
+  tip:"A crowded wedding hall. Everyone is in the way. Only hit the troublemaker!"},
+ {name:"Final Boss",emoji:"👑",floor:"#455a64",rug:["#b71c1c","#263238"],target:15,time:55,speed:5,dodge:.45,hide:.08,kids:2,shield:true,extras:["grandpa","cat"],
+  tip:"Last level! The twins are fast, shielded and sneaky. Show them who's Mom!"}
+];
+const decor={"Living Room":['📺','🪴'],"Kitchen":['🧊','🍲'],"Garden":['🌻','🏡'],"Holiday Visit":['🍬','🕰️'],"The Twins":['🧸','🎈'],"The Shield":['🍳','🧯'],"The Wedding":['🎉','🎂'],"Final Boss":['🏆','🎆']};
+
+const momLines=["Grrr! Come here!","Hey! HEY!","Ooooh, you little...!","Come here!","Don't run, I won't do anything!","I'm telling your father!","When I was your age...","How many times did I tell you?!","That vase was Grandma's!","What will the neighbors say?!","I said STOP!"];
+const hitLines=["Ouch!","It wasn't me!","The cat did it!","I love you, Mommy!","It was the wind!","Never again!","Daaaad!","It fell by itself!"];
+const dodgeLines=["Missed me, Mom!","Matrix mode!","Can't catch me!","Ha ha!","Too slow!"];
+const shieldLines=["CLANG!","Lid power!","Bounced!","Shield up!"];
+const extraInfo={
+ cat:{e:"🐈",speed:2.2,pen:"time",amt:3,lines:["MEOOOW!","Hsssss!","Mrrraow?!"],sfx:"cat",mom:"Not the cat, YOU!"},
+ grandpa:{e:"👴",speed:.8,pen:"time",amt:5,lines:["Did you just hit ME?!","Oh my back!","In my day..."],sfx:"grandpa",mom:"Sorry, Dad!"},
+ baby:{e:"👶",speed:1,pen:"vase",amt:1,lines:["Waaaah!","Uwaaa!"],sfx:"baby",mom:"Oh sweetie, sorry!"}
+};
+
+let unlocked=1;try{unlocked=+localStorage.getItem('ssLv')||1}catch(e){}
+let L,lvIdx,kids,others,shots,parts,items,score,vaseList,timeLeft,running=false,t,momB,shake,ammo,lastSec,flash;
+let points,combo,comboT,pops,power,dadAt,dad,dadDone,hitstop,freezeT,winPending,dadB;
+const mom={x:0,y:0};
+
+// vases stand on a shelf below the HUD
+function placeVases(){if(!vaseList)return;const n=vaseList.length;vaseList.forEach((v,i)=>{v.x=W*(i+1)/(n+1);v.y=96})}
+function vasesLeft(){return vaseList.filter(v=>!v.broken).length}
+function breakVase(){
+  const alive=vaseList.filter(v=>!v.broken);if(!alive.length)return 0;
+  const v=pick(alive);v.broken=true;v.shake=0;boomShards(v.x,v.y-10);SFX.vase();shake=8;
+  return vasesLeft();
+}
+function boomShards(x,y){for(let i=0;i<14;i++)parts.push({x,y,vx:(Math.random()-.5)*9,vy:-Math.random()*8,shard:true,c:pick(["#2e86c1","#f4d03f","#ffffff"]),ttl:55,r:Math.random()*6})}
+
+function makeKid(x){return{x,y:H*.42,vx:2,vy:1,hurt:0,hide:0,turn:40,shield:0,shieldCd:200+Math.random()*200,b:null,taunt:0,stun:0,spin:0}}
+function setup(i){
+  lvIdx=i;L=LEVELS[i];
+  mom.x=W/2;mom.y=H-70;
+  kids=[];const n=L.kids||1;for(let k=0;k<n;k++)kids.push(makeKid(W*(k+1)/(n+1)));
+  others=(L.extras||[]).map(type=>({type,x:Math.random()*W,y:H*.3+Math.random()*H*.3,vx:(Math.random()<.5?-1:1)*extraInfo[type].speed,b:null,hurt:0}));
+  vaseList=[{},{},{}].map(()=>({broken:false}));placeVases();
+  shots=[];parts=[];items=[];score=0;timeLeft=L.time;t=0;ammo=2;lastSec=performance.now();flash=null;
+  points=0;combo=0;comboT=0;pops=[];power=null;dadAt=60*(8+Math.random()*10);dad=0;dadDone=lvIdx===0;hitstop=0;freezeT=0;winPending=0;dadB=null;
+  momB={txt:"Come here!",ttl:90};kids[0].b={txt:"It wasn't me!",ttl:80};shake=0;updUI();
+}
+function updUI(){
+  document.getElementById('lvl').textContent=L.emoji+" "+(lvIdx+1);
+  document.getElementById('score').textContent="🎯 "+score+"/"+L.target;
+  document.getElementById('time').textContent="⏱ "+timeLeft;
+  document.getElementById('vase').textContent="🏺"+vasesLeft();document.getElementById('pts').textContent="⭐ "+points;
+}
+function say(o,txt,ttl=70){o.b={txt,ttl}}
+function pop(txt,x,y,col="#c0392b",size=34){pops.push({txt,x,y,col,size,ttl:55,rot:(Math.random()-.5)*.4})}
+const POWERS={
+ gold:{e:"⭐",name:"GOLDEN SLIPPER",n:3,line:"Golden slipper! Shields can't stop it!"},
+ triple:{e:"🎯",name:"TRIPLE THROW",n:4,line:"Triple throw!"},
+ baguette:{e:"🥖",name:"BAGUETTE BONK",n:3,line:"The baguette! Dizzy for sure!"},
+ freeze:{e:"❄️",name:"",n:0,line:"Brain freeze! Everyone slows down!"},
+ tea:{e:"☕",name:"",n:0,line:"Ahh, tea time!"}
+};
+function addHit(k,s,extra){
+  combo++;comboT=150;const mult=Math.min(combo,5);
+  let pts=100*mult+(extra||0);points+=pts;
+  pop(pick(["POW!","BONK!","WHAP!","SMACK!","THWACK!","BAM!"]),k.x,k.y-20,pick(["#e74c3c","#8e44ad","#2980b9","#d35400"]),38);
+  if(combo>=2){pop("COMBO x"+combo,W/2,H*.25,"#f39c12",30+combo*3);SFX.combo(combo)}
+  pop("+"+pts,k.x+30,k.y+10,"#27ae60",20);
+  hitstop=5;k.spin=1;
+}
+
+function throwAt(x,y){
+  audio();
+  if(!running||winPending)return;
+  if(ammo<=0){momSay("Where's my slipper?!",45);SFX.empty();return}
+  ammo--;SFX.throw();momThrow();
+  const dx=x-mom.x,dy=y-(mom.y-20),d=Math.hypot(dx,dy)||1,sp=13;
+  const pw=power?power.type:null;
+  const mk=(ang,extra)=>{const c=Math.cos(ang),sn=Math.sin(ang),vx=(dx/d*c-dy/d*sn)*sp,vy=(dx/d*sn+dy/d*c)*sp;
+    shots.push({x:mom.x,y:mom.y-20,vx,vy,tx:mom.x+vx/sp*d,ty:mom.y-20+vy/sp*d,rot:0,state:'fly',extra,kind:pw})};
+  mk(0,false);
+  if(pw==='triple'){mk(-.22,true);mk(.22,true)}
+  if(pw==='gold')SFX.big();
+  if(power&&--power.n<=0)power=null;
+  if(Math.random()<.35)momSay(pick(momLines),70);
+  for(const k of kids)if(k.hide<=0&&Math.random()<L.dodge){const s=Math.sign(k.x-x)||1;k.vx=s*(L.speed+4);k.turn=22}
+}
+cv.addEventListener('pointerdown',e=>throwAt(e.clientX,e.clientY));
+function boom(x,y,e,n){for(let i=0;i<n;i++)parts.push({x,y,vx:(Math.random()-.5)*8,vy:-Math.random()*7,e,ttl:45})}
+function bounds(o,top,bot){
+  if(o.x<30){o.x=30;o.vx=Math.abs(o.vx)}if(o.x>W-30){o.x=W-30;o.vx=-Math.abs(o.vx)}
+  if(o.y<top){o.y=top;o.vy=Math.abs(o.vy)}if(o.y>bot){o.y=bot;o.vy=-Math.abs(o.vy)}
+}
+
+function step(){
+  if(winPending){winPending--;for(const p of parts){p.x+=p.vx;p.y+=p.vy;p.vy+=.3;p.ttl--}parts=parts.filter(p=>p.ttl>0);for(const p of pops)p.ttl--;pops=pops.filter(p=>p.ttl>0);for(const k of kids)k.spin+=.3;if(winPending<=0)end(true);return}
+  if(hitstop>0){hitstop--;return}
+  t++;
+  if(comboT>0&&--comboT===0){if(combo>=3)pop("Combo ended",W/2,H*.25,"#7f8c8d",22);combo=0}
+  if(freezeT>0)freezeT--;
+  if(!dadDone&&t>=dadAt){dadDone=true;dad=200;SFX.door();dadB={txt:"What is going on here?!",ttl:120};speak("What is going on here?!",.8,1,true);
+    for(const k of kids){k.hide=0;say(k,"Uh oh... Dad!",90)}pop("DAD IS HOME!",W/2,H*.2,"#2c3e50",34)}
+  if(dad>0){dad--;if(dadB&&--dadB.ttl<=0)dadB=null}
+  const now=performance.now();
+  if(now-lastSec>=1000){lastSec+=1000;timeLeft--;updUI();if(timeLeft<=5&&timeLeft>0)tone(1000,1000,.05,'square',.08);if(timeLeft<=0){end(false,"time");return}}
+  const top=150,bot=H-170,sp=L.speed+t/1500;
+  for(const k of kids){
+    if(k.hurt>0)k.hurt--;
+    if(L.shield){if(k.shield>0)k.shield--;else if(--k.shieldCd<=0){k.shield=110;k.shieldCd=180+Math.random()*220;say(k,"Got a lid!",50)}}
+    if(k.spin>0)k.spin=Math.max(0,k.spin-.05);
+    if(k.stun>0){k.stun--;bounds(k,top,bot);if(k.b&&--k.b.ttl<=0)k.b=null;continue}
+    if(dad>0){if(k.b&&--k.b.ttl<=0)k.b=null;continue}
+    if(k.taunt>0){k.taunt--;if(k.b&&--k.b.ttl<=0)k.b=null;continue}
+    if(k.hide<=0&&k.hurt<=0&&Math.random()<.004+lvIdx*.0005){k.taunt=80;SFX.taunt();const tl=pick(["Na-na-na-na-naaa!","Can't catch me!","Bleeeh!","Missed, missed!"]);say(k,tl,80);speak(tl,1.7,1.2,true);continue}
+    if(k.hide>0)k.hide--;
+    else{
+      if(--k.turn<=0){k.turn=25+Math.random()*55;const a=Math.random()*Math.PI*2;k.vx=Math.cos(a)*sp;k.vy=Math.sin(a)*sp*.7;
+        if(Math.random()<L.hide){k.hide=70;SFX.hide();say(k,L.name==="Kitchen"?"Behind the counter!":"You can't see me!",60)}}
+      const fz=freezeT>0?.3:1;k.x+=k.vx*fz;k.y+=k.vy*fz;
+    }
+    bounds(k,top,bot);
+    if(k.b&&--k.b.ttl<=0)k.b=null;
+  }
+  for(const o of others){
+    o.x+=o.vx;o.y+=Math.sin(t*.03+o.x*.01)*.6;if(o.hurt>0)o.hurt--;
+    if(o.type==='cat'&&Math.random()<.01)o.vx*=-1;if(o.type==='cat'&&Math.random()<.002){meow();say(o,'Meow~',40)}
+    bounds(o,top,bot);if(o.b&&--o.b.ttl<=0)o.b=null;
+  }
+  if(Math.random()<.006&&items.length<1)items.push({type:pick(['tea','tea','gold','triple','baguette','freeze']),x:60+Math.random()*(W-120),y:top+Math.random()*(bot-top),ttl:320});
+  for(const it of items)it.ttl--;items=items.filter(i=>i.ttl>0);
+
+  for(const s of shots){
+    if(s.state==='fly'){
+      s.x+=s.vx;s.y+=s.vy;s.rot+=.5;let hit=false;
+      for(const k of kids){
+        const rad=s.kind==='gold'?60:34;
+        if(k.hide>0||Math.hypot(s.x-k.x,s.y-k.y)>rad)continue;
+        hit=true;
+        if(k.shield>0&&s.kind!=='gold'){combo=0;s.state='back';s.wait=10;boom(s.x,s.y,'✨',6);say(k,pick(shieldLines),50);SFX.shield()}
+        else{s.state='back';let gain=1,extra=0;
+          if(k.taunt>0){gain++;extra=200;k.taunt=0;pop("TAUNT PUNISHED!",k.x,k.y-60,"#c0392b",24)}
+          if(dad>0){extra+=100}
+          if(s.kind==='baguette'){gain++;k.stun=150;SFX.bonk();pop("DIZZY!",k.x,k.y-60,"#8e44ad",26)}
+          if(s.kind==='gold'){boom(s.x,s.y,'🌟',10);if(k.shield>0){k.shield=0;pop("SHIELD BROKEN!",k.x,k.y-60,"#f1c40f",24)}}
+          score=Math.min(L.target,score+gain);addHit(k,s,extra);
+          k.hurt=30;shake=s.kind==='gold'?16:10;boom(s.x,s.y,'⭐',8);{const ln=pick(hitLines);say(k,ln);kidHurt(ln)}k.vx*=-1.3;k.turn=20;SFX.hit();updUI();
+          if(score>=L.target){winPending=70;points+=timeLeft*50+vasesLeft()*200;for(let i=0;i<40;i++)parts.push({x:W/2,y:H/2,vx:(Math.random()-.5)*16,vy:-Math.random()*14,e:pick(['🎉','⭐','✨','🎊']),ttl:70});SFX.win();updUI();return}}
+        break;
+      }
+      if(!hit)for(const o of others){
+        if(Math.hypot(s.x-o.x,s.y-o.y)>32)continue;
+        hit=true;s.state='back';o.hurt=30;shake=8;combo=0;const inf=extraInfo[o.type];{const ln=pick(inf.lines);say(o,ln);if(o.type==='grandpa')speak(ln,.8,.95,true);else if(o.type==='baby')speak(ln,1.9,1.1,true)}boom(s.x,s.y,'💢',6);SFX[inf.sfx]();
+        if(inf.pen==="time"){timeLeft=Math.max(0,timeLeft-inf.amt);flash={txt:"-"+inf.amt+" sec",ttl:50,x:o.x,y:o.y}}
+        else{flash={txt:"-1 vase",ttl:50,x:o.x,y:o.y};if(breakVase()<=0){updUI();end(false,"vase");return}}
+        momSay(inf.mom,60);updUI();break;
+      }
+      if(!hit)for(const it of items){
+        if(Math.hypot(s.x-it.x,s.y-it.y)>30)continue;
+        hit=true;it.ttl=0;s.state='back';const P=POWERS[it.type];momSay(P.line,60);
+        if(it.type==='tea'){timeLeft+=5;pop("+5 sec",it.x,it.y,"#27ae60",28);SFX.tea()}
+        else if(it.type==='freeze'){freezeT=300;pop("FREEZE!",it.x,it.y,"#3498db",32);SFX.freeze()}
+        else{power={type:it.type,n:P.n};pop(P.name,it.x,it.y,"#f39c12",26);SFX.power()}
+        updUI();break;
+      }
+      // slipper flying into the vase shelf
+      if(!hit&&s.y<130)for(const v of vaseList){
+        if(v.broken||Math.abs(s.x-v.x)>26||Math.abs(s.y-(v.y-18))>30)continue;
+        hit=true;v.broken=true;boomShards(v.x,v.y-10);SFX.vase();shake=8;s.state='back';s.wait=15;
+        momSay("Oh no, not the vase!",60);updUI();if(vasesLeft()<=0){end(false,"vase");return}break;
+      }
+      if(!hit&&(s.x<-30||s.x>W+30||s.y<-30||Math.hypot(s.x-s.tx,s.y-s.ty)<14)){
+        s.state='back';s.wait=22;if(s.extra){s.done=1;continue}if(combo>=2)pop('Combo lost!',W/2,H*.25,'#7f8c8d',22);combo=0;comboT=0;
+        if(Math.random()<.1+lvIdx*.02){momSay("Oops, another vase!",60);updUI_after();if(breakVase()<=0){updUI();end(false,"vase");return}updUI()}
+        else{SFX.miss();if(Math.random()<.5)say(pick(kids),pick(dodgeLines),55)}
+      }
+    }else{
+      if(s.wait>0){s.wait--;continue}
+      const dx=mom.x-s.x,dy=mom.y-s.y,d=Math.hypot(dx,dy);
+      s.x+=dx/d*10;s.y+=dy/d*10;s.rot+=.2;
+      if(d<20){s.done=1;if(!s.extra)ammo++}
+    }
+  }
+  shots=shots.filter(s=>!s.done);
+  for(const p of parts){p.x+=p.vx;p.y+=p.vy;p.vy+=.3;p.ttl--}parts=parts.filter(p=>p.ttl>0);
+  if(shake>0)shake--;if(momB&&--momB.ttl<=0)momB=null;if(flash&&--flash.ttl<=0)flash=null;for(const p of pops)p.ttl--;pops=pops.filter(p=>p.ttl>0);
+}
+function updUI_after(){}
+
+function bubble(x,y,txt,col){
+  ctx.font="bold 15px system-ui";const w=ctx.measureText(txt).width+20;
+  const bx=Math.max(6,Math.min(W-w-6,x-w/2));
+  ctx.fillStyle=col;ctx.strokeStyle="#5a2d0c";ctx.lineWidth=2;
+  ctx.beginPath();ctx.roundRect(bx,y-30,w,30,12);ctx.fill();ctx.stroke();
+  ctx.fillStyle="#5a2d0c";ctx.textAlign="left";ctx.textBaseline="middle";ctx.fillText(txt,bx+10,y-15);
+}
+// hand-drawn vase (works on every phone, no emoji needed)
+function drawVase(v){
+  const x=v.x,y=v.y;
+  if(v.broken){
+    ctx.fillStyle="#2e86c1";
+    ctx.beginPath();ctx.moveTo(x-14,y);ctx.lineTo(x-8,y-10);ctx.lineTo(x-3,y);ctx.fill();
+    ctx.beginPath();ctx.moveTo(x+2,y);ctx.lineTo(x+9,y-7);ctx.lineTo(x+15,y);ctx.fill();
+    ctx.fillStyle="#f4d03f";ctx.fillRect(x-4,y-4,6,4);
+    return;
+  }
+  ctx.save();ctx.translate(x,y);
+  ctx.fillStyle="#2e86c1";ctx.strokeStyle="#1b4f72";ctx.lineWidth=2;
+  ctx.beginPath();
+  ctx.moveTo(-8,-38);ctx.lineTo(8,-38);
+  ctx.quadraticCurveTo(6,-30,14,-22);ctx.quadraticCurveTo(22,-10,10,0);
+  ctx.lineTo(-10,0);ctx.quadraticCurveTo(-22,-10,-14,-22);ctx.quadraticCurveTo(-6,-30,-8,-38);
+  ctx.closePath();ctx.fill();ctx.stroke();
+  ctx.fillStyle="#f4d03f";ctx.fillRect(-14,-20,28,5);
+  ctx.fillStyle="#fff";ctx.beginPath();ctx.arc(-5,-12,2.5,0,7);ctx.arc(5,-12,2.5,0,7);ctx.fill();
+  ctx.fillStyle="#1b4f72";ctx.fillRect(-10,-42,20,5);
+  ctx.restore();
+}
+function draw(){
+  ctx.save();
+  if(shake)ctx.translate((Math.random()-.5)*shake,(Math.random()-.5)*shake);
+  ctx.fillStyle=L.floor;ctx.fillRect(-20,-20,W+40,H+40);
+  // wall + shelf
+  ctx.fillStyle="#f6e3c4";ctx.fillRect(-20,36,W+40,72);
+  ctx.fillStyle="rgba(200,150,90,.25)";for(let x=0;x<W;x+=44)ctx.fillRect(x,36,22,72);
+  ctx.fillStyle="#8d5524";ctx.fillRect(W*.08,96,W*.84,9);ctx.fillStyle="#5d3615";ctx.fillRect(W*.08,105,W*.84,4);
+  ctx.textAlign="center";ctx.textBaseline="middle";ctx.font="28px serif";
+  const dc=decor[L.name];ctx.fillText(dc[0],22,78);ctx.fillText(dc[1],W-22,78);
+  vaseList.forEach(drawVase);
+  // rug
+  ctx.fillStyle=L.rug[0];ctx.fillRect(W*.1,H*.32,W*.8,H*.36);ctx.fillStyle=L.rug[1];ctx.fillRect(W*.15,H*.36,W*.7,H*.28);
+  for(const it of items){ctx.save();ctx.globalAlpha=it.ttl<60&&Math.floor(t/5)%2?.4:1;ctx.fillStyle='rgba(255,255,255,.7)';ctx.beginPath();ctx.arc(it.x,it.y,24+Math.sin(t*.2)*3,0,7);ctx.fill();ctx.font="30px serif";ctx.fillText(POWERS[it.type].e,it.x,it.y);if(it.type==='triple'){ctx.font='bold 14px system-ui';ctx.fillStyle='#c0392b';ctx.fillText('x3',it.x+16,it.y+16)}ctx.restore()}
+  for(const o of others){ctx.save();ctx.translate(o.x,o.y);if(o.vx<0)ctx.scale(-1,1);ctx.font=(o.type==='grandpa'?50:40)+"px serif";ctx.fillText(o.hurt>0?'😠':extraInfo[o.type].e,0,0);ctx.restore()}
+  for(const k of kids){
+    if(k.hide>0){ctx.font="56px serif";ctx.fillText(L.name==="Garden"?'🌳':'🛋️',k.x,k.y);ctx.font="22px serif";ctx.fillText('👀',k.x,k.y-30);continue}
+    const face=k.stun>0?'😵‍💫':dad>0?'😨':k.taunt>0?'😜':k.hurt>0?'😵':freezeT>0?'🥶':'🏃';
+    ctx.save();ctx.translate(k.x,k.y+(k.taunt>0?Math.sin(t*.5)*5:0));ctx.rotate(k.spin*Math.PI*4);if(k.vx<0&&face==='🏃')ctx.scale(-1,1);ctx.font="50px serif";ctx.fillText(face,0,0);ctx.restore();
+    if(k.taunt>0){ctx.font="24px serif";ctx.fillText('👅',k.x+(Math.sin(t*.4)*14),k.y+30)}
+    if(k.stun>0){for(let i=0;i<3;i++){const a=t*.15+i*2.1;ctx.font="16px serif";ctx.fillText('⭐',k.x+Math.cos(a)*24,k.y-34+Math.sin(a)*8)}}
+    if(k.shield>0){ctx.font="34px serif";ctx.fillText('🛡️',k.x+(k.vx<0?-24:24),k.y+4)}
+    if(k.hurt>0){ctx.font="18px serif";ctx.fillText('💫',k.x,k.y-32)}
+  }
+  for(const s of shots){ctx.save();ctx.translate(s.x,s.y);ctx.rotate(s.rot);ctx.globalAlpha=s.state==='back'?.6:1;
+    if(s.kind==='gold'){ctx.shadowColor='#f1c40f';ctx.shadowBlur=25;ctx.font="54px serif";ctx.fillText('🩴',0,0)}
+    else if(s.kind==='baguette'){ctx.font="40px serif";ctx.fillText('🥖',0,0)}
+    else{ctx.font="34px serif";ctx.fillText('🩴',0,0)}ctx.restore()}
+  if(freezeT>0){ctx.fillStyle='rgba(120,190,255,.15)';ctx.fillRect(0,0,W,H)}
+  if(dad>0){ctx.font="60px serif";ctx.fillText('👨',W-45,H*.55);if(dadB)bubble(W-60,H*.55-36,dadB.txt,"#e8e8e8")}
+  ctx.globalAlpha=1;
+  ctx.font="62px serif";ctx.fillText('👩‍🦱',mom.x,mom.y);
+  for(let i=0;i<ammo;i++){ctx.font="28px serif";ctx.fillText(power&&power.type==='baguette'?'🥖':'🩴',mom.x-50+i*100,mom.y+10)}
+  if(power){ctx.font="bold 14px system-ui";ctx.fillStyle="#fff";const tx=POWERS[power.type].e+" "+POWERS[power.type].name+" x"+power.n;const w=ctx.measureText(tx).width+16;ctx.fillStyle="rgba(243,156,18,.9)";ctx.beginPath();ctx.roundRect(mom.x-w/2,H-24,w,20,10);ctx.fill();ctx.fillStyle="#fff";ctx.fillText(tx,mom.x,H-14)}
+  if(combo>=2){ctx.font="bold 18px system-ui";ctx.fillStyle="#f39c12";ctx.fillText("🔥 x"+combo,W-40,H-30)}
+  for(const p of parts){ctx.globalAlpha=Math.max(0,p.ttl/45);if(p.shard){ctx.fillStyle=p.c;ctx.save();ctx.translate(p.x,p.y);ctx.rotate(p.r+=.2);ctx.fillRect(-4,-3,8,6);ctx.restore()}else{ctx.font="22px serif";ctx.fillText(p.e,p.x,p.y)}}ctx.globalAlpha=1;
+  for(const p of pops){const a=Math.min(1,p.ttl/20),sc=p.ttl>45?1+(p.ttl-45)*.08:1;ctx.save();ctx.globalAlpha=a;ctx.translate(Math.max(70,Math.min(W-70,p.x)),p.y-(55-p.ttl)*.8);ctx.rotate(p.rot);ctx.scale(sc,sc);ctx.font="900 "+p.size+"px system-ui";{const mw=ctx.measureText(p.txt).width;const lim=W-30;if(mw*sc>lim){const f=lim/(mw*sc);ctx.scale(f,f)}}ctx.rotate(0);ctx.lineWidth=5;ctx.strokeStyle="#fff";ctx.strokeText(p.txt,0,0);ctx.fillStyle=p.col;ctx.fillText(p.txt,0,0);ctx.restore()}ctx.globalAlpha=1;
+  if(flash){ctx.font="bold 24px system-ui";ctx.fillStyle="#c0392b";ctx.textAlign="center";ctx.fillText(flash.txt,flash.x,flash.y-50-(50-flash.ttl))}
+  for(const o of others)if(o.b)bubble(o.x,o.y-34,o.b.txt,"#fff3c4");
+  for(const k of kids)if(k.b)bubble(k.x,k.y-36,k.b.txt,"#d6f5ff");
+  if(momB)bubble(mom.x,mom.y-42,momB.txt,"#fff");
+  ctx.restore();
+}
+function loop(){if(!running)return;step();if(running){draw();requestAnimationFrame(loop)}}
+
+// ---------- SCREENS ----------
+function menu(){
+  running=false;
+  let g="";for(let i=0;i<LEVELS.length;i++){const lk=i+1>unlocked;g+=`<button class="lv ${lk?'lock':''}" ${lk?'disabled':''} onclick="audio();SFX.click();intro(${i})">${lk?'🔒':LEVELS[i].emoji}</button>`}
+  ov.innerHTML=`<div class="big">👩‍🦱🩴➡️🏃</div><h1>SLIPPER STRIKE 2</h1>
+  <p>Your son broke the vase and he's running away! Tap the screen to throw your slipper there. You only have two slippers. Miss, and you might break the other vases on the shelf.</p>
+  <h2>Choose a level</h2><div class="grid">${g}</div>
+  <p style="font-size:14px;text-align:left" class="tip">🔥 Hit in a row for <b>combos</b><br>⭐ Golden slipper breaks shields<br>🎯 Triple throw<br>🥖 Baguette makes the kid dizzy<br>❄️ Freeze slows everyone<br>☕ Tea gives five extra seconds<br>😜 Hit a taunting kid for double<br>👨 When Dad comes home, the kid freezes!</p>`;
+  ov.style.display='flex';
+}
+function intro(i){
+  const l=LEVELS[i];
+  ov.innerHTML=`<div class="big">${l.emoji}</div><h2>Level ${words(i+1)}</h2><h1>${l.name}</h1>
+  <p class="tip">${l.tip}</p>
+  <p>Goal: <b>${words(l.target)} hits</b><br>Time: <b>${words(l.time)} seconds</b></p>
+  <button class="btn" onclick="audio();SFX.click();play(${i})">GRAB THE SLIPPER!</button><button class="btn alt" onclick="SFX.click();menu()">Levels</button>`;
+  ov.style.display='flex';
+}
+function play(i){ov.style.display='none';setup(i);running=true;loop()}
+function end(win,why){
+  running=false;draw();
+  const v=vasesLeft();
+  let best=0;try{best=+localStorage.getItem('ssBest'+lvIdx)||0}catch(e){}
+  const newBest=points>best;if(newBest){best=points;try{localStorage.setItem('ssBest'+lvIdx,best)}catch(e){}}
+  const ptsHtml=`<p>Score: <b>${points}</b>${newBest&&win?' 🏆 New best!':''}<br>Best: ${best}</p>`;
+  if(win){
+    if(lvIdx+2>unlocked){unlocked=Math.min(LEVELS.length,lvIdx+2);try{localStorage.setItem('ssLv',unlocked)}catch(e){}}
+    const last=lvIdx===LEVELS.length-1;
+    const stars=v===3?"⭐⭐⭐":v===2?"⭐⭐":"⭐";
+    ov.innerHTML=last?`<div class="big">👑🩴👑</div><h1>SLIPPER MASTER!</h1><p>You beat every level. You're the most accurate mom in the neighborhood. The kids won't go near the vases ever again.</p><p style="font-size:30px">${stars}</p>${ptsHtml}<button class="btn" onclick="SFX.click();menu()">Levels</button>`
+    :`<div class="big">🩴💥😵</div><h1>LEVEL CLEARED!</h1><p>${pick(["The kid surrendered. He's doing the dishes tonight.","Lesson learned. Maybe.","The slipper found its target!","The neighbors are applauding."])}</p><p style="font-size:30px">${stars}</p>${ptsHtml}
+      <button class="btn" onclick="SFX.click();intro(${lvIdx+1})">NEXT LEVEL</button><button class="btn alt" onclick="SFX.click();menu()">Levels</button>`;
+  }else{
+    SFX.lose();
+    ov.innerHTML=`<div class="big">${why==="vase"?'💔':'🏃💨'}</div><h1>${why==="vase"?'NO VASES LEFT!':'THE KID ESCAPED!'}</h1>
+    <p>${why==="vase"?'Every vase in the house is broken. When Dad gets home, you are BOTH in trouble.':'He ran outside to play football. See you at dinner.'}</p>
+    <p>Hits: <b>${words(score)}</b> of ${words(L.target)}</p>${ptsHtml}
+    <button class="btn" onclick="audio();SFX.click();play(${lvIdx})">TRY AGAIN</button><button class="btn alt" onclick="SFX.click();menu()">Levels</button>`;
+  }
+  ov.style.display='flex';
+}
+resize();setup(0);draw();menu();
+</script>
+</body>
+</html>

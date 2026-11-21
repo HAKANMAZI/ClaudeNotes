@@ -1,20 +1,16 @@
 # Slipper Strike (Terlik Kaçışı)
 
-Komik web oyunu. Anne terlik fırlatır, yaramaz çocuk kaçar.
+Komik web oyunu. Anne terlik fırlatır, yaramaz çocuk kaçar. Tek dosya, kurulum gerekmez: `index.html` dosyasını tarayıcıda aç.
 
-## Nasıl oynanır
-- `index.html` dosyasını tarayıcıda aç (telefon veya bilgisayar).
-- Ekrana dokun, terlik oraya uçar. Elinde iki terlik var.
-- Iskalarsan raftaki vazolar kırılabilir. Üç vazo kırılınca kaybedersin.
-- Çaya terlik değdirirsen beş saniye kazanırsın.
+## v2 (güncel) — `v2/index.html`
+- Kombo sistemi: üst üste isabet, katlanan puan
+- Çizgi roman yazıları: POW!, BONK!, SMACK!
+- Güçlendirmeler: altın terlik (kalkanı kırar), üçlü atış, baget (çocuğu sersemletir), dondurma (herkes yavaşlar), çay (beş saniye)
+- Çocuk dil çıkarıp alay eder; o an vurursan çift puan
+- "Baba eve geldi!" olayı: çocuk korkudan donar
+- Bölüm sonu puan, en iyi skor, kazanınca konfeti
 
-## Bölümler
-Living Room, Kitchen, Garden (kedi), Holiday Visit (dede), The Twins (bebek), The Shield (tencere kapağı), The Wedding, Final Boss.
-
-## Özellikler
-- İngilizce arayüz
-- Ses efektleri ve konuşan karakterler (tarayıcının konuşma özelliği)
-- Kedi miyav sesi
-- Açılan bölümler tarayıcıda kaydedilir
-
-Tek dosya, kurulum gerekmez.
+## v1 — `v1/index.html`
+- Sekiz bölüm, kedi / dede / bebek / kalkan zorlukları
+- Ses efektleri, konuşan karakterler, kedi miyavı
+- Raftaki vazolar; ıskalarsan kırılır
