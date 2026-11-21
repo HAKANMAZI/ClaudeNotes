@@ -13,7 +13,7 @@ const TOKEN = 'BURAYA-KENDI-SIFRENIZI-YAZIN';
 
 function doGet(e) {
   const p = (e && e.parameter) || {};
-  if (TOKEN === 'BURAYA-KENDI-SIFRENIZI-YAZIN' || p.token !== TOKEN) return out_({ error: 'yetkisiz' });
+  if (TOKEN.indexOf('BURAYA') === 0 || p.token !== TOKEN) return out_({ error: 'yetkisiz' });
   const ss = SpreadsheetApp.getActive();
   const sh = ss.getSheetByName('Takip');
 
