@@ -7,3 +7,4 @@
 - [hakdil](hakdil/): HakDil, Türkçe programlama dili (v2: makine koduna derleyen derleyici, Windows .exe; v1: Python yorumlayıcı)
 - [HakEngine](HakEngine/): HakEngine, SQL Server ve Oracle mimarisine benzer eğitim amaçlı veritabanı motoru (v2: JOIN, B+ ağacı indeks, EXPLAIN, alt sorgu, VIEW; v1: temel motor)
 - [hakterm](hakterm/): HakTerm, MobaXterm benzeri SSH + SFTP istemcisi (v3: şık koyu arayüz ve temalar; v2: renkler, vim/htop; v1: temel sürüm)
+- [slipper-strike](slipper-strike/): Slipper Strike (Terlik Kaçışı), anne terlik atar çocuk kaçar; sekiz bölümlü komik web oyunu (İngilizce, sesli)
