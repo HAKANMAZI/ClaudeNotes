@@ -25,7 +25,7 @@
 html,body{margin:0}
 body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:14px;line-height:1.45;-webkit-tap-highlight-color:transparent}
 .wrap{padding-left:max(14px,env(safe-area-inset-left,0px));padding-right:max(14px,env(safe-area-inset-right,0px))}
-header.bar{position:sticky;top:0;z-index:5;background:var(--surface);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
+header.bar{background:var(--surface);border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top,0px)}
 .bar-in{display:flex;flex-wrap:wrap;align-items:center;gap:8px 10px;padding-block:10px}
 .brand{display:flex;flex-direction:column;margin-right:auto;min-width:0}
 .brand h1{font-family:var(--f-display);font-weight:800;font-size:19px;letter-spacing:-.01em;margin:0}
@@ -47,6 +47,7 @@ main{display:flex;flex-direction:column;gap:14px;padding-block:14px calc(32px + 
 .tile .v{font-family:var(--f-num);font-size:17px;font-weight:600;font-variant-numeric:tabular-nums;overflow-wrap:anywhere}
 .tile.hero{border-color:var(--accent);background:var(--accent-soft)}
 .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.tabbar{position:sticky;top:0;z-index:5;background:var(--bg);padding-top:calc(6px + env(safe-area-inset-top,0px));padding-bottom:6px;margin-top:-6px}
 .tabs{display:flex;gap:4px;background:var(--surface-2);padding:4px;border-radius:9px;overflow-x:auto;max-width:100%}
 .tab{border:0;background:transparent;color:var(--muted);padding:6px 10px;border-radius:6px;font-weight:600;white-space:nowrap}
 .tab[aria-selected="true"]{background:var(--surface);color:var(--fg);box-shadow:0 1px 2px rgba(0,0,0,.12)}
@@ -62,6 +63,9 @@ th button{all:unset;cursor:pointer;display:inline-flex;gap:3px;align-items:cente
 th .dir{color:var(--accent)}
 th:first-child,td:first-child{position:sticky;left:0;text-align:left;background:var(--surface);z-index:1;border-right:1px solid var(--line)}
 th:first-child{background:var(--surface-2)}
+tfoot td{font-weight:700;border-top:2px solid var(--line);border-bottom:0;background:var(--surface-2)}
+tfoot td:first-child{background:var(--surface-2)}
+.sumhead{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin:4px 0 -6px}
 td.txt{font-family:var(--f-body);font-size:13px;text-align:left;white-space:normal;min-width:150px;max-width:240px}
 tbody tr:active td{background:var(--surface-2)}
 .tk{font-family:var(--f-display);font-weight:700;font-size:14px;letter-spacing:.02em}
@@ -98,8 +102,7 @@ form.edit label,.field{display:flex;flex-direction:column;gap:4px;font-size:12px
 
 <main class="wrap">
   <div class="notice" id="notice" hidden><p id="noticeText"></p><button class="btn primary" id="noticeBtn" type="button" hidden>Ayarları aç</button></div>
-  <section class="summary" id="summary" aria-label="Portföy özeti"></section>
-  <div class="controls">
+  <div class="tabbar">
     <div class="tabs" role="tablist" id="tabs"></div>
   </div>
   <div class="controls">
@@ -112,6 +115,8 @@ form.edit label,.field{display:flex;flex-direction:column;gap:4px;font-size:12px
     <span class="msg" id="addMsg" role="status"></span>
   </form>
   <div class="board" id="board"><div class="empty">Tablo yükleniyor…</div></div>
+  <h2 class="sumhead">Portföy toplamı</h2>
+  <section class="summary" id="summary" aria-label="Portföy toplamı"></section>
   <div class="foot">
     <span>Fiyat ve teknik veriler: Yahoo Finance (gecikmeli). Portföy, temel analiz ve KAP: Google Sheet'iniz.</span>
     <span>Satıra dokununca ayrıntı ve alım/satım düzenleme açılır. Yatırım tavsiyesi değildir.</span>
@@ -346,12 +351,27 @@ function rowsToShow() {
   }
   return rows;
 }
+function totalRow(keys, rows) {
+  const SUM = ["cost","value","real","unreal","total","reel"];
+  if (!keys.some(k => SUM.includes(k))) return "";
+  const t = { cost: 0, value: 0, real: 0, unreal: 0, total: 0, reel: 0 }; let base = 0, n = 0, hasReel = false;
+  for (const it of rows) { const c = it.c; if (!fin(c.total)) continue; n++; base += it.pf.adet * it.pf.alis;
+    for (const k of SUM) if (fin(c[k])) { t[k] += c[k]; if (k === "reel") hasReel = true; } }
+  if (!n) return "";
+  const cell = (k) => {
+    if (SUM.includes(k)) { const v = k === "reel" && !hasReel ? null : t[k]; const signed = COL[k].signed; return `<td class="${signed ? sign(v) : ""}">${tr(v, 2)}</td>`; }
+    if (k === "pct") { const v = base ? t.total / base : null; return `<td class="${sign(v)}">${pct(v)}</td>`; }
+    if (k === "reelPct") { const v = base && hasReel ? t.reel / base : null; return `<td class="${sign(v)}">${pct(v)}</td>`; }
+    return "<td></td>";
+  };
+  return `<tfoot><tr><td><span class="tk">TOPLAM<small>${n} hisse</small></span></td>${keys.map(cell).join("")}</tr></tfoot>`;
+}
 function renderBoard() {
   if (SHEET_ONLY.has(state.tab) && !state.sheet) { $("board").innerHTML = `<div class="empty">Bu sekme Google Sheet'inizden gelir. Ayarlar'dan Apps Script bağlantısını kurun.</div>`; return; }
   const keys = GROUPS[state.tab]; const rows = rowsToShow();
   if (!rows.length) { $("board").innerHTML = `<div class="empty">${state.mine ? "Portföyünüzde alım girilmiş hisse yok. Bir satıra dokunup alım bilginizi girin." : state.items.length ? "Eşleşen hisse yok." : "Liste boş. Yukarıdan hisse ekleyin."}</div>`; return; }
   const th = (key, label) => { const a = state.sort && state.sort.key === key; return `<th scope="col" aria-sort="${a ? (state.sort.dir > 0 ? "ascending" : "descending") : "none"}"><button type="button" data-sort="${key}">${esc(label)}<span class="dir">${a ? (state.sort.dir > 0 ? "▲" : "▼") : ""}</span></button></th>`; };
-  $("board").innerHTML = `<table><thead><tr>${th("ticker", "Hisse")}${keys.map(k => th(k, COL[k].label)).join("")}</tr></thead><tbody>${rows.map(it => `<tr data-t="${esc(it.ticker)}" tabindex="0"><td><span class="tk">${esc(it.ticker)}<small>${esc(it.sector || (it.m && it.m.name) || "")}</small></span></td>${keys.map(k => { const c = COL[k]; const v = c.val(it); const cls = c.text ? "txt" : c.signed ? sign(v) : ""; return `<td class="${cls}">${c.show(it)}</td>`; }).join("")}</tr>`).join("")}</tbody></table>`;
+  $("board").innerHTML = `<table><thead><tr>${th("ticker", "Hisse")}${keys.map(k => th(k, COL[k].label)).join("")}</tr></thead><tbody>${rows.map(it => `<tr data-t="${esc(it.ticker)}" tabindex="0"><td><span class="tk">${esc(it.ticker)}<small>${esc(it.sector || (it.m && it.m.name) || "")}</small></span></td>${keys.map(k => { const c = COL[k]; const v = c.val(it); const cls = c.text ? "txt" : c.signed ? sign(v) : ""; return `<td class="${cls}">${c.show(it)}</td>`; }).join("")}</tr>`).join("")}</tbody>${totalRow(keys, rows)}</table>`;
 }
 function renderFresh() {
   const t = (d) => d ? d.toLocaleTimeString("tr-TR", { hour: "2-digit", minute: "2-digit" }) : "—";
