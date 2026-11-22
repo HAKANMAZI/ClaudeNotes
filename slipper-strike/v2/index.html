@@ -54,9 +54,15 @@ function noise(dur,vol=.3,fFrom=3000,fTo=300,delay=0,q=1){
   f.frequency.setValueAtTime(fFrom,t0);f.frequency.exponentialRampToValueAtTime(fTo,t0+dur);
   g.gain.setValueAtTime(vol,t0);g.gain.exponentialRampToValueAtTime(.001,t0+dur);s.connect(f).connect(g).connect(AC.destination);s.start(t0);
 }
+function slap(){
+  if(!AC||muted)return;const t0=AC.currentTime,len=Math.floor(AC.sampleRate*.12),b=AC.createBuffer(1,len,AC.sampleRate),d=b.getChannelData(0);
+  for(let i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);
+  const s=AC.createBufferSource(),f=AC.createBiquadFilter(),g=AC.createGain();s.buffer=b;f.type='lowpass';f.frequency.value=1800;f.Q.value=.7;g.gain.value=.6;
+  s.connect(f).connect(g).connect(AC.destination);s.start(t0);
+}
 const SFX={
   throw(){noise(.18,.25,800,3000,0,2)},
-  hit(){noise(.08,.5,1500,400);tone(500,120,.12,'square',.15);tone(300,900,.25,'sine',.15,.08)},
+  hit(){slap();tone(160,70,.18,'sine',.35);tone(620,880,.12,'sine',.08,.06)},
   shield(){tone(1800,1700,.35,'triangle',.2);tone(2600,2500,.3,'sine',.12);tone(1200,1150,.4,'sine',.1)},
   miss(){noise(.12,.25,500,150)},
   vase(){noise(.35,.5,4000,800,0,.7);for(let i=0;i<5;i++)tone(2500+Math.random()*2500,2000,.15,'triangle',.08,.05+i*.05)},
@@ -69,7 +75,7 @@ const SFX={
   win(){[523,659,784,1046].forEach((f,i)=>tone(f,f,.25,'square',.12,i*.12));tone(1046,1046,.6,'sine',.15,.48)},
   lose(){[392,370,349,294].forEach((f,i)=>tone(f,f*.97,i===3?.8:.35,'sawtooth',.13,i*.35))},
   click(){tone(600,800,.06,'sine',.15)},
-  combo(n){const b=440*Math.pow(1.12,Math.min(n,8));tone(b,b*1.5,.15,'square',.12);tone(b*1.5,b*2,.15,'square',.1,.1)},
+  combo(n){const b=523*Math.pow(1.06,Math.min(n,8));tone(b,b,.18,'sine',.12,.05);tone(b*1.5,b*1.5,.22,'sine',.1,.15)},
   power(){[523,784,1046,1568].forEach((f,i)=>tone(f,f*1.02,.15,'triangle',.15,i*.06))},
   door(){noise(.15,.5,300,100);noise(.15,.5,300,100,.25);tone(90,60,.5,'sawtooth',.2,.5)},
   taunt(){[700,900,700,900,1000].forEach((f,i)=>tone(f,f,.1,'triangle',.1,i*.1))},
@@ -98,7 +104,7 @@ function speak(txt,pitch,rate,kid){
   }catch(e){}
 }
 const KID_OW=["Ouch!","Ow, ow, ow!","Owwie!","Aaah! Mommy!","Ow! That hurts!","Ouchie!"];
-function kidHurt(line){speak(pick(KID_OW)+" "+line,1.6,1.15,true)}
+function kidHurt(line){if(Math.random()<.6)speak(pick(KID_OW),1.25,1.05,true)}
 const MOM_SHOUT=["Hey!","Come here!","You!","Stop right there!","Gotcha!","Don't you run!"];
 function momThrow(){if(Math.random()<.5)speak(pick(MOM_SHOUT),1.0,1.1,false)}
 // realistic-ish cat meow: pitch + formant sweep (m-i-a-o-w)
@@ -399,8 +405,8 @@ function draw(){
   for(const k of kids){
     if(k.hide>0){ctx.font="56px serif";ctx.fillText(L.name==="Garden"?'🌳':'🛋️',k.x,k.y);ctx.font="22px serif";ctx.fillText('👀',k.x,k.y-30);continue}
     const face=k.stun>0?'😵‍💫':dad>0?'😨':k.taunt>0?'😜':k.hurt>0?'😵':freezeT>0?'🥶':'🏃';
-    ctx.save();if(k.inv>0)ctx.globalAlpha=Math.floor(t/4)%2?.35:.9;ctx.translate(k.x,k.y+(k.taunt>0?Math.sin(t*.5)*5:0));ctx.rotate(k.spin*Math.PI*4);if(k.vx<0&&face==='🏃')ctx.scale(-1,1);ctx.font="50px serif";ctx.fillText(face,0,0);ctx.restore();
-    if(k.taunt>0){ctx.font="24px serif";ctx.fillText('👅',k.x+(Math.sin(t*.4)*14),k.y+30)}
+    ctx.save();if(k.inv>0)ctx.globalAlpha=Math.floor(t/4)%2?.35:.9;ctx.translate(k.x,k.y+(k.taunt>0?Math.sin(t*.5)*3:0));ctx.rotate(k.spin*Math.PI*4);if(k.vx<0&&face==='🏃')ctx.scale(-1,1);ctx.font=(face==='🏃'?"50px serif":"36px serif");ctx.fillText(face,0,0);ctx.restore();
+    
     if(k.stun>0){for(let i=0;i<3;i++){const a=t*.15+i*2.1;ctx.font="16px serif";ctx.fillText('⭐',k.x+Math.cos(a)*24,k.y-34+Math.sin(a)*8)}}
     if(k.shield>0){ctx.font="34px serif";ctx.fillText(L.shieldE||'🛡️',k.x+(k.vx<0?-24:24),k.y+4)}
     if(k.hurt>0){ctx.font="18px serif";ctx.fillText('💫',k.x,k.y-32)}
