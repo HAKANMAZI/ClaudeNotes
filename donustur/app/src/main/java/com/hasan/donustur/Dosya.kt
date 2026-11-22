@@ -88,6 +88,13 @@ object Dosya {
         return kaydet(ctx, f, ad)
     }
 
+    /** Asıl dosyanın üzerine yazmayı dener; izin yoksa false döner. */
+    fun uzerineYaz(ctx: Context, uri: Uri, f: File): Boolean = try {
+        val o = try { ctx.contentResolver.openOutputStream(uri, "wt") } catch (e: Exception) { ctx.contentResolver.openOutputStream(uri, "w") }
+        o!!.use { out -> f.inputStream().use { it.copyTo(out) } }
+        true
+    } catch (e: Exception) { false }
+
     fun metinOku(ctx: Context, g: Girdi): String =
         ctx.contentResolver.openInputStream(g.uri)!!.use { it.readBytes().toString(Charsets.UTF_8) }
 

@@ -37,9 +37,7 @@ class GoruntuleActivity : Activity() {
             startActivity(Intent(this, MainActivity::class.java).setAction(Intent.ACTION_SEND)
                 .putExtra(Intent.EXTRA_STREAM, uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
         }, 1f)
-        if (g.uzanti == "pdf") ust.ekle(buton("✏️ Düzenle", 0xFFD84315.toInt()) {
-            startActivity(Intent(this, PdfDuzenleActivity::class.java).setData(uri).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
-        }, 1f)
+        if (g.uzanti in Duzenle.DUZENLENIR) ust.ekle(buton("✏️ Düzenle", 0xFFD84315.toInt()) { Duzenle.ac(this, uri) }, 1f)
         ust.ekle(buton("Paylaş", 0xFF00897B.toInt()) { paylas(listOf(uri), Dosya.mime(g.ad)) }, 1f)
         ust.ekle(buton("Başka uygulama", Color.GRAY) { disaridaAc(uri, Dosya.mime(g.ad)) }, 1f)
         kok.ekle(ust)

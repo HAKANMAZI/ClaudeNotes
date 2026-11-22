@@ -37,5 +37,23 @@
         </activity>
 
         <activity android:name=".PdfDuzenleActivity" android:exported="false" android:label="PDF Düzenle" />
+        <activity android:name=".WordActivity" android:exported="false" android:label="Word" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".TabloActivity" android:exported="false" android:label="Excel" android:windowSoftInputMode="adjustResize" />
+        <activity android:name=".MetinDuzenleActivity" android:exported="false" android:label="Metin" android:windowSoftInputMode="adjustResize" />
+
+        <!-- "Düzenle → Dönüştür": Word, Excel, PDF, metin dosyalarını düzenlemek için -->
+        <activity android:name=".DuzenleYonlendir" android:exported="true" android:label="Dönüştür ile düzenle"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.EDIT" />
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <data android:scheme="content" />
+                <data android:mimeType="application/pdf" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.wordprocessingml.document" />
+                <data android:mimeType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                <data android:mimeType="text/*" />
+            </intent-filter>
+        </activity>
     </application>
 </manifest>

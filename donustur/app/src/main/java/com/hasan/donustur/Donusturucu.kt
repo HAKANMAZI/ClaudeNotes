@@ -19,7 +19,7 @@ object Donusturucu {
     val SES = setOf("mp3", "m4a", "aac", "wav", "flac", "ogg", "opus", "amr")
 
     private val ETIKET = linkedMapOf(
-        "duzenle" to "✏️ PDF Düzenle",
+        "duzenle" to "✏️ Düzenle",
         "jpg" to "JPG", "png" to "PNG", "webp" to "WEBP", "pdf" to "PDF",
         "tekpdf" to "Hepsi tek PDF", "txt" to "TXT", "html" to "HTML", "csv" to "CSV", "json" to "JSON",
         "jsonguzel" to "Düzenli JSON", "vtt" to "WebVTT", "srt" to "SRT",
@@ -47,19 +47,20 @@ object Donusturucu {
     private fun kodlar(g: Girdi): List<String> = when (val k = kategori(g)) {
         "gorsel" -> listOf("jpg", "png", "webp", "pdf", "tekpdf", "dondur", "aynala", "gri", "k11", "k43", "k169", "yari")
         "pdf" -> listOf("duzenle", "jpg", "png", "txt", "tekpdf", "bol", "kucult", "sayfano")
-        "belge", "sunum" -> listOf("pdf", "txt", "tekpdf")
-        "tablo" -> listOf("csv", "json", "html", "pdf", "tekpdf")
-        "csv" -> listOf("json", "html", "pdf", "tekpdf")
-        "json" -> listOf("csv", "jsonguzel", "pdf", "tekpdf")
-        "md", "markdown" -> listOf("html", "pdf", "txt", "tekpdf")
-        "html", "htm" -> listOf("pdf", "txt", "tekpdf")
-        "srt" -> listOf("vtt", "txt", "pdf")
-        "vtt" -> listOf("srt", "txt", "pdf")
+        "belge" -> (if (g.uzanti == "docx") listOf("duzenle") else emptyList()) + listOf("pdf", "txt", "tekpdf")
+        "sunum" -> listOf("pdf", "txt", "tekpdf")
+        "tablo" -> listOf("duzenle", "csv", "json", "html", "pdf", "tekpdf")
+        "csv" -> listOf("duzenle", "json", "html", "pdf", "tekpdf")
+        "json" -> listOf("duzenle", "csv", "jsonguzel", "pdf", "tekpdf")
+        "md", "markdown" -> listOf("duzenle", "html", "pdf", "txt", "tekpdf")
+        "html", "htm" -> listOf("duzenle", "pdf", "txt", "tekpdf")
+        "srt" -> listOf("duzenle", "vtt", "txt", "pdf")
+        "vtt" -> listOf("duzenle", "srt", "txt", "pdf")
         "video" -> listOf("m4a", "wav", "sessiz", "kare", "kareler")
         "ses" -> listOf("wav", "m4a")
         "arsiv" -> listOf("cikar")
         "diger" -> emptyList()
-        else -> if (k in METIN) listOf("pdf", "tekpdf") else emptyList()
+        else -> if (k in METIN) listOf("duzenle", "pdf", "tekpdf") else emptyList()
     } + "zip"
 
     /** Seçilen dosyaların hepsine uyan hedefler. */

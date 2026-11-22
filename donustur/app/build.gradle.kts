@@ -11,8 +11,8 @@ android {
         applicationId = "com.hasan.donustur"
         minSdk = 29
         targetSdk = 34
-        versionCode = 1
-        versionName = "1.0"
+        versionCode = 2
+        versionName = "2.0"
     }
 
     // Sabit imza: güncellemeler eski sürümün üstüne kurulabilsin

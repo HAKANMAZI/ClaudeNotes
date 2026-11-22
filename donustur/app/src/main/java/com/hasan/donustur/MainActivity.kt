@@ -20,6 +20,7 @@ class MainActivity : Activity() {
     private val SECIM = 1
     private val PDF_SECIM = 2
     private val AC_SECIM = 3
+    private val DUZENLE_SECIM = 4
 
     private val arka = Executors.newSingleThreadExecutor()
     private val secilenler = mutableListOf<Girdi>()
@@ -42,6 +43,10 @@ class MainActivity : Activity() {
         ust.ekle(buton("✏️ PDF Düzenle", 0xFFD84315.toInt()) { pdfDuzenle() }, 1f)
         ust.ekle(buton("👁 Dosya aç", 0xFF2E7D32.toInt()) { sec(AC_SECIM, "*/*", false) }, 1f)
         kok.ekle(ust)
+        val ust2 = yatay(this)
+        ust2.ekle(buton("📝 Aç ve düzenle (PDF, Word, Excel, metin)", 0xFF6A1B9A.toInt()) { sec(DUZENLE_SECIM, "*/*", false) }, 1f)
+        ust2.ekle(buton("➕ Yeni", 0xFF455A64.toInt()) { yeniBelge() })
+        kok.ekle(ust2)
 
         liste = yazi("Henüz dosya seçilmedi.\nİpucu: Galeri ya da Dosyalar'dan Paylaş → Dönüştür de kullanabilirsiniz.", 14f).apply { setTextColor(Color.DKGRAY) }
         kok.ekle(liste)
@@ -99,8 +104,15 @@ class MainActivity : Activity() {
         when (requestCode) {
             SECIM -> dosyalariAyarla(uriler)
             PDF_SECIM -> startActivity(Intent(this, PdfDuzenleActivity::class.java).setData(uriler[0]).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
+            DUZENLE_SECIM -> Duzenle.ac(this, uriler[0])
             AC_SECIM -> startActivity(Intent(this, GoruntuleActivity::class.java).setData(uriler[0]).addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION))
         }
+    }
+
+    private fun yeniBelge() {
+        val secenek = arrayOf("📄 Word belgesi (.docx)", "📊 Excel tablosu (.xlsx)", "🔤 Metin (.txt)")
+        AlertDialog.Builder(this).setTitle("Yeni belge")
+            .setItems(secenek) { _, i -> Duzenle.yeni(this, listOf("docx", "xlsx", "txt")[i]) }.show()
     }
 
     private fun pdfDuzenle() {
@@ -136,7 +148,7 @@ class MainActivity : Activity() {
     }
 
     private fun baslat(h: Hedef) {
-        if (h.kod == "duzenle") { pdfDuzenle(); return }
+        if (h.kod == "duzenle") { Duzenle.ac(this, secilenler[0].uri); return }
         val girdiler = secilenler.toList()
         cark.visibility = View.VISIBLE
         durum.text = "Başlıyor…"

@@ -4,6 +4,16 @@
 
 **İndir:** https://github.com/HAKANMAZI/ClaudeNotes/releases/tag/donustur-android
 
+## v2: Aç ve düzenle (PDF, Word, Excel, metin)
+- **📝 Aç ve düzenle** → dosya seç → türüne göre düzenleyici açılır. Dosyalar'da **Birlikte aç / Düzenle → Dönüştür** de olur.
+- **Word (.docx):** paragrafa dokunup yaz, Enter yeni paragraf, paragraf ekle/sil, kalın, bul-değiştir. Stil, resim ve tablolar korunur.
+- **Excel (.xlsx) / CSV:** hücreye dokunup değer ya da formül (`=SUM(A1:A5)`) yaz, sayfa sekmeleri, satır/sütun ekle, sütun toplamları. Hücre biçimleri korunur; formüller Excel'de açılınca hesaplanır.
+- **Metin:** TXT, Markdown, JSON, HTML, XML, altyazı; bul-değiştir.
+- **PDF:** PDF Düzenle ekranı (yazı, imza, karartma, sayfa işlemleri…).
+- **Kaydet** asıl dosyanın üzerine yazar; izin yoksa İndirilenler/Donustur'a kopyalar. **Farklı kaydet**, **PDF olarak**, **Paylaş**.
+- **➕ Yeni:** boş Word, Excel ya da metin belgesi.
+- Eski .doc / .xls desteklenmez (.docx / .xlsx gerekir). Düzenlenen paragrafın içindeki karışık biçim (yarısı kalın gibi) ilk parçanın biçimine döner.
+
 ## Kullanım
 - **📂 Dosya seç** → bir ya da çok dosya seç → hedef biçime dokun.
 - Galeri / Dosyalar'da **Paylaş → Dönüştür** de çalışır.
