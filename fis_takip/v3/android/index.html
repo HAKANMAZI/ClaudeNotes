@@ -501,7 +501,7 @@ function cal(v){
   if(nd.length)h+=`<div class="card"><b>Tarihi okunamayan fişler</b>`+nd.map(r=>`<div class="row" style="margin-top:8px"><span>${esc(r.magaza||"Fiş")} · ${TL(r.toplam)}</span><input type="date" onchange="setDate('${esc(r.id)}',this.value)"></div>`).join("")+`</div>`;
   if(sel&&HA[sel]&&cfOk("h"))h+=HA[sel].map(r=>`<div class="card" style="border-color:#8a6d1e">🔔 <b>${esc(r.magaza)}</b>${r.acik?` <span class="mu">${esc(r.acik)}</span>`:""} · ${TL(r.toplam)} <span class="mu">(${r.hat.p==="y"?"her yıl":"her ay"} hatırlatma)</span></div>`).join("");
   if(sel)h+=ajOn(sel).filter(a=>cfOk(a.t)).map(ajCard).join("");
-  if(HY.length&&cfOk("h"))h+=`<div class="card"><b>🔔 Yaklaşan ödemeler</b>${HY.map((x,i)=>`<div class="it" style="align-items:center"><span>${esc(x.r.magaza)}${x.r.acik?` <span class="mu">${esc(x.r.acik)}</span>`:""}<br><span class="mu">${esc(x.k)} · ${x.kal===0?"bugün":x.kal+" gün kaldı"} · ${x.r.hat.p==="y"?"her yıl":"her ay"}</span></span><span style="text-align:right">${TL(x.r.toplam)}<br><button class="g" style="padding:3px 8px" onclick="hatOde(${i})">Ödendi, ekle</button></span></div>`).join("")}</div>`;
+  /* Yaklaşan ödemeler artık yalnızca Ajanda sekmesinde görünür */
   v.innerHTML=h;
 }
 /* Bir fişin tarihini elle değiştirir. */
